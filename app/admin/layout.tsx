@@ -31,6 +31,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               <Link href="/admin/users" className="text-header-foreground/80 hover:text-header-foreground hover:underline">
                 Käyttäjät
               </Link>
+              <Link href="/admin/reports" className="text-header-foreground/80 hover:text-header-foreground hover:underline">
+                Raportit
+              </Link>
+              <Link href="/admin/payouts" className="text-header-foreground/80 hover:text-header-foreground hover:underline">
+                Tilitykset
+              </Link>
             </nav>
           </div>
           <div className="flex shrink-0 items-center gap-4 text-sm">

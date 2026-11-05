@@ -38,6 +38,10 @@ function load(): CartItem[] {
 let items: CartItem[] = load();
 const listeners = new Set<() => void>();
 
+// Stable snapshot for server rendering — React requires getServerSnapshot to
+// return a cached value, so this is a module constant, never a fresh array.
+const EMPTY_CART: CartItem[] = [];
+
 function emit() {
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
@@ -83,7 +87,7 @@ export const cartStore = {
 export function useCart(): { items: CartItem[]; count: number } {
   // getServerSnapshot: during SSR the store has nothing meaningful (localStorage
   // does not exist), so the server always renders the empty cart.
-  const snapshot = useSyncExternalStore(cartStore.subscribe, cartStore.getItems, () => []);
+  const snapshot = useSyncExternalStore(cartStore.subscribe, cartStore.getItems, () => EMPTY_CART);
   return { items: snapshot, count: snapshot.reduce((sum, i) => sum + i.quantity, 0) };
 }
 

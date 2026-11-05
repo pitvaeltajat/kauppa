@@ -1,25 +1,28 @@
-// Admin authorization rules.
-//
-// Order of preference:
-//   1. KAUPPA_ADMIN_EMAILS  — explicit comma-separated allowlist.
-//   2. GOOGLE_WORKSPACE_DOMAIN — every sign-in from the troop's Workspace
-//                                domain is an admin.
-//   3. Neither set — every signed-in user is an admin. Meant for local dev;
-//      do not deploy a store with both empty.
+// Admin authorization. Roles live in the database: there is no env-based
+// allowlist anymore. A person is an admin only when a User row exists with
+// role = ADMIN — bootstrap the first one with `pnpm db:seed` (see
+// KAUPPA_BOOTSTRAP_ADMIN_EMAILS) or `pnpm db:admin <email>`, then manage roles
+// under /admin/users.
 
-export function isAdminEmail(email: string | null | undefined): boolean {
+import { prisma } from '@/lib/prisma';
+
+/** True when a User row with this email has role ADMIN. */
+export async function isAdminUser(email: string | null | undefined): Promise<boolean> {
   if (!email) return false;
-  const normalized = email.trim().toLowerCase();
-  const allowlist = (process.env.KAUPPA_ADMIN_EMAILS ?? '')
-    .split(',')
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
-  if (allowlist.length > 0) return allowlist.includes(normalized);
-  const domain = process.env.GOOGLE_WORKSPACE_DOMAIN?.trim().toLowerCase();
-  if (domain) return normalized.endsWith(`@${domain}`);
-  return true;
+  const user = await prisma.user.findUnique({ where: { email: email.trim().toLowerCase() } });
+  return user?.role === 'ADMIN';
+}
+
+/** Current role of a User row, or null when the user has never signed in. */
+export async function getUserRole(
+  email: string | null | undefined,
+): Promise<'ADMIN' | 'USER' | null> {
+  if (!email) return null;
+  const user = await prisma.user.findUnique({ where: { email: email.trim().toLowerCase() } });
+  return user?.role ?? null;
 }
 
 export function isDevLoginEnabled(): boolean {
   return process.env.NODE_ENV !== 'production' && process.env.KAUPPA_DEV_LOGIN === '1';
 }
+

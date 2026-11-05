@@ -7,6 +7,22 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+/// Anyone who has signed in. Roles live in the database: a person only sees
+/// the admin side once an existing admin (or the seed) sets role = ADMIN.
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
 /// A shop section, e.g. "PitVa-tuotteet". Fully editable from the admin UI —
 /// nothing here is hardcoded.
 model Category {
@@ -22,13 +38,14 @@ model Category {
   @@index([sortOrder])
 }
 
-/// One sellable thing. Variants/sizes (e.g. huppari koot) are a later step;
-/// for now one price and one nullable stock count per item.
+/// One sellable thing, with 0..n questions the buyer answers at checkout
+/// (TEXT, NUMBER, RADIO or CHECKBOX) — e.g. a huppari size or a name for a
+/// custom item. Answers are snapshotted onto the order line.
 model Item {
-  id          String   @id @default(cuid())
+  id          String         @id @default(cuid())
   name        String
-  slug        String   @unique
-  description String   @default("")
+  slug        String         @unique
+  description String         @default("")
   priceCents  Int
   /// Image URL shown in the catalog. NULL renders the "Ei kuvaa" placeholder.
   imageUrl    String?
@@ -36,15 +53,42 @@ model Item {
   stock       Int?
   /// Hidden items are not shown in the catalog or buyable, but keep their
   /// order history.
-  active      Boolean  @default(true)
-  sortOrder   Int      @default(0)
+  active      Boolean        @default(true)
+  sortOrder   Int            @default(0)
   categoryId  String
-  category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  category    Category       @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
   orderLines  OrderLine[]
+  questions   ItemQuestion[]
 
   @@index([categoryId, active])
+}
+
+/// One question asked at checkout for an item ("Hupparin koko", "Nimikyltin
+/// teksti"). RADIO and CHECKBOX read their choices from `options` (string[]);
+/// TEXT and NUMBER ignore it. `required` only applies to TEXT and NUMBER —
+/// choice questions must always have an answer.
+model ItemQuestion {
+  id        String       @id @default(cuid())
+  itemId    String
+  item      Item         @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  prompt    String
+  type      QuestionType @default(TEXT)
+  required  Boolean      @default(false)
+  options   Json         @default("[]")
+  sortOrder Int          @default(0)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@index([itemId])
+}
+
+enum QuestionType {
+  TEXT
+  NUMBER
+  RADIO
+  CHECKBOX
 }
 
 /// One checkout. Lines are a snapshot: renaming or deleting an item later does
@@ -66,14 +110,17 @@ model Order {
 }
 
 model OrderLine {
-  id         String @id @default(cuid())
+  id         String  @id @default(cuid())
   orderId    String
-  order      Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order      Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   itemId     String
-  item       Item   @relation(fields: [itemId], references: [id])
+  item       Item    @relation(fields: [itemId], references: [id])
   name       String
   priceCents Int
   quantity   Int
+  /// Snapshot of the buyer's answers to the item's checkout questions:
+  /// [{ questionId, prompt, type, answer }]. Survives question edits/deletes.
+  answers    Json?
 
   @@index([orderId])
 }

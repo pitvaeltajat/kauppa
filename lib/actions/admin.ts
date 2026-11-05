@@ -4,15 +4,37 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
-import { isAdminEmail } from '@/lib/admin';
+import { isAdminUser } from '@/lib/admin';
 import { slugify } from '@/lib/slug';
 import { parseEurosInput } from '@/lib/money';
+import { parseQuestionDrafts } from '@/lib/questions';
 
 export type ActionResult = { error?: string };
 
 async function requireAdmin(): Promise<boolean> {
   const session = await auth();
-  return Boolean(session?.user?.email && isAdminEmail(session.user.email));
+  const email = session?.user?.email ?? null;
+  if (!email || !(await isAdminUser(email))) return false;
+  return true;
+}
+
+// --- Users ----------------------------------------------------------------
+
+export async function setUserRole(formData: FormData): Promise<void> {
+  const session = await auth();
+  const adminEmail = session?.user?.email ?? null;
+  if (!adminEmail || !(await isAdminUser(adminEmail))) return;
+
+  const id = ((formData.get('id') as string) ?? '').trim();
+  const role = (formData.get('role') as string) ?? '';
+  if (!id || (role !== 'ADMIN' && role !== 'USER')) return;
+
+  // Never demote yourself — there would be no one left to promote you back.
+  const target = await prisma.user.findUnique({ where: { id } });
+  if (!target || target.email === adminEmail) return;
+
+  await prisma.user.update({ where: { id }, data: { role } });
+  revalidatePath('/admin/users');
 }
 
 // --- Items ----------------------------------------------------------------
@@ -50,6 +72,15 @@ export async function saveItem(
   const active = formData.get('active') === 'on';
   const description = ((formData.get('description') as string) ?? '').trim();
 
+  // Checkout questions come as a JSON string; an empty array clears them.
+  let questionRows: { prompt: string; type: string; required: boolean; options: string[] }[] = [];
+  const questionsRaw = ((formData.get('questions') as string) ?? '').trim();
+  if (questionsRaw) {
+    const parsed = parseQuestionDrafts(questionsRaw);
+    if (!parsed.ok) return { error: parsed.error };
+    questionRows = parsed.questions;
+  }
+
   const data = {
     name,
     slug,
@@ -63,9 +94,40 @@ export async function saveItem(
   };
 
   if (id) {
-    await prisma.item.update({ where: { id }, data });
+    await prisma.$transaction([
+      prisma.item.update({ where: { id }, data }),
+      prisma.itemQuestion.deleteMany({ where: { itemId: id } }),
+      ...(questionRows.length === 0
+        ? []
+        : [
+            prisma.itemQuestion.createMany({
+              data: questionRows.map((q, index) => ({
+                itemId: id,
+                prompt: q.prompt,
+                type: q.type as 'TEXT' | 'NUMBER' | 'RADIO' | 'CHECKBOX',
+                required: q.required,
+                options: q.options,
+                sortOrder: index,
+              })),
+            }),
+          ]),
+    ]);
   } else {
-    await prisma.item.create({ data });
+    const item = await prisma.item.create({
+      data: {
+        ...data,
+        questions: {
+          create: questionRows.map((q, index) => ({
+            prompt: q.prompt,
+            type: q.type as 'TEXT' | 'NUMBER' | 'RADIO' | 'CHECKBOX',
+            required: q.required,
+            options: q.options,
+            sortOrder: index,
+          })),
+        },
+      },
+    });
+    void item;
   }
 
   revalidatePath('/', 'layout');

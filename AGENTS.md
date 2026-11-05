@@ -10,7 +10,10 @@ See `CLAUDE.md` for the full conventions. The short version:
   source of truth for prices/stock.
 - Server actions called from plain forms take one arg (`FormData`); server
   actions in `useActionState` take `(prev, formData)` and return `ActionResult`.
-- Admin authorization is enforced in the server action / layout, never only in
-  the UI.
+- Admin authorization is a database `User` row with role `ADMIN`, set under
+  /admin/users (bootstrap: `KAUPPA_BOOTSTRAP_ADMIN_EMAILS` + `pnpm db:seed`,
+  or `pnpm db:admin <email>`). Enforced in the layout and every server action.
+- Items can carry checkout questions (TEXT/NUMBER/RADIO/CHECKBOX); answers are
+  validated in `lib/questions.ts` and snapshotted onto the order line.
 - Theme tokens live in `styles/globals.css`; keep them in sync with
   Klapi/Budu/landeri.

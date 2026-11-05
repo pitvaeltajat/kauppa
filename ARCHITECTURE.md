@@ -43,21 +43,37 @@ Category 1──n Item 1──n OrderLine n──1 Order
 
 ## Admin
 
-`/admin` is guarded in `app/admin/layout.tsx` by `auth()` + `isAdminEmail`
-(`lib/admin.ts`). Server actions (`lib/actions/admin.ts`) re-run the same guard
-— the UI is never enough.
+`/admin` is guarded in `app/admin/layout.tsx` by `auth()` + `isAdminUser`
+(`lib/admin.ts`), and every server action (`lib/actions/admin.ts`) re-runs the
+same check — the UI is never enough.
 
-Preference order for who is an admin:
+**Roles live in the database.** Signing in (`lib/auth.ts` jwt callback, only
+on an actual sign-in) upserts a `User` row with role `USER`. Only rows with
+role `ADMIN` pass the guard. Roles are managed under `/admin/users`
+(setUserRole); you cannot demote yourself. The first admin comes from the seed
+(`KAUPPA_BOOTSTRAP_ADMIN_EMAILS`) or `pnpm db:admin <email>`.
+`GOOGLE_WORKSPACE_DOMAIN` only restricts who can sign in at all — it grants no
+admin rights.
 
-1. `KAUPPA_ADMIN_EMAILS` — explicit allowlist.
-2. `GOOGLE_WORKSPACE_DOMAIN` — any sign-in from that domain.
-3. Neither — everything signed-in is an admin (dev only).
-
-Orders: list with status filter, expandable line items, and actions that move
-the status forward (`Merkitse maksetuksi / luovutetuksi`, `Peruuta`).
+Orders: list with status filter, expandable line items (including the buyer's
+question answers), and actions that move the status forward (`Merkitse
+maksetuksi / luovutetuksi`, `Peruuta`).
 
 Catalog: full CRUD for items and categories. A category can only be deleted
-when it is empty; an item is hidden rather than deleted once it exists.
+when it is empty; an item is hidden rather than deleted once it exists. Items
+carry 0..n checkout questions (TEXT / NUMBER / RADIO / CHECKBOX), edited in the
+item form and asked in the cart before payment.
+
+## Checkout questions
+
+A question row exists per item (`ItemQuestion`). At checkout the cart page
+renders them (answers kept in the browser with the cart), and
+`POST /api/checkout` re-validates every answer against the database using the
+pure `validateAndBuildAnswers` in `lib/questions.ts`: text/number questions are
+required when flagged, choice questions are always required and answers must
+be in the option list. Valid answers are snapshotted onto the order line
+(`OrderLine.answers`), so editing or deleting a question later never rewrites
+history. The snapshot appears in the admin order view and the success page.
 
 ## Design tokens
 

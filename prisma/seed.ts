@@ -97,9 +97,15 @@ const items = [
     priceCents: 4200,
     stock: null,
     description:
-      'ILovePitVa-huppari aikuisille. Uusi mallisto! Hupparin koko valitaan noudettaessa ' +
-      'tuote kokouksessa tai kololta — laita toiveesi tilauksen yhteydessä tai sovi ' +
-      'kalustonhoitajan kanssa.',
+      'ILovePitVa-huppari aikuisille. Uusi mallisto! Valitse hupparin koko ostoskorissa.',
+    questions: [
+      {
+        prompt: 'Hupparin koko',
+        type: 'RADIO' as const,
+        required: true,
+        options: ['S', 'M', 'L', 'XL', 'XXL'],
+      },
+    ],
   },
   {
     name: 'ILovePitVa huppari - Lapset',
@@ -107,16 +113,30 @@ const items = [
     priceCents: 3900,
     stock: null,
     description:
-      'ILovePitVa-huppari lapsille. Uusi mallisto! Hupparin koko valitaan noudettaessa ' +
-      'tuote kokouksessa tai kololta — laita toiveesi tilauksen yhteydessä tai sovi ' +
-      'kalustonhoitajan kanssa.',
+      'ILovePitVa-huppari lapsille. Uusi mallisto! Valitse hupparin koko ostoskorissa.',
+    questions: [
+      {
+        prompt: 'Hupparin koko',
+        type: 'RADIO' as const,
+        required: true,
+        options: ['116', '128', '140', '152', '164'],
+      },
+    ],
   },
   {
     name: 'PitVa nimikyltti',
     category: 'pitva-tuotteet',
     priceCents: 800,
     stock: null,
-    description: 'Ennakkotilatun PitVa-nimikyltin maksu.',
+    description: 'Ennakkotilatun PitVa-nimikyltin maksu. Kerro kyltin teksti ostoskorissa.',
+    questions: [
+      {
+        prompt: 'Mitä tekstiä nimikylttiin (esim. "Aatu Vaelta")?',
+        type: 'TEXT' as const,
+        required: true,
+        options: [],
+      },
+    ],
   },
 
   // --- Tapahtumat ---
@@ -198,7 +218,7 @@ async function main() {
       .replace(/[\u0300-\u036f]/g, '')
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '');
-    await prisma.item.upsert({
+    const upserted = await prisma.item.upsert({
       where: { slug },
       update: {
         name: item.name,
@@ -218,7 +238,51 @@ async function main() {
         categoryId: category.id,
       },
     });
+
+    // Checkout questions are only seeded when the item has none yet, so
+    // admin-edited questions survive re-seeding.
+    const questions = (
+      item as {
+        questions?: { prompt: string; type: string; required: boolean; options: string[] }[];
+      }
+    ).questions;
+    if (questions && questions.length > 0) {
+      const existingCount = await prisma.itemQuestion.count({ where: { itemId: upserted.id } });
+      if (existingCount === 0) {
+        await prisma.itemQuestion.createMany({
+          data: questions.map((q, index) => ({
+            itemId: upserted.id,
+            prompt: q.prompt,
+            type: q.type as 'TEXT' | 'NUMBER' | 'RADIO' | 'CHECKBOX',
+            required: q.required,
+            options: q.options,
+            sortOrder: index,
+          })),
+        });
+      }
+    }
     console.log(`Tuote: ${item.name}`);
+  }
+
+  // Bootstrap admins: KAUPPA_BOOTSTRAP_ADMIN_EMAILS="a@domain, b@domain". Roles
+  // otherwise live in the database and are managed under /admin/users.
+  const bootstrapAdmins = (process.env.KAUPPA_BOOTSTRAP_ADMIN_EMAILS ?? '')
+    .split(',')
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean);
+  for (const email of bootstrapAdmins) {
+    await prisma.user.upsert({
+      where: { email },
+      update: { role: 'ADMIN' },
+      create: { email, role: 'ADMIN' },
+    });
+    console.log(`Ylläpitäjä: ${email}`);
+  }
+  if (bootstrapAdmins.length === 0) {
+    console.log(
+      'Vinkki: aseta KAUPPA_BOOTSTRAP_ADMIN_EMAILS seedataksesi ensimmäisen ylläpitäjän ' +
+        '(tai käytä pnpm db:admin sähköposti@esimerkki.fi).',
+    );
   }
   console.log('Valmis! Katalogi on seedattu.');
 }

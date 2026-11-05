@@ -1,11 +1,14 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { auth, signOut } from '@/lib/auth';
-import { isAdminEmail } from '@/lib/admin';
+import { isAdminUser } from '@/lib/admin';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
-  if (!session?.user?.email || !isAdminEmail(session.user.email)) {
+  const email = session?.user?.email ?? null;
+
+  // Roles live in the database — an admin is a User row with role ADMIN.
+  if (!email || !(await isAdminUser(email))) {
     redirect(`/login?callbackUrl=${encodeURIComponent('/admin')}`);
   }
 
@@ -24,6 +27,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               </Link>
               <Link href="/admin/categories" className="text-header-foreground/80 hover:text-header-foreground hover:underline">
                 Kategoriat
+              </Link>
+              <Link href="/admin/users" className="text-header-foreground/80 hover:text-header-foreground hover:underline">
+                Käyttäjät
               </Link>
             </nav>
           </div>
@@ -48,3 +54,4 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     </div>
   );
 }
+

@@ -10,6 +10,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ItemImage } from '@/components/item-image';
 
+type CheckoutQuestion = {
+  id: string;
+  prompt: string;
+  type: 'TEXT' | 'NUMBER' | 'RADIO' | 'CHECKBOX';
+  required: boolean;
+  options: string[];
+};
+
 type FetchedItem = {
   id: string;
   slug: string;
@@ -17,11 +25,15 @@ type FetchedItem = {
   priceCents: number;
   imageUrl: string | null;
   stock: number | null;
+  questions: CheckoutQuestion[];
 };
+
+type Answers = Record<string, Record<string, string | string[]>>;
 
 export function CartShell() {
   const { items } = useCart();
   const [catalog, setCatalog] = useState<Map<string, FetchedItem>>(new Map());
+  const [answers, setAnswers] = useState<Answers>({});
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -57,11 +69,40 @@ export function CartShell() {
     0,
   );
 
+  function setAnswer(itemId: string, questionId: string, value: string | string[]) {
+    setAnswers((prev) => ({
+      ...prev,
+      [itemId]: { ...prev[itemId], [questionId]: value },
+    }));
+  }
+
+  function missingAnswerMessage(item: FetchedItem): string | null {
+    const itemAnswers = answers[item.id] ?? {};
+    for (const question of item.questions) {
+      const value = itemAnswers[question.id];
+      const empty =
+        value === undefined || value === '' || (Array.isArray(value) && value.length === 0);
+      if (empty) {
+        return `Vastaa kysymykseen "${question.prompt}" (${item.name}).`;
+      }
+    }
+    return null;
+  }
+
   async function goToCheckout() {
     setError(null);
     if (lines.length === 0 || lines.some(({ item }) => !item)) {
       setError('Osa tuotteista ei ole enää myynnissä. Poista ne korista.');
       return;
+    }
+    for (const { item } of lines) {
+      if (item && item.questions.length > 0) {
+        const missing = missingAnswerMessage(item);
+        if (missing) {
+          setError(missing);
+          return;
+        }
+      }
     }
     setLoading(true);
     try {
@@ -70,6 +111,7 @@ export function CartShell() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           items: items.map((i) => ({ id: i.id, quantity: i.quantity })),
+          answers,
           email: email.trim() || undefined,
           name: name.trim() || undefined,
         }),
@@ -171,6 +213,88 @@ export function CartShell() {
                   <Trash2 className="size-4" />
                 </button>
               </div>
+
+              {/* Checkout questions for this item */}
+              {item && item.questions.length > 0 && (
+                <div className="mt-4 space-y-4 rounded-md bg-background p-4">
+                  {item.questions.map((question) => {
+                    const current = answers[item.id]?.[question.id];
+                    return (
+                      <div key={question.id} className="space-y-2">
+                        <Label className="text-xs font-medium">
+                          {question.prompt}
+                          {!question.required && (
+                            <span className="ml-1 font-normal text-muted-foreground">
+                              (valinnainen)
+                            </span>
+                          )}
+                        </Label>
+                        {question.type === 'TEXT' && (
+                          <Input
+                            value={typeof current === 'string' ? current : ''}
+                            onChange={(e) => setAnswer(item.id, question.id, e.target.value)}
+                            placeholder={question.prompt}
+                          />
+                        )}
+                        {question.type === 'NUMBER' && (
+                          <Input
+                            type="number"
+                            inputMode="decimal"
+                            value={typeof current === 'string' ? current : ''}
+                            onChange={(e) => setAnswer(item.id, question.id, e.target.value)}
+                            placeholder="luku"
+                          />
+                        )}
+                        {question.type === 'RADIO' && (
+                          <div className="flex flex-wrap gap-x-4 gap-y-2">
+                            {question.options.map((option) => (
+                              <label
+                                key={option}
+                                className="flex cursor-pointer items-center gap-2 text-sm"
+                              >
+                                <input
+                                  type="radio"
+                                  name={`q-${item.id}-${question.id}`}
+                                  className="size-4 accent-[hsl(244,51%,24%)]"
+                                  checked={current === option}
+                                  onChange={() => setAnswer(item.id, question.id, option)}
+                                />
+                                {option}
+                              </label>
+                            ))}
+                          </div>
+                        )}
+                        {question.type === 'CHECKBOX' && (
+                          <div className="flex flex-wrap gap-x-4 gap-y-2">
+                            {question.options.map((option) => {
+                              const selected = Array.isArray(current) ? current : [];
+                              return (
+                                <label
+                                  key={option}
+                                  className="flex cursor-pointer items-center gap-2 text-sm"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    className="size-4 accent-[hsl(244,51%,24%)]"
+                                    checked={selected.includes(option)}
+                                    onChange={(e) => {
+                                      const next = e.target.checked
+                                        ? [...selected, option]
+                                        : selected.filter((o) => o !== option);
+                                      setAnswer(item.id, question.id, next);
+                                    }}
+                                  />
+                                  {option}
+                                </label>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         ))}

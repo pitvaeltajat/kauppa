@@ -2,14 +2,16 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getStripe } from '@/lib/stripe';
 import { buildCheckout, type CheckoutRequestItem } from '@/lib/checkout';
+import { validateAndBuildAnswers, type AnswersByItem, type ItemQuestionLike } from '@/lib/questions';
 
 /**
- * Creates an Order row and a Stripe Checkout Session for the cart. Prices and
- * stock are re-validated against the database — nothing the browser sent is
- * trusted. In test mode this needs STRIPE_SECRET_KEY (sk_test_) set.
+ * Creates an Order row and a Stripe Checkout Session for the cart. Prices,
+ * stock and any item question answers are re-validated against the database —
+ * nothing the browser sent is trusted. In test mode this needs
+ * STRIPE_SECRET_KEY (sk_test_) set.
  */
 export async function POST(req: Request) {
-  let payload: { items?: unknown; email?: unknown; name?: unknown };
+  let payload: { items?: unknown; email?: unknown; name?: unknown; answers?: unknown };
   try {
     payload = await req.json();
   } catch {
@@ -40,6 +42,31 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: result.error }, { status: 400 });
   }
 
+  // Item questions: validate the cart-supplied answers and snapshot them.
+  const itemIds = result.lines.map((line) => line.itemId);
+  const questionRows = await prisma.itemQuestion.findMany({
+    where: { itemId: { in: itemIds } },
+    orderBy: { sortOrder: 'asc' },
+  });
+  const questionsByItem: Record<string, ItemQuestionLike[]> = {};
+  for (const itemId of itemIds) questionsByItem[itemId] = [];
+  for (const q of questionRows) {
+    questionsByItem[q.itemId]?.push({
+      id: q.id,
+      prompt: q.prompt,
+      type: q.type,
+      required: q.required,
+      options: q.options as string[],
+    });
+  }
+  const answers = (typeof payload.answers === 'object' && payload.answers !== null
+    ? (payload.answers as AnswersByItem)
+    : undefined);
+  const answerResult = validateAndBuildAnswers(questionsByItem, answers);
+  if (!answerResult.ok) {
+    return NextResponse.json({ error: answerResult.error }, { status: 400 });
+  }
+
   const email =
     typeof payload.email === 'string' && payload.email.includes('@')
       ? payload.email.trim().slice(0, 254)
@@ -59,6 +86,7 @@ export async function POST(req: Request) {
           name: line.name,
           priceCents: line.priceCents,
           quantity: line.quantity,
+          answers: answerResult.snapshotsByItem[line.itemId] ?? [],
         })),
       },
     },

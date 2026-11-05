@@ -113,16 +113,37 @@ export default async function AdminOrdersPage({
                   Tuotteet ({order.lines.reduce((sum, l) => sum + l.quantity, 0)} kpl)
                 </summary>
                 <ul className="mt-2 space-y-1 rounded-md bg-background p-3 text-sm">
-                  {order.lines.map((line) => (
-                    <li key={line.id} className="flex justify-between gap-3">
-                      <span>
-                        {line.name} × {line.quantity}
-                      </span>
-                      <span className="shrink-0 text-muted-foreground">
-                        {formatCents(line.priceCents * line.quantity)}
-                      </span>
-                    </li>
-                  ))}
+                  {order.lines.map((line) => {
+                    const answers = Array.isArray(line.answers)
+                      ? (line.answers as {
+                          questionId: string;
+                          prompt?: string;
+                          answer?: string | string[];
+                        }[])
+                      : [];
+                    return (
+                      <li key={line.id} className="space-y-1">
+                        <div className="flex justify-between gap-3">
+                          <span>
+                            {line.name} × {line.quantity}
+                          </span>
+                          <span className="shrink-0 text-muted-foreground">
+                            {formatCents(line.priceCents * line.quantity)}
+                          </span>
+                        </div>
+                        {answers.length > 0 && (
+                          <ul className="ml-4 space-y-0.5 text-xs text-muted-foreground">
+                            {answers.map((answer) => (
+                              <li key={answer.questionId}>
+                                {answer.prompt}:{' '}
+                                {Array.isArray(answer.answer) ? answer.answer.join(', ') : answer.answer}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
               </details>
 

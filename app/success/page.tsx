@@ -37,14 +37,38 @@ export default async function SuccessPage({
                 on vahvistettu ja maksu vastaanotettu. Kuitti on lähetetty sähköpostiisi.
               </p>
               <div className="divide-y rounded-md border">
-                {order.lines.map((line) => (
-                  <div key={line.id} className="flex items-baseline justify-between gap-3 px-4 py-2 text-sm">
-                    <span className="min-w-0">
-                      {line.name} <span className="text-muted-foreground">× {line.quantity}</span>
-                    </span>
-                    <span className="shrink-0 font-medium">{formatCents(line.priceCents * line.quantity)}</span>
-                  </div>
-                ))}
+                {order.lines.map((line) => {
+                  const answers = Array.isArray(line.answers)
+                    ? (line.answers as {
+                        questionId: string;
+                        prompt?: string;
+                        answer?: string | string[];
+                      }[])
+                    : [];
+                  return (
+                    <div key={line.id} className="px-4 py-2 text-sm">
+                      <div className="flex items-baseline justify-between gap-3">
+                        <span className="min-w-0">
+                          {line.name}{' '}
+                          <span className="text-muted-foreground">× {line.quantity}</span>
+                        </span>
+                        <span className="shrink-0 font-medium">
+                          {formatCents(line.priceCents * line.quantity)}
+                        </span>
+                      </div>
+                      {answers.length > 0 && (
+                        <ul className="mt-1 space-y-0.5 text-xs text-muted-foreground">
+                          {answers.map((answer) => (
+                            <li key={answer.questionId}>
+                              {answer.prompt}:{' '}
+                              {Array.isArray(answer.answer) ? answer.answer.join(', ') : answer.answer}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  );
+                })}
                 <div className="flex items-baseline justify-between gap-3 px-4 py-2 text-sm font-bold">
                   <span>Yhteensä</span>
                   <span>{formatCents(order.totalCents)}</span>

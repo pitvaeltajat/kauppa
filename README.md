@@ -44,9 +44,19 @@ Two options:
    `/login` page additionally offers a password-less sign-in with any
    `@example.com` address. It is ignored whenever `NODE_ENV` is `production`.
 
-An email is an admin when it is in `KAUPPA_ADMIN_EMAILS`, or (when that is
-empty) it is under `GOOGLE_WORKSPACE_DOMAIN`. With neither set every signed-in
-user is an admin — fine locally, do not deploy that way.
+**Admin roles live in the database.** Signing in creates a `User` row with
+role `USER` automatically; a person only sees `/admin` once an existing admin
+has set their role to `ADMIN` under **Hallinta → Käyttäjät**. Bootstrap the
+first admin with either
+
+```bash
+KAUPPA_BOOTSTRAP_ADMIN_EMAILS="nimi@pitkajarvenvaeltajat.fi" pnpm db:seed
+# or
+pnpm db:admin nimi@pitkajarvenvaeltajat.fi
+```
+
+Optional: `GOOGLE_WORKSPACE_DOMAIN` still restricts *who may sign in* at all,
+but it grants no admin rights by itself.
 
 ### Stripe (test mode)
 
@@ -77,7 +87,8 @@ mark it paid manually.
 | `pnpm format` / `format:check` | Prettier             |
 | `pnpm db:migrate`  | `prisma migrate dev`                            |
 | `pnpm db:deploy`   | `prisma migrate deploy` (used on Vercel)        |
-| `pnpm db:seed`     | Upsert the seed catalog (`prisma/seed.ts`)       |
+| `pnpm db:seed`     | Upsert the seed catalog + questions (`prisma/seed.ts`) |
+| `pnpm db:admin <email>` | Make a user an ADMIN (or `KAUPPA_BOOTSTRAP_ADMIN_EMAILS` + seed) |
 
 ## Deploying (Vercel)
 

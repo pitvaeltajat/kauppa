@@ -1,0 +1,138 @@
+@import 'tailwindcss';
+
+@utility container {
+  margin-inline: auto;
+  padding-inline: 1rem;
+  @media (width >= 1280px) {
+    max-width: 1280px;
+  }
+}
+
+/*
+  ── Brand palette (Pitkäjärven Vaeltajat "Värit" sheet) ─────────────────────
+  Copied verbatim from Klapi's styles/globals.css and Budu's app/globals.css so
+  that arriving here reads as the same product as the services it links to.
+
+    light blue  #BBD1FB   hsl(219 89% 86%)   CTA button, raised surfaces
+    dark blue   #221E5D   hsl(244 51% 24%)   header/app bar, body text, links
+    gray        #C9C5C3   hsl(20  7% 82%)    borders and muted surfaces
+    brown       #82593E   hsl(24 35% 38%)    warning
+    cream       #FBE7B2   hsl(44 90% 84%)    text on a solid brown fill
+    red         #A23936   hsl(2  50% 42%)    destructive
+    green       #2E6B51  (150 45% 30%)        status only — the sheet has no green
+
+  If the brand tokens move in Klapi/Budu/landeri, move them here as well — the
+  store, being the public shop, is the one of these apps most people meet first.
+*/
+@theme {
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+
+  --color-success: hsl(var(--success));
+  --color-success-foreground: hsl(var(--success-foreground));
+
+  --color-warning: hsl(var(--warning));
+  --color-warning-foreground: hsl(var(--warning-foreground));
+
+  --color-cta: hsl(var(--cta));
+  --color-cta-foreground: hsl(var(--cta-foreground));
+  --color-cta-hover: hsl(var(--cta-hover));
+
+  --color-header: hsl(var(--header));
+  --color-header-foreground: hsl(var(--header-foreground));
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+}
+
+@layer base {
+  *,
+  ::before,
+  ::after {
+    border-color: var(--color-border, currentcolor);
+  }
+
+  :root {
+    /* The light blue, opened up until body text clears 13:1 on it. */
+    --background: 219 89% 96%;
+    --foreground: 244 51% 24%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 244 51% 24%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 244 51% 24%;
+
+    /* Brand dark blue: every link, icon and bg-primary/10 chip. */
+    --primary: 244 51% 24%;
+    --primary-foreground: 219 89% 97%;
+
+    /* Brand light blue, exactly: the filled call-to-action button. */
+    --cta: 219 89% 86%;
+    --cta-foreground: 244 51% 24%;
+    --cta-hover: 219 85% 80%;
+
+    /* The quieter button beside a --cta one. */
+    --secondary: 20 6% 87%;
+    --secondary-foreground: 244 51% 24%;
+
+    --muted: 220 22% 93%;
+    --muted-foreground: 244 14% 40%;
+
+    --accent: 219 80% 91%;
+    --accent-foreground: 244 51% 24%;
+
+    /* Brand red */
+    --destructive: 2 50% 42%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 150 45% 30%;
+    --success-foreground: 0 0% 100%;
+
+    /* Brand brown, labelled in brand cream (5.1:1). */
+    --warning: 24 35% 38%;
+    --warning-foreground: 44 90% 84%;
+
+    /* The app bar: fixed brand surface, stays dark-on-light. */
+    --header: 244 51% 24%;
+    --header-foreground: 219 89% 97%;
+
+    /* Brand gray */
+    --border: 20 7% 82%;
+    --input: 20 7% 82%;
+    --ring: 244 51% 24%;
+
+    --radius: 0.375rem;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    -webkit-font-smoothing: antialiased;
+  }
+}

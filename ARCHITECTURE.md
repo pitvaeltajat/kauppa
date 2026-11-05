@@ -1,0 +1,81 @@
+# Architecture
+
+## Data model (Prisma)
+
+```
+Category 1──n Item 1──n OrderLine n──1 Order
+```
+
+- **Category** — a shop section (`PitVa-tuotteet`, `Tapahtumat`,
+  `Huivit ja merkit`). Fully editable from `/admin/categories`; nothing is
+  hardcoded.
+- **Item** — one sellable thing. `priceCents` is the single source of truth
+  (int cents, no floats). `stock: Int | null` — `null` means unlimited (bundle
+  offers, event registrations). `active: false` hides an item from the store
+  and the checkout but keeps its order history (admin "Piilota").
+- **Order** — one checkout. Status lifecycle:
+  `RECEIVED → PAID → COMPLETED | CANCELLED`.
+- **OrderLine** — a snapshot of what was bought (`name`, `priceCents`,
+  `quantity`). Renaming or deleting an item later never rewrites history.
+
+## Checkout flow
+
+1. The cart lives in the browser (`lib/cart.ts`): ids + quantities in
+   localStorage, read through `useSyncExternalStore`. Names, prices and stock
+   are never stored there.
+2. `POST /api/checkout` re-fetches the items from Postgres and validates every
+   line with `buildCheckout` (`lib/checkout.ts`): active item, stock, quantity
+   cap, and a total recomputed from DB prices. It creates the `Order`
+   (RECEIVED) with its lines, then a Stripe Checkout Session using
+   `price_data` (no Stripe Product/Price sync — the DB is the catalog).
+   `metadata.orderId` links the two. If creating the session fails, the order
+   row is rolled back.
+3. Stripe hosts the checkout. The browser is redirected to `session.url`; the
+   cart is cleared.
+4. `POST /api/webhooks/stripe` (signature-verified):
+   - `checkout.session.completed` → `markOrderPaid`: RECEIVED → PAID, sets
+     `paidAt`, `stripePaymentIntent` and backfills email/name from the session,
+     then decrements stock per line (`lib/orders.ts`, floors at 0, leaves
+     `null` stock alone). Idempotent (`PAID`/`COMPLETED` orders are skipped).
+   - `checkout.session.expired` → cancels a still-RECEIVED order.
+5. `session_id` on `/success` resolves the order for the thank-you page. Stripe
+   emails the receipt; the admin sees the same data under `/admin`.
+
+## Admin
+
+`/admin` is guarded in `app/admin/layout.tsx` by `auth()` + `isAdminEmail`
+(`lib/admin.ts`). Server actions (`lib/actions/admin.ts`) re-run the same guard
+— the UI is never enough.
+
+Preference order for who is an admin:
+
+1. `KAUPPA_ADMIN_EMAILS` — explicit allowlist.
+2. `GOOGLE_WORKSPACE_DOMAIN` — any sign-in from that domain.
+3. Neither — everything signed-in is an admin (dev only).
+
+Orders: list with status filter, expandable line items, and actions that move
+the status forward (`Merkitse maksetuksi / luovutetuksi`, `Peruuta`).
+
+Catalog: full CRUD for items and categories. A category can only be deleted
+when it is empty; an item is hidden rather than deleted once it exists.
+
+## Design tokens
+
+Copied from Klapi's `styles/globals.css` into `styles/globals.css`, light
+theme only: navy `#221E5D` header/`primary`, light blue `#BBD1FB` as the CTA
+button, `#ECF2FE` page wash, white cards, warm-gray borders, `#A23936`
+destructive, brown/cream warning, muted green for "available/paid" statuses.
+If the brand tokens move in the other apps, move them here too.
+
+## Deliberate simplifications (v1)
+
+- No item variants/sizes — the huppari sizes are currently handled by noting
+  the size choice at pickup. A future `options` field on Item would carry them.
+- No custom email (SES) — Stripe sends the receipt; order emails can follow the
+  Klapi SES pattern later.
+- No product photo upload — `imageUrl` is a URL text field; S3 upload is a
+  follow-up.
+- `price_data` for Checkout means no Stripe-side product catalog to keep in
+  sync; fine until prices are managed outside the app.
+- Overbooking is possible: stock is decremented on the paid webhook, not
+  reserved at checkout. Acceptable for a scout store.

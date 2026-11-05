@@ -1,0 +1,86 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// A shop section, e.g. "PitVa-tuotteet". Fully editable from the admin UI —
+/// nothing here is hardcoded.
+model Category {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  items       Item[]
+
+  @@index([sortOrder])
+}
+
+/// One sellable thing. Variants/sizes (e.g. huppari koot) are a later step;
+/// for now one price and one nullable stock count per item.
+model Item {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String   @default("")
+  priceCents  Int
+  /// Image URL shown in the catalog. NULL renders the "Ei kuvaa" placeholder.
+  imageUrl    String?
+  /// NULL = unlimited stock (bundle offers, event registrations).
+  stock       Int?
+  /// Hidden items are not shown in the catalog or buyable, but keep their
+  /// order history.
+  active      Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  orderLines  OrderLine[]
+
+  @@index([categoryId, active])
+}
+
+/// One checkout. Lines are a snapshot: renaming or deleting an item later does
+/// not rewrite what the order says was bought.
+model Order {
+  id                  String      @id @default(cuid())
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+  status              OrderStatus @default(RECEIVED)
+  email               String?
+  name                String?
+  totalCents          Int
+  stripeSessionId     String?     @unique
+  stripePaymentIntent String?
+  paidAt              DateTime?
+  lines               OrderLine[]
+
+  @@index([status, createdAt])
+}
+
+model OrderLine {
+  id         String @id @default(cuid())
+  orderId    String
+  order      Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  itemId     String
+  item       Item   @relation(fields: [itemId], references: [id])
+  name       String
+  priceCents Int
+  quantity   Int
+
+  @@index([orderId])
+}
+
+enum OrderStatus {
+  RECEIVED
+  PAID
+  COMPLETED
+  CANCELLED
+}

@@ -7,17 +7,25 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/// Anyone who has signed in. Roles are derived on sign-in (lib/auth.ts):
-/// a pitva-domain Google account becomes EVENT_ADMIN automatically; USER is
-/// everyone else (parents normally never log in). SUPERADMIN is the one manual
-/// grant — only a superadmin sets it, and it is never auto-downgraded.
+/// Anyone who has signed in, or who the nightly Workspace sync pre-provisioned.
+/// Roles are derived on sign-in (lib/auth.ts): a pitva-domain Google account
+/// becomes EVENT_ADMIN automatically; USER is everyone else (parents normally
+/// never log in). SUPERADMIN is the one manual grant — only a superadmin sets
+/// it, and it is never auto-downgraded.
+///
+/// `deletedAt` soft-deletes a departed member: the Workspace sync stamps it
+/// when someone leaves the member group (and clears it if they return), and
+/// lib/auth.ts refuses their sign-in while it is set. `deletedBySync` records
+/// that the sync, not a human, did it — a hand-deletion is never auto-restored.
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  role      Role     @default(USER)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  role          Role      @default(USER)
+  deletedAt     DateTime?
+  deletedBySync Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 }
 
 enum Role {

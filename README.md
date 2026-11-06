@@ -112,6 +112,49 @@ project:
 DNS: `kauppa.pitva.fi` CNAME to the Vercel deployment, in the same Route 53
 hosted zone that points `atk.pitva.fi` and `klapi.pitva.fi`.
 
+### Google Workspace user sync (optional)
+
+`/api/cron/syncWorkspaceUsers` runs nightly (see `vercel.json`) and reconciles
+kauppa's users against the troop's Google Workspace roster:
+
+- a member of the Workspace group with no kauppa row **gets one** (role
+  `EVENT_ADMIN`, the same a pitva-domain sign-in grants), so the whole troop
+  shows in `/admin/users` with names before anyone has logged in;
+- a name that changed in the directory **is refreshed**;
+- someone deleted, suspended, archived, or removed from the group **is
+  soft-deleted** — `deletedAt` is stamped and `lib/auth.ts` refuses their
+  sign-in, even though their pitva-domain address would otherwise still derive
+  EVENT_ADMIN. Their row and any manual role survive;
+- someone who comes back **is restored**, but only if the sync was the one that
+  deactivated them (`User.deletedBySync`) — a user an admin deleted by hand
+  stays deleted.
+
+Three guards fence the destructive half: an empty active roster aborts the run
+(HTTP 409), a run that would deactivate more than `WORKSPACE_SYNC_MAX_DEACTIVATIONS`
+accounts (default 10) aborts before writing anything, and the last live
+SUPERADMIN is never deactivated.
+
+**Setup** reuses klapi's `klapi-workspace-sync` service account, so the
+domain-wide delegation is already in place. Set on the Vercel project:
+
+- `GOOGLE_WORKSPACE_SA_KEY` — base64 of the SA JSON key (copy from klapi)
+- `GOOGLE_WORKSPACE_SUBJECT` — a Workspace admin to impersonate (copy from klapi)
+- `GOOGLE_WORKSPACE_GROUP` — `jasenet@pitkajarvenvaeltajat.fi`
+- `GOOGLE_WORKSPACE_EXCLUDE` — robot accounts to never provision (e.g. `admin@…`)
+- `CRON_SECRET` — `openssl rand -base64 32`; Vercel Cron sends it as the
+  `Authorization: Bearer` header and the route rejects anything else
+
+Dry run (writes nothing):
+
+```bash
+curl -H "Authorization: Bearer $CRON_SECRET" \
+  "https://kauppa.pitva.fi/api/cron/syncWorkspaceUsers?dryRun=1"
+```
+
+A `unauthorized_client` error from the token exchange means the SA's client id
+is missing the two `admin.directory.*.readonly` scopes in Admin console →
+Security → API controls → Domain-wide delegation.
+
 To share the session cookie with the other services later, set
 `AUTH_COOKIE_DOMAIN=".pitva.fi"` and make `AUTH_SECRET` equal the others'.
 

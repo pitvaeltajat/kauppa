@@ -23,6 +23,11 @@ export type ItemFormValues = {
   description: string;
   sortOrder: number;
   active: boolean;
+  isEvent: boolean;
+  /** "YYYY-MM-DD" for the native date inputs, or null. */
+  startsAt: string | null;
+  endsAt: string | null;
+  hidden: boolean;
   questions: {
     id: string;
     prompt: string;
@@ -54,11 +59,22 @@ function emptyDraft(): QuestionDraft {
   return { key: crypto.randomUUID(), prompt: '', type: 'TEXT', required: true, optionsText: '' };
 }
 
-export function ItemForm({ categories, item }: { categories: Category[]; item?: ItemFormValues }) {
+export function ItemForm({
+  categories,
+  item,
+  eventMode = false,
+}: {
+  categories: Category[];
+  item?: ItemFormValues;
+  /** Events-only form (used by event admins): locks isEvent on, hides the
+   * category picker (events go to Tapahtumat automatically). */
+  eventMode?: boolean;
+}) {
   const [state, action, pending] = useActionState(saveItem, undefined);
   const [questions, setQuestions] = useState<QuestionDraft[]>(
     item?.questions?.map(draftFromQuestion) ?? [],
   );
+  const [isEvent, setIsEvent] = useState(item?.isEvent ?? eventMode);
 
   function updateQuestion(key: string, patch: Partial<QuestionDraft>) {
     setQuestions((prev) => prev.map((q) => (q.key === key ? { ...q, ...patch } : q)));
@@ -101,17 +117,58 @@ export function ItemForm({ categories, item }: { categories: Category[]; item?: 
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-1.5">
-          <Label htmlFor="categoryId">Kategoria *</Label>
-          <Select id="categoryId" name="categoryId" defaultValue={item?.categoryId ?? categories[0]?.id}>
-            {categories.map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            ))}
-          </Select>
+      {/* Event controls. In eventMode the kind is locked on; otherwise a
+          superadmin can turn any product into an event. */}
+      {eventMode ? (
+        <input type="hidden" name="isEvent" value="on" />
+      ) : (
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            name="isEvent"
+            checked={isEvent}
+            onChange={(e) => setIsEvent(e.target.checked)}
+            className="size-4 accent-[hsl(244,51%,24%)]"
+          />
+          Tämä on tapahtuma (alkamis- ja päättymispäivä, piiloutuu listalta viikko päättymisen jälkeen)
+        </label>
+      )}
+
+      {isEvent && (
+        <div className="grid gap-4 sm:grid-cols-2 rounded-md border bg-background p-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="startsAt">Alkaa *</Label>
+            <Input id="startsAt" name="startsAt" type="date" required defaultValue={item?.startsAt ?? ''} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="endsAt">Päättyy *</Label>
+            <Input id="endsAt" name="endsAt" type="date" required defaultValue={item?.endsAt ?? ''} />
+          </div>
+          <label className="flex items-center gap-2 text-sm sm:col-span-2">
+            <input
+              type="checkbox"
+              name="hidden"
+              defaultChecked={item?.hidden ?? false}
+              className="size-4 accent-[hsl(244,51%,24%)]"
+            />
+            Piilota etusivulta — näkyy vain suoralla linkillä
+          </label>
         </div>
+      )}
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        {!isEvent && (
+          <div className="space-y-1.5">
+            <Label htmlFor="categoryId">Kategoria *</Label>
+            <Select id="categoryId" name="categoryId" defaultValue={item?.categoryId ?? categories[0]?.id}>
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
+            </Select>
+          </div>
+        )}
         <div className="space-y-1.5">
           <Label htmlFor="price">Hinta (€) *</Label>
           <Input

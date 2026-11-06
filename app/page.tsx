@@ -3,15 +3,17 @@ import { prisma } from '@/lib/prisma';
 import { ArrowRight } from 'lucide-react';
 import { CategoryTile } from '@/components/category-tile';
 import { ItemCard } from '@/components/item-card';
+import { listedItemWhere } from '@/lib/catalog';
 
 export default async function HomePage() {
+  const listed = listedItemWhere();
   const [categories, items] = await Promise.all([
     prisma.category.findMany({
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
-      include: { _count: { select: { items: { where: { active: true } } } } },
+      include: { _count: { select: { items: { where: listed } } } },
     }),
     prisma.item.findMany({
-      where: { active: true },
+      where: listed,
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
       include: { category: true },
     }),

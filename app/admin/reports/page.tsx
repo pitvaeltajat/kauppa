@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 import { formatCents } from '@/lib/money';
+import { requireSuperAdmin } from '@/lib/admin-guard';
 
 export const metadata: Metadata = { title: 'Myyntiraportti' };
 
@@ -42,6 +43,7 @@ export default async function AdminReportsPage({
 }: {
   searchParams: Promise<{ period?: string }>;
 }) {
+  await requireSuperAdmin();
   const { period: periodParam } = await searchParams;
   const period: Period = PERIODS.includes(periodParam as Period) ? (periodParam as Period) : 'all';
   const window = periodWindow(period);

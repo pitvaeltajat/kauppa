@@ -7,8 +7,10 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/// Anyone who has signed in. Roles live in the database: a person only sees
-/// the admin side once an existing admin (or the seed) sets role = ADMIN.
+/// Anyone who has signed in. Roles are derived on sign-in (lib/auth.ts):
+/// a pitva-domain Google account becomes EVENT_ADMIN automatically; USER is
+/// everyone else (parents normally never log in). SUPERADMIN is the one manual
+/// grant — only a superadmin sets it, and it is never auto-downgraded.
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
@@ -20,7 +22,8 @@ model User {
 
 enum Role {
   USER
-  ADMIN
+  EVENT_ADMIN
+  SUPERADMIN
 }
 
 /// A shop section, e.g. "PitVa-tuotteet". Fully editable from the admin UI —
@@ -51,9 +54,18 @@ model Item {
   imageUrl    String?
   /// NULL = unlimited stock (bundle offers, event registrations).
   stock       Int?
-  /// Hidden items are not shown in the catalog or buyable, but keep their
-  /// order history.
+  /// Inactive items are not shown in the catalog or buyable, but keep their
+  /// order history (a discontinued product). The hard off switch.
   active      Boolean        @default(true)
+  /// An event is a special item: a registration/fee with start+end dates that
+  /// auto-hides from listings one week after it ends. Managed by event admins.
+  isEvent     Boolean        @default(false)
+  startsAt    DateTime?
+  endsAt      DateTime?
+  /// Unlisted: kept off the front page and category listings but still
+  /// reachable and buyable at its direct /item/<slug> link. Used for events
+  /// shared by link only; also applied automatically once an event is over.
+  hidden      Boolean        @default(false)
   sortOrder   Int            @default(0)
   categoryId  String
   category    Category       @relation(fields: [categoryId], references: [id], onDelete: Cascade)

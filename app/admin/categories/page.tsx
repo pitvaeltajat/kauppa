@@ -3,11 +3,13 @@ import Link from 'next/link';
 import { Plus } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
 import { deleteCategory } from '@/lib/actions/admin';
+import { requireSuperAdmin } from '@/lib/admin-guard';
 import { Button } from '@/components/ui/button';
 
 export const metadata: Metadata = { title: 'Kategoriat' };
 
 export default async function AdminCategoriesPage() {
+  await requireSuperAdmin();
   const categories = await prisma.category.findMany({
     orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
     include: { _count: { select: { items: true } } },

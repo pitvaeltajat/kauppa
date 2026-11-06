@@ -3,6 +3,7 @@ import Google from 'next-auth/providers/google';
 import Credentials from 'next-auth/providers/credentials';
 import type { Provider } from 'next-auth/providers';
 import { prisma } from '@/lib/prisma';
+import { deriveRole, type Role } from '@/lib/admin';
 
 // Local development only: a password-less sign-in on /login that takes any
 // email. Mirrors Budu's BUDU_DEV_LOGIN. Ignored in production.
@@ -52,23 +53,25 @@ function buildProviders(): Provider[] {
 }
 
 /**
- * Makes sure the signed-in person has a User row — roles live in the database,
- * so signing in with USER as the default, and an existing admin can promote
- * the row under /admin/users. The role is read back so the JWT/session can
- * carry it.
+ * Makes sure the signed-in person has a User row and the right role. The role
+ * is re-derived from the email domain on every sign-in (pitva domain =>
+ * EVENT_ADMIN), but a standing SUPERADMIN is preserved. The role is read back
+ * so the JWT/session can carry it.
  */
 async function ensureUser(email: string | null | undefined, name: string | null | undefined) {
   if (!email) return null;
   const normalized = email.trim().toLowerCase();
   const existing = await prisma.user.findUnique({ where: { email: normalized } });
   if (existing) {
-    if (existing.name !== (name ?? null)) {
-      return prisma.user.update({ where: { email: normalized }, data: { name: name ?? null } });
+    const role = deriveRole(normalized, existing.role as Role);
+    const nextName = name ?? existing.name ?? null;
+    if (role !== existing.role || nextName !== existing.name) {
+      return prisma.user.update({ where: { email: normalized }, data: { role, name: nextName } });
     }
     return existing;
   }
   return prisma.user.create({
-    data: { email: normalized, name: name ?? email.split('@')[0] },
+    data: { email: normalized, name: name ?? email.split('@')[0], role: deriveRole(normalized, null) },
   });
 }
 

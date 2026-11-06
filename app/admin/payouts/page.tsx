@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import { fi } from 'date-fns/locale';
 import { getStripe } from '@/lib/stripe';
 import { formatCents } from '@/lib/money';
+import { requireSuperAdmin } from '@/lib/admin-guard';
 import { Badge } from '@/components/ui/badge';
 
 export const metadata: Metadata = { title: 'Tilitykset' };
@@ -90,6 +91,7 @@ async function loadPayouts(): Promise<
 }
 
 export default async function AdminPayoutsPage() {
+  await requireSuperAdmin();
   const result = await loadPayouts();
 
   return (

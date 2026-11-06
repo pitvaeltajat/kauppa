@@ -4,12 +4,14 @@ import { Plus } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
 import { formatCents } from '@/lib/money';
 import { hideItem } from '@/lib/actions/admin';
+import { requireSuperAdmin } from '@/lib/admin-guard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
 export const metadata: Metadata = { title: 'Tuotteet' };
 
 export default async function AdminItemsPage() {
+  await requireSuperAdmin();
   const items = await prisma.item.findMany({
     orderBy: [{ category: { sortOrder: 'asc' } }, { sortOrder: 'asc' }, { name: 'asc' }],
     include: { category: true },

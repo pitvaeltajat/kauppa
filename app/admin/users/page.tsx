@@ -1,16 +1,25 @@
 import type { Metadata } from 'next';
 import { format } from 'date-fns';
 import { fi } from 'date-fns/locale';
-import { Shield } from 'lucide-react';
+import { Shield, ShieldCheck } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
+import { deriveRole, type Role } from '@/lib/admin';
 import { setUserRole } from '@/lib/actions/admin';
+import { requireSuperAdmin } from '@/lib/admin-guard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
 export const metadata: Metadata = { title: 'Käyttäjät' };
 
+const ROLE_LABEL: Record<Role, string> = {
+  SUPERADMIN: 'Pääylläpitäjä',
+  EVENT_ADMIN: 'Tapahtumavastaava',
+  USER: 'Käyttäjä',
+};
+
 export default async function AdminUsersPage() {
+  await requireSuperAdmin();
   const session = await auth();
   const myEmail = session?.user?.email?.trim().toLowerCase();
 
@@ -23,7 +32,8 @@ export default async function AdminUsersPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Käyttäjät</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Ylläpitäjyys on tietokannassa: tili saa ADMIN-roolin täältä. Ensimmäinen ylläpitäjä
+          Tapahtumavastaavan roolin saa automaattisesti jokainen pitva-tunnuksella kirjautuva.
+          Pääylläpitäjän (täydet oikeudet) nimittää vain toinen pääylläpitäjä täältä. Ensimmäinen
           luodaan seed-komennolla (KAUPPA_BOOTSTRAP_ADMIN_EMAILS) tai <code>pnpm db:admin sähköposti</code>.
         </p>
       </div>
@@ -47,6 +57,10 @@ export default async function AdminUsersPage() {
             <tbody>
               {users.map((user) => {
                 const isMe = user.email === myEmail;
+                const role = user.role as Role;
+                const isSuper = role === 'SUPERADMIN';
+                // Demoting a superadmin drops them back to their derived role.
+                const demoteTo = deriveRole(user.email, null);
                 return (
                   <tr key={user.id} className="border-b last:border-0">
                     <td className="px-4 py-3 font-medium">
@@ -57,12 +71,16 @@ export default async function AdminUsersPage() {
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">{user.name ?? '—'}</td>
                     <td className="px-4 py-3">
-                      {user.role === 'ADMIN' ? (
+                      {isSuper ? (
                         <Badge className="gap-1">
-                          <Shield className="size-3" /> Ylläpitäjä
+                          <ShieldCheck className="size-3" /> {ROLE_LABEL.SUPERADMIN}
+                        </Badge>
+                      ) : role === 'EVENT_ADMIN' ? (
+                        <Badge variant="warning" className="gap-1">
+                          <Shield className="size-3" /> {ROLE_LABEL.EVENT_ADMIN}
                         </Badge>
                       ) : (
-                        <Badge variant="secondary">Käyttäjä</Badge>
+                        <Badge variant="secondary">{ROLE_LABEL.USER}</Badge>
                       )}
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">
@@ -73,13 +91,9 @@ export default async function AdminUsersPage() {
                         {!isMe && (
                           <form action={setUserRole}>
                             <input type="hidden" name="id" value={user.id} />
-                            <input
-                              type="hidden"
-                              name="role"
-                              value={user.role === 'ADMIN' ? 'USER' : 'ADMIN'}
-                            />
-                            <Button type="submit" size="sm" variant={user.role === 'ADMIN' ? 'ghost' : 'outline'}>
-                              {user.role === 'ADMIN' ? 'Poista ylläpito' : 'Tee ylläpitäjäksi'}
+                            <input type="hidden" name="role" value={isSuper ? demoteTo : 'SUPERADMIN'} />
+                            <Button type="submit" size="sm" variant={isSuper ? 'ghost' : 'outline'}>
+                              {isSuper ? 'Poista pääylläpito' : 'Tee pääylläpitäjäksi'}
                             </Button>
                           </form>
                         )}

@@ -1,16 +1,12 @@
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
-import { auth, signOut } from '@/lib/auth';
-import { isAdminUser } from '@/lib/admin';
+import { signOut } from '@/lib/auth';
+import { isSuperAdmin } from '@/lib/admin';
+import { requireEventAdmin } from '@/lib/admin-guard';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const session = await auth();
-  const email = session?.user?.email ?? null;
-
-  // Roles live in the database — an admin is a User row with role ADMIN.
-  if (!email || !(await isAdminUser(email))) {
-    redirect(`/login?callbackUrl=${encodeURIComponent('/admin')}`);
-  }
+  // Event admins and superadmins reach the admin area; others go to /login.
+  const role = await requireEventAdmin();
+  const superadmin = isSuperAdmin(role);
 
   return (
     <div className="min-h-[60vh]">
@@ -19,24 +15,31 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <div className="flex items-center gap-5">
             <span className="font-bold">Hallinta</span>
             <nav className="flex items-center gap-4 text-sm">
-              <Link href="/admin" className="text-header-foreground/80 hover:text-header-foreground hover:underline">
-                Tilaukset
+              <Link href="/admin/events" className="text-header-foreground/80 hover:text-header-foreground hover:underline">
+                Tapahtumat
               </Link>
-              <Link href="/admin/items" className="text-header-foreground/80 hover:text-header-foreground hover:underline">
-                Tuotteet
-              </Link>
-              <Link href="/admin/categories" className="text-header-foreground/80 hover:text-header-foreground hover:underline">
-                Kategoriat
-              </Link>
-              <Link href="/admin/users" className="text-header-foreground/80 hover:text-header-foreground hover:underline">
-                Käyttäjät
-              </Link>
-              <Link href="/admin/reports" className="text-header-foreground/80 hover:text-header-foreground hover:underline">
-                Raportit
-              </Link>
-              <Link href="/admin/payouts" className="text-header-foreground/80 hover:text-header-foreground hover:underline">
-                Tilitykset
-              </Link>
+              {superadmin && (
+                <>
+                  <Link href="/admin" className="text-header-foreground/80 hover:text-header-foreground hover:underline">
+                    Tilaukset
+                  </Link>
+                  <Link href="/admin/items" className="text-header-foreground/80 hover:text-header-foreground hover:underline">
+                    Tuotteet
+                  </Link>
+                  <Link href="/admin/categories" className="text-header-foreground/80 hover:text-header-foreground hover:underline">
+                    Kategoriat
+                  </Link>
+                  <Link href="/admin/users" className="text-header-foreground/80 hover:text-header-foreground hover:underline">
+                    Käyttäjät
+                  </Link>
+                  <Link href="/admin/reports" className="text-header-foreground/80 hover:text-header-foreground hover:underline">
+                    Raportit
+                  </Link>
+                  <Link href="/admin/payouts" className="text-header-foreground/80 hover:text-header-foreground hover:underline">
+                    Tilitykset
+                  </Link>
+                </>
+              )}
             </nav>
           </div>
           <div className="flex shrink-0 items-center gap-4 text-sm">

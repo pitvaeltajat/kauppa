@@ -1,7 +1,8 @@
 #!/usr/bin/env node
-// Creates/upgrades a user to ADMIN by email:
+// Creates/upgrades a user to SUPERADMIN by email:
 //   pnpm db:admin etunimi@pitkajarvenvaeltajat.fi
-// Roles otherwise live in the database and are managed under /admin/users.
+// Event-admin roles are derived from the email domain on sign-in; SUPERADMIN
+// is the manual grant, managed under /admin/users.
 
 import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
@@ -16,9 +17,9 @@ if (!email || !email.includes('@')) {
 
 await prisma.user.upsert({
   where: { email },
-  update: { role: 'ADMIN' },
-  create: { email, role: 'ADMIN' },
+  update: { role: 'SUPERADMIN' },
+  create: { email, role: 'SUPERADMIN' },
 });
 
-console.log(`${email} on nyt ylläpitäjä. He voivat kirjautua Hallintaan heti — uusi istunto riittää.`);
+console.log(`${email} on nyt pääylläpitäjä. He voivat kirjautua Hallintaan heti — uusi istunto riittää.`);
 await prisma.$disconnect();

@@ -1,5 +1,7 @@
 import Link from 'next/link';
+import { CalendarDays } from 'lucide-react';
 import { formatCents } from '@/lib/money';
+import { formatEventDates } from '@/lib/catalog';
 import { ItemImage } from '@/components/item-image';
 
 export type ItemCardData = {
@@ -10,10 +12,14 @@ export type ItemCardData = {
   imageUrl: string | null;
   stock: number | null;
   description: string;
+  isEvent?: boolean;
+  startsAt?: Date | null;
+  endsAt?: Date | null;
 };
 
 export function ItemCard({ item }: { item: ItemCardData }) {
   const soldOut = item.stock === 0;
+  const dates = item.isEvent ? formatEventDates(item.startsAt, item.endsAt) : '';
   return (
     <Link
       href={`/item/${item.slug}`}
@@ -27,6 +33,11 @@ export function ItemCard({ item }: { item: ItemCardData }) {
           </h3>
           <span className="shrink-0 text-sm font-bold">{formatCents(item.priceCents)}</span>
         </div>
+        {dates && (
+          <p className="mt-1 flex items-center gap-1 text-xs font-medium text-primary">
+            <CalendarDays className="size-3.5" /> {dates}
+          </p>
+        )}
         <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{item.description}</p>
         <p className="mt-2 text-xs">
           {soldOut ? (

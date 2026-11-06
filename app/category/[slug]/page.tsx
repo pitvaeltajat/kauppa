@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { ChevronRight } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
 import { ItemCard } from '@/components/item-card';
+import { listedItemWhere } from '@/lib/catalog';
 
 export async function generateMetadata({
   params,
@@ -21,7 +22,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
     where: { slug },
     include: {
       items: {
-        where: { active: true },
+        where: listedItemWhere(),
         orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
       },
     },

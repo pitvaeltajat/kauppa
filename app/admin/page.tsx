@@ -5,6 +5,7 @@ import { fi } from 'date-fns/locale';
 import { prisma } from '@/lib/prisma';
 import { formatCents } from '@/lib/money';
 import { setOrderStatus } from '@/lib/actions/admin';
+import { requireSuperAdmin } from '@/lib/admin-guard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
@@ -27,6 +28,7 @@ export default async function AdminOrdersPage({
 }: {
   searchParams: Promise<{ status?: string }>;
 }) {
+  await requireSuperAdmin();
   const { status: statusParam } = await searchParams;
   const filter = STATUSES.includes(statusParam as (typeof STATUSES)[number])
     ? (statusParam as (typeof STATUSES)[number])

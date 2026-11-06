@@ -4,30 +4,50 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
-import { isAdminUser } from '@/lib/admin';
+import { getUserRole, isEventAdmin, isSuperAdmin, type Role } from '@/lib/admin';
 import { slugify } from '@/lib/slug';
 import { parseEurosInput } from '@/lib/money';
 import { parseQuestionDrafts } from '@/lib/questions';
 
 export type ActionResult = { error?: string };
 
-async function requireAdmin(): Promise<boolean> {
+/** Role of the signed-in person, or null when not signed in. */
+async function currentRole(): Promise<Role | null> {
   const session = await auth();
-  const email = session?.user?.email ?? null;
-  if (!email || !(await isAdminUser(email))) return false;
-  return true;
+  return getUserRole(session?.user?.email ?? null);
+}
+
+/** Events live in the "Tapahtumat" category so event admins need no category
+ * access; find-or-create it. */
+async function eventCategoryId(): Promise<string> {
+  const category = await prisma.category.upsert({
+    where: { slug: 'tapahtumat' },
+    update: {},
+    create: { name: 'Tapahtumat', slug: 'tapahtumat', sortOrder: 2 },
+  });
+  return category.id;
+}
+
+/** Date-only input ("YYYY-MM-DD") to a Date at midnight, or null. */
+function parseDate(raw: string): Date | null {
+  const value = raw.trim();
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
 }
 
 // --- Users ----------------------------------------------------------------
 
 export async function setUserRole(formData: FormData): Promise<void> {
+  // Only superadmins change roles, and the only grant worth toggling is
+  // SUPERADMIN (EVENT_ADMIN is derived from the email domain on sign-in).
   const session = await auth();
-  const adminEmail = session?.user?.email ?? null;
-  if (!adminEmail || !(await isAdminUser(adminEmail))) return;
+  const adminEmail = session?.user?.email?.trim().toLowerCase() ?? null;
+  if (!isSuperAdmin(await getUserRole(adminEmail))) return;
 
   const id = ((formData.get('id') as string) ?? '').trim();
   const role = (formData.get('role') as string) ?? '';
-  if (!id || (role !== 'ADMIN' && role !== 'USER')) return;
+  if (!id || (role !== 'SUPERADMIN' && role !== 'EVENT_ADMIN' && role !== 'USER')) return;
 
   // Never demote yourself — there would be no one left to promote you back.
   const target = await prisma.user.findUnique({ where: { id } });
@@ -43,13 +63,30 @@ export async function saveItem(
   prev: ActionResult | undefined,
   formData: FormData,
 ): Promise<ActionResult> {
-  if (!(await requireAdmin())) return { error: 'Ei käyttöoikeutta. Kirjaudu sisään.' };
+  const role = await currentRole();
+  if (!isEventAdmin(role)) return { error: 'Ei käyttöoikeutta. Kirjaudu sisään.' };
 
   const id = ((formData.get('id') as string) ?? '').trim() || undefined;
   const name = ((formData.get('name') as string) ?? '').trim();
   if (!name) return { error: 'Nimi puuttuu.' };
 
-  const categoryId = ((formData.get('categoryId') as string) ?? '').trim();
+  // Event admins may only touch events; superadmins may create either kind.
+  const isEvent = !isSuperAdmin(role) || formData.get('isEvent') === 'on';
+
+  let startsAt: Date | null = null;
+  let endsAt: Date | null = null;
+  if (isEvent) {
+    startsAt = parseDate((formData.get('startsAt') as string) ?? '');
+    endsAt = parseDate((formData.get('endsAt') as string) ?? '');
+    if (!startsAt || !endsAt) return { error: 'Tapahtumalle on annettava alkamis- ja päättymispäivä.' };
+    if (endsAt < startsAt) return { error: 'Päättymispäivä ei voi olla ennen alkamispäivää.' };
+  }
+  const hidden = formData.get('hidden') === 'on';
+
+  // Events live in Tapahtumat; a non-event takes the category the form chose.
+  const categoryId = isEvent
+    ? await eventCategoryId()
+    : ((formData.get('categoryId') as string) ?? '').trim();
   if (!categoryId) return { error: 'Valitse kategoria.' };
 
   const priceCents = parseEurosInput((formData.get('price') as string) ?? '');
@@ -81,6 +118,12 @@ export async function saveItem(
     questionRows = parsed.questions;
   }
 
+  // Event admins may edit events only, never a regular product.
+  if (id && !isSuperAdmin(role)) {
+    const target = await prisma.item.findUnique({ where: { id }, select: { isEvent: true } });
+    if (!target?.isEvent) return { error: 'Ei käyttöoikeutta tähän tuotteeseen.' };
+  }
+
   const data = {
     name,
     slug,
@@ -91,6 +134,10 @@ export async function saveItem(
     sortOrder,
     active,
     description,
+    isEvent,
+    startsAt,
+    endsAt,
+    hidden,
   };
 
   if (id) {
@@ -131,15 +178,29 @@ export async function saveItem(
   }
 
   revalidatePath('/', 'layout');
-  redirect('/admin/items');
+  redirect(isEvent ? '/admin/events' : '/admin/items');
 }
 
 export async function hideItem(formData: FormData): Promise<void> {
-  if (!(await requireAdmin())) return;
+  if (!isSuperAdmin(await currentRole())) return;
   const id = ((formData.get('id') as string) ?? '').trim();
   if (!id) return;
   await prisma.item.update({ where: { id }, data: { active: false } });
   revalidatePath('/', 'layout');
+}
+
+/** Toggle an event's "unlisted" flag (off the front page, direct link still
+ * works). Event admins and superadmins; events only. */
+export async function setEventHidden(formData: FormData): Promise<void> {
+  if (!isEventAdmin(await currentRole())) return;
+  const id = ((formData.get('id') as string) ?? '').trim();
+  const hidden = formData.get('hidden') === 'true';
+  if (!id) return;
+  const target = await prisma.item.findUnique({ where: { id }, select: { isEvent: true } });
+  if (!target?.isEvent) return;
+  await prisma.item.update({ where: { id }, data: { hidden } });
+  revalidatePath('/', 'layout');
+  revalidatePath('/admin/events');
 }
 
 // --- Categories -----------------------------------------------------------
@@ -148,7 +209,7 @@ export async function saveCategory(
   prev: ActionResult | undefined,
   formData: FormData,
 ): Promise<ActionResult> {
-  if (!(await requireAdmin())) return { error: 'Ei käyttöoikeutta. Kirjaudu sisään.' };
+  if (!isSuperAdmin(await currentRole())) return { error: 'Ei käyttöoikeutta. Kirjaudu sisään.' };
 
   const id = ((formData.get('id') as string) ?? '').trim() || undefined;
   const name = ((formData.get('name') as string) ?? '').trim();
@@ -174,7 +235,7 @@ export async function saveCategory(
 }
 
 export async function deleteCategory(formData: FormData): Promise<void> {
-  if (!(await requireAdmin())) return;
+  if (!isSuperAdmin(await currentRole())) return;
 
   const id = ((formData.get('id') as string) ?? '').trim();
   if (!id) return;
@@ -193,7 +254,7 @@ export async function deleteCategory(formData: FormData): Promise<void> {
 const ORDER_STATUSES = ['RECEIVED', 'PAID', 'COMPLETED', 'CANCELLED'] as const;
 
 export async function setOrderStatus(formData: FormData): Promise<void> {
-  if (!(await requireAdmin())) return;
+  if (!isSuperAdmin(await currentRole())) return;
   const id = ((formData.get('id') as string) ?? '').trim();
   const status = (formData.get('status') as string) ?? '';
   if (!id || !ORDER_STATUSES.includes(status as (typeof ORDER_STATUSES)[number])) return;

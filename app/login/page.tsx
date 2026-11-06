@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { ShieldAlert } from 'lucide-react';
 import { auth } from '@/lib/auth';
-import { isAdminUser, isDevLoginEnabled } from '@/lib/admin';
+import { getUserRole, isEventAdmin, isDevLoginEnabled } from '@/lib/admin';
 import { LoginForm } from '@/components/login-form';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,12 +21,12 @@ export default async function LoginPage({
 
   const session = await auth();
   const email = session?.user?.email ?? null;
-  if (email && (await isAdminUser(email))) {
+  if (email && isEventAdmin(await getUserRole(email))) {
     redirect(safeCallback);
   }
 
-  // Signed in, but not an admin — roles live in the database, so no env-based
-  // allowlist can help. An existing admin must promote the User row.
+  // Signed in, but no admin access — a parent account. Roles are derived from
+  // the email domain, so only a pitva account reaches the admin side.
   if (email) {
     return (
       <div className="container flex justify-center py-12">

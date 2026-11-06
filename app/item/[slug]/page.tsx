@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, CalendarDays } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
 import { formatCents } from '@/lib/money';
+import { formatEventDates, isEventOver } from '@/lib/catalog';
 import { ItemImage } from '@/components/item-image';
 import { AddToCartForm } from '@/components/add-to-cart-form';
 import { Badge } from '@/components/ui/badge';
@@ -29,6 +30,8 @@ export default async function ItemPage({ params }: { params: Promise<{ slug: str
   if (!item || !item.active) notFound();
 
   const soldOut = item.stock === 0;
+  const eventDates = item.isEvent ? formatEventDates(item.startsAt, item.endsAt) : '';
+  const eventOver = item.isEvent && isEventOver(item.endsAt);
 
   return (
     <div className="container py-8">
@@ -52,7 +55,18 @@ export default async function ItemPage({ params }: { params: Promise<{ slug: str
         <div>
           <p className="text-sm text-muted-foreground">{item.category.name}</p>
           <h1 className="mt-1 text-2xl font-bold">{item.name}</h1>
+          {eventDates && (
+            <p className="mt-2 flex items-center gap-1.5 text-sm font-medium text-primary">
+              <CalendarDays className="size-4" /> {eventDates}
+            </p>
+          )}
           <p className="mt-3 text-3xl font-bold">{formatCents(item.priceCents)}</p>
+
+          {eventOver && (
+            <p className="mt-3 rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-sm text-warning">
+              Tämä tapahtuma on jo ollut. Ilmoittautuminen voi olla sulkeutunut.
+            </p>
+          )}
 
           <div className="mt-3">
             {soldOut ? (

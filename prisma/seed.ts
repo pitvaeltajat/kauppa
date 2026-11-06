@@ -145,6 +145,9 @@ const items = [
     category: 'tapahtumat',
     priceCents: 1500,
     stock: null,
+    isEvent: true,
+    startsAt: new Date('2026-11-28'),
+    endsAt: new Date('2026-11-29'),
     description:
       'Ostamalla tämän tuotteen ilmoitat lapsesi mukaan sudenpentuosaston retkelle ' +
       '28.-29.11. Retki järjestetään PitVan omalla kämpällä, Kammilla.',
@@ -154,6 +157,9 @@ const items = [
     category: 'tapahtumat',
     priceCents: 2500,
     stock: null,
+    isEvent: true,
+    startsAt: new Date('2027-01-29'),
+    endsAt: new Date('2027-01-31'),
     description:
       'Ostamalla tämän tuotteen ilmoittaudut mukaan PitVan johtajistoretkelle 29.-31.1.2027.',
   },
@@ -162,6 +168,9 @@ const items = [
     category: 'tapahtumat',
     priceCents: 1500,
     stock: null,
+    isEvent: true,
+    startsAt: new Date('2026-11-14'),
+    endsAt: new Date('2026-11-15'),
     description:
       'Ostamalla tämän tuotteen ilmoitat lapsesi mukaan Soturisopulien ja ' +
       'Pikkuoravien maastoretkelle.',
@@ -218,6 +227,17 @@ async function main() {
       .replace(/[\u0300-\u036f]/g, '')
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '');
+    const event = item as {
+      isEvent?: boolean;
+      startsAt?: Date;
+      endsAt?: Date;
+      imageUrl?: string;
+    };
+    const eventFields = {
+      isEvent: event.isEvent ?? false,
+      startsAt: event.startsAt ?? null,
+      endsAt: event.endsAt ?? null,
+    };
     const upserted = await prisma.item.upsert({
       where: { slug },
       update: {
@@ -225,8 +245,9 @@ async function main() {
         description: item.description,
         priceCents: item.priceCents,
         stock: item.stock ?? null,
-        imageUrl: item.imageUrl ?? null,
+        imageUrl: event.imageUrl ?? null,
         categoryId: category.id,
+        ...eventFields,
       },
       create: {
         name: item.name,
@@ -234,8 +255,9 @@ async function main() {
         description: item.description,
         priceCents: item.priceCents,
         stock: item.stock ?? null,
-        imageUrl: item.imageUrl ?? null,
+        imageUrl: event.imageUrl ?? null,
         categoryId: category.id,
+        ...eventFields,
       },
     });
 
@@ -273,10 +295,10 @@ async function main() {
   for (const email of bootstrapAdmins) {
     await prisma.user.upsert({
       where: { email },
-      update: { role: 'ADMIN' },
-      create: { email, role: 'ADMIN' },
+      update: { role: 'SUPERADMIN' },
+      create: { email, role: 'SUPERADMIN' },
     });
-    console.log(`Ylläpitäjä: ${email}`);
+    console.log(`Pääylläpitäjä: ${email}`);
   }
   if (bootstrapAdmins.length === 0) {
     console.log(

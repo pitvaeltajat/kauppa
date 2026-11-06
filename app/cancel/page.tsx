@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { XCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { ButtonLink } from '@/components/ui/button-link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export const metadata: Metadata = { title: 'Maksu peruuntui' };
@@ -20,12 +19,12 @@ export default function CancelPage() {
             palata kauppaan harkitsemaan.
           </p>
           <div className="flex justify-center gap-3">
-            <Link href="/cart">
-              <Button variant="outline">Takaisin ostoskoriin</Button>
-            </Link>
-            <Link href="/">
-              <Button variant="cta">Jatka ostoksia</Button>
-            </Link>
+            <ButtonLink href="/cart" variant="outline">
+              Takaisin ostoskoriin
+            </ButtonLink>
+            <ButtonLink href="/" variant="cta">
+              Jatka ostoksia
+            </ButtonLink>
           </div>
         </CardContent>
       </Card>

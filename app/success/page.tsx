@@ -1,9 +1,8 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { CheckCircle2 } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
 import { formatCents } from '@/lib/money';
-import { Button } from '@/components/ui/button';
+import { ButtonLink } from '@/components/ui/button-link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export const metadata: Metadata = { title: 'Kiitos tilauksesta' };
@@ -88,9 +87,9 @@ export default async function SuccessPage({
           </div>
 
           <div className="flex justify-center gap-3 pt-2">
-            <Link href="/">
-              <Button variant="cta">Takaisin kauppaan</Button>
-            </Link>
+            <ButtonLink href="/" variant="cta">
+              Takaisin kauppaan
+            </ButtonLink>
           </div>
         </CardContent>
       </Card>

@@ -73,8 +73,21 @@ model Item {
   updatedAt   DateTime       @updatedAt
   orderLines  OrderLine[]
   questions   ItemQuestion[]
+  pastSlugs   ItemSlug[]
 
   @@index([categoryId, active])
+}
+
+/// A slug this item used to have. When an admin edits an item's slug, the old
+/// one is kept here so shared links (/item/<old-slug>) keep working — the item
+/// page resolves a past slug and permanent-redirects to the current URL.
+model ItemSlug {
+  slug      String   @id
+  itemId    String
+  item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([itemId])
 }
 
 /// One question asked at checkout for an item ("Hupparin koko", "Nimikyltin

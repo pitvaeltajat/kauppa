@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { getUserRole, isEventAdmin, isSuperAdmin, type Role } from '@/lib/admin';
@@ -97,6 +98,12 @@ export async function saveItem(
   if (existing && existing.id !== id) {
     return { error: `Slug "${slug}" on jo toisen tuotteen käytössä.` };
   }
+  // The new slug must not be another item's old URL either (that redirect would
+  // then clash). A past slug of this same item is fine — it becomes live again.
+  const aliasOwner = await prisma.itemSlug.findUnique({ where: { slug } });
+  if (aliasOwner && aliasOwner.itemId !== id) {
+    return { error: `Slug "${slug}" on toisen tuotteen vanha osoite.` };
+  }
 
   const stockRaw = ((formData.get('stock') as string) ?? '').trim();
   const stock = stockRaw === '' ? null : Number(stockRaw);
@@ -118,10 +125,19 @@ export async function saveItem(
     questionRows = parsed.questions;
   }
 
-  // Event admins may edit events only, never a regular product.
-  if (id && !isSuperAdmin(role)) {
-    const target = await prisma.item.findUnique({ where: { id }, select: { isEvent: true } });
-    if (!target?.isEvent) return { error: 'Ei käyttöoikeutta tähän tuotteeseen.' };
+  // Load the current row once (for the event-admin guard and the old slug).
+  let oldSlug: string | null = null;
+  if (id) {
+    const current = await prisma.item.findUnique({
+      where: { id },
+      select: { slug: true, isEvent: true },
+    });
+    if (!current) return { error: 'Tuotetta ei löytynyt.' };
+    // Event admins may edit events only, never a regular product.
+    if (!isSuperAdmin(role) && !current.isEvent) {
+      return { error: 'Ei käyttöoikeutta tähän tuotteeseen.' };
+    }
+    oldSlug = current.slug;
   }
 
   const data = {
@@ -141,8 +157,23 @@ export async function saveItem(
   };
 
   if (id) {
+    // Keep the old slug alive as a redirect; drop any stale alias that equals
+    // the new live slug (e.g. this item reclaiming one of its own past slugs).
+    const aliasOps: Prisma.PrismaPromise<unknown>[] = [
+      prisma.itemSlug.deleteMany({ where: { slug } }),
+    ];
+    if (oldSlug && oldSlug !== slug) {
+      aliasOps.push(
+        prisma.itemSlug.upsert({
+          where: { slug: oldSlug },
+          create: { slug: oldSlug, itemId: id },
+          update: { itemId: id },
+        }),
+      );
+    }
     await prisma.$transaction([
       prisma.item.update({ where: { id }, data }),
+      ...aliasOps,
       prisma.itemQuestion.deleteMany({ where: { itemId: id } }),
       ...(questionRows.length === 0
         ? []

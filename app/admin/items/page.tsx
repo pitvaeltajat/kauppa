@@ -6,7 +6,8 @@ import { formatCents } from '@/lib/money';
 import { hideItem } from '@/lib/actions/admin';
 import { requireSuperAdmin } from '@/lib/admin-guard';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { ButtonLink } from '@/components/ui/button-link';
+import { FormButton } from '@/components/admin/form-button';
 
 export const metadata: Metadata = { title: 'Tuotteet' };
 
@@ -21,11 +22,9 @@ export default async function AdminItemsPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold">Tuotteet ({items.length})</h1>
-        <Link href="/admin/items/new">
-          <Button variant="cta">
-            <Plus /> Uusi tuote
-          </Button>
-        </Link>
+        <ButtonLink href="/admin/items/new" variant="cta">
+          <Plus /> Uusi tuote
+        </ButtonLink>
       </div>
 
       <div className="overflow-x-auto rounded-lg border bg-card shadow-sm">
@@ -68,17 +67,19 @@ export default async function AdminItemsPage() {
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex justify-end gap-2">
-                    <Link href={`/admin/items/${item.id}`}>
-                      <Button type="button" size="sm" variant="outline">
-                        Muokkaa
-                      </Button>
-                    </Link>
+                    <ButtonLink href={`/admin/items/${item.id}`} size="sm" variant="outline">
+                      Muokkaa
+                    </ButtonLink>
                     {item.active && (
                       <form action={hideItem}>
                         <input type="hidden" name="id" value={item.id} />
-                        <Button type="submit" size="sm" variant="ghost">
+                        <FormButton
+                          size="sm"
+                          variant="ghost"
+                          confirm={`Piilota "${item.name}" kaupasta? Voit palauttaa sen muokkaamalla.`}
+                        >
                           Piilota
-                        </Button>
+                        </FormButton>
                       </form>
                     )}
                   </div>

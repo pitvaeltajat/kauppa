@@ -6,6 +6,7 @@ import { Minus, Plus, Trash2, ShoppingCart } from 'lucide-react';
 import { cartStore, useCart } from '@/lib/cart';
 import { formatCents } from '@/lib/money';
 import { Button } from '@/components/ui/button';
+import { ButtonLink } from '@/components/ui/button-link';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ItemImage } from '@/components/item-image';
@@ -144,9 +145,9 @@ export function CartShell() {
             Täältä löydät PitVa-tuotteet, huivit ja tapahtumailmoittautumiset.
           </p>
         </div>
-        <Link href="/">
-          <Button variant="cta">Siirry kauppaan</Button>
-        </Link>
+        <ButtonLink href="/" variant="cta">
+          Siirry kauppaan
+        </ButtonLink>
       </div>
     );
   }

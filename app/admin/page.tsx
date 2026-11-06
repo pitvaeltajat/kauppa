@@ -7,7 +7,7 @@ import { formatCents } from '@/lib/money';
 import { setOrderStatus } from '@/lib/actions/admin';
 import { requireSuperAdmin } from '@/lib/admin-guard';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { FormButton } from '@/components/admin/form-button';
 
 export const metadata: Metadata = { title: 'Tilaukset' };
 
@@ -162,7 +162,13 @@ export default async function AdminOrdersPage({
                   />
                 )}
                 {(order.status === 'RECEIVED' || order.status === 'PAID') && (
-                  <StatusButton orderId={order.id} status="CANCELLED" label="Peruuta" variant="ghost" />
+                  <StatusButton
+                    orderId={order.id}
+                    status="CANCELLED"
+                    label="Peruuta"
+                    variant="ghost"
+                    confirm={`Peruutetaanko tilaus #${order.id.slice(-8).toUpperCase()}?`}
+                  />
                 )}
               </div>
             </div>
@@ -178,19 +184,21 @@ function StatusButton({
   status,
   label,
   variant = 'outline',
+  confirm,
 }: {
   orderId: string;
   status: string;
   label: string;
   variant?: 'outline' | 'ghost';
+  confirm?: string;
 }) {
   return (
     <form action={setOrderStatus}>
       <input type="hidden" name="id" value={orderId} />
       <input type="hidden" name="status" value={status} />
-      <Button type="submit" size="sm" variant={variant}>
+      <FormButton size="sm" variant={variant} confirm={confirm}>
         {label}
-      </Button>
+      </FormButton>
     </form>
   );
 }

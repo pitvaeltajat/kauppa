@@ -8,7 +8,7 @@ import { deriveRole, type Role } from '@/lib/admin';
 import { setUserRole } from '@/lib/actions/admin';
 import { requireSuperAdmin } from '@/lib/admin-guard';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { FormButton } from '@/components/admin/form-button';
 
 export const metadata: Metadata = { title: 'Käyttäjät' };
 
@@ -95,9 +95,17 @@ export default async function AdminUsersPage() {
                           <form action={setUserRole}>
                             <input type="hidden" name="id" value={user.id} />
                             <input type="hidden" name="role" value={isSuper ? demoteTo : 'SUPERADMIN'} />
-                            <Button type="submit" size="sm" variant={isSuper ? 'ghost' : 'outline'}>
+                            <FormButton
+                              size="sm"
+                              variant={isSuper ? 'ghost' : 'outline'}
+                              confirm={
+                                isSuper
+                                  ? `Poistetaanko pääylläpito-oikeudet käyttäjältä ${user.email}?`
+                                  : `Annetaanko ${user.email} täydet pääylläpito-oikeudet?`
+                              }
+                            >
                               {isSuper ? 'Poista pääylläpito' : 'Tee pääylläpitäjäksi'}
-                            </Button>
+                            </FormButton>
                           </form>
                         )}
                       </div>

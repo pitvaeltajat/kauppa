@@ -7,7 +7,8 @@ import { formatEventDates, isEventOver } from '@/lib/catalog';
 import { setEventHidden } from '@/lib/actions/admin';
 import { requireEventAdmin } from '@/lib/admin-guard';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { ButtonLink } from '@/components/ui/button-link';
+import { FormButton } from '@/components/admin/form-button';
 
 export const metadata: Metadata = { title: 'Tapahtumat' };
 
@@ -28,11 +29,9 @@ export default async function AdminEventsPage() {
     <div>
       <div className="mb-2 flex items-center justify-between">
         <h1 className="text-2xl font-bold">Tapahtumat ({events.length})</h1>
-        <Link href="/admin/events/new">
-          <Button variant="cta">
-            <Plus /> Uusi tapahtuma
-          </Button>
-        </Link>
+        <ButtonLink href="/admin/events/new" variant="cta">
+          <Plus /> Uusi tapahtuma
+        </ButtonLink>
       </div>
       <p className="mb-6 text-sm text-muted-foreground">
         Tapahtuman ostaminen on ilmoittautuminen. Tapahtuma poistuu etusivulta automaattisesti
@@ -88,22 +87,22 @@ export default async function AdminEventsPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex justify-end gap-2">
-                        <Link href={`/admin/events/${event.id}/ilmoittautuneet`}>
-                          <Button type="button" size="sm" variant="outline">
-                            Ilmoittautuneet ({event._count.orderLines})
-                          </Button>
-                        </Link>
-                        <Link href={`/admin/events/${event.id}`}>
-                          <Button type="button" size="sm" variant="outline">
-                            Muokkaa
-                          </Button>
-                        </Link>
+                        <ButtonLink
+                          href={`/admin/events/${event.id}/ilmoittautuneet`}
+                          size="sm"
+                          variant="outline"
+                        >
+                          Ilmoittautuneet ({event._count.orderLines})
+                        </ButtonLink>
+                        <ButtonLink href={`/admin/events/${event.id}`} size="sm" variant="outline">
+                          Muokkaa
+                        </ButtonLink>
                         <form action={setEventHidden}>
                           <input type="hidden" name="id" value={event.id} />
                           <input type="hidden" name="hidden" value={event.hidden ? 'false' : 'true'} />
-                          <Button type="submit" size="sm" variant="ghost">
+                          <FormButton size="sm" variant="ghost">
                             {event.hidden ? 'Näytä' : 'Piilota'}
-                          </Button>
+                          </FormButton>
                         </form>
                       </div>
                     </td>

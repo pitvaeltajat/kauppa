@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { Plus } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
 import { deleteCategory } from '@/lib/actions/admin';
 import { requireSuperAdmin } from '@/lib/admin-guard';
-import { Button } from '@/components/ui/button';
+import { ButtonLink } from '@/components/ui/button-link';
+import { FormButton } from '@/components/admin/form-button';
 
 export const metadata: Metadata = { title: 'Kategoriat' };
 
@@ -19,11 +19,9 @@ export default async function AdminCategoriesPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold">Kategoriat ({categories.length})</h1>
-        <Link href="/admin/categories/new">
-          <Button variant="cta">
-            <Plus /> Uusi kategoria
-          </Button>
-        </Link>
+        <ButtonLink href="/admin/categories/new" variant="cta">
+          <Plus /> Uusi kategoria
+        </ButtonLink>
       </div>
 
       <div className="space-y-3">
@@ -52,18 +50,16 @@ export default async function AdminCategoriesPage() {
               </p>
             </div>
             <div className="flex gap-2">
-              <Link href={`/admin/categories/${category.id}`}>
-                <Button type="button" size="sm" variant="outline">
-                  Muokkaa
-                </Button>
-              </Link>
+              <ButtonLink href={`/admin/categories/${category.id}`} size="sm" variant="outline">
+                Muokkaa
+              </ButtonLink>
               <form action={deleteCategory}>
                 <input type="hidden" name="id" value={category.id} />
-                <Button
-                  type="submit"
+                <FormButton
                   size="sm"
                   variant="ghost"
                   disabled={category._count.items > 0}
+                  confirm={`Poista kategoria "${category.name}"? Tätä ei voi perua.`}
                   title={
                     category._count.items > 0
                       ? 'Kategoriassa on tuotteita — siirrä tai piilota ne ensin'
@@ -71,7 +67,7 @@ export default async function AdminCategoriesPage() {
                   }
                 >
                   Poista
-                </Button>
+                </FormButton>
               </form>
             </div>
           </div>

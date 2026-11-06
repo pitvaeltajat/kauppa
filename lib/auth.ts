@@ -79,9 +79,10 @@ export const authConfig: NextAuthConfig = {
   providers: buildProviders(),
   secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET,
   session: { strategy: 'jwt' },
-  // Browserless hosts (localhost, self-hosted) are trusted when the app is not
-  // on Vercel; on Vercel the platform host is trusted automatically.
-  trustHost: !process.env.VERCEL,
+  // Every deployment of this app (Vercel custom domain, localhost, self-hosted)
+  // serves its own trusted host. Passing an explicit `false` on Vercel disabled
+  // Auth.js's own host trust and made /api/auth/* throw UntrustedHost.
+  trustHost: true,
   pages: { signIn: '/login' },
   // The shared .pitva.fi session cookie (landeri/klapi/budu). AUTH_SECRET must
   // then match the other apps. Leave unset locally to stay host-scoped.

@@ -42,7 +42,7 @@ export default async function AdminItemsPage() {
           </thead>
           <tbody>
             {items.map((item) => (
-              <tr key={item.id} className="border-b last:border-0">
+              <tr key={item.id} className="border-b transition-colors last:border-0 hover:bg-muted/40">
                 <td className="px-4 py-3 font-medium">
                   <Link
                     href={`/item/${item.slug}`}

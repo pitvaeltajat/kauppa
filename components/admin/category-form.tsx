@@ -38,8 +38,15 @@ export function CategoryForm({ category }: { category?: CategoryFormValues }) {
             id="slug"
             name="slug"
             defaultValue={category?.slug ?? ''}
-            placeholder="Muodostetaan nimestä"
+            placeholder="muodostetaan-nimesta"
+            spellCheck={false}
+            autoCapitalize="none"
+            aria-describedby="slug-help"
           />
+          <p id="slug-help" className="text-xs text-muted-foreground">
+            Osaston osoite: <span className="font-mono">/category/{'{slug}'}</span>. Jätä tyhjäksi,
+            niin se muodostetaan nimestä. Pienet kirjaimet, numerot ja väliviivat (ä→a, ö→o).
+          </p>
         </div>
       </div>
 
@@ -49,6 +56,8 @@ export function CategoryForm({ category }: { category?: CategoryFormValues }) {
           <Input
             id="sortOrder"
             name="sortOrder"
+            type="number"
+            step="1"
             inputMode="numeric"
             defaultValue={category?.sortOrder ?? 0}
           />

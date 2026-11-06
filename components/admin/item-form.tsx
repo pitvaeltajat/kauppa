@@ -112,8 +112,16 @@ export function ItemForm({
             id="slug"
             name="slug"
             defaultValue={item?.slug ?? ''}
-            placeholder="Muodostetaan nimestä"
+            placeholder="muodostetaan-nimesta"
+            spellCheck={false}
+            autoCapitalize="none"
+            aria-describedby="slug-help"
           />
+          <p id="slug-help" className="text-xs text-muted-foreground">
+            Tuotteen osoite: <span className="font-mono">/item/{'{slug}'}</span>. Jätä tyhjäksi,
+            niin se muodostetaan nimestä. Pienet kirjaimet, numerot ja väliviivat (ä→a, ö→o).
+            Muutettuasi slugia vanha linkki ohjautuu uuteen.
+          </p>
         </div>
       </div>
 
@@ -176,6 +184,8 @@ export function ItemForm({
             name="price"
             required
             inputMode="decimal"
+            pattern="[0-9]+([.,][0-9]{1,2})?"
+            title="Hinta euroina, esim. 16 tai 16,00"
             defaultValue={item ? (item.priceCents / 100).toFixed(2).replace('.', ',') : ''}
             placeholder="16,00"
           />
@@ -188,6 +198,9 @@ export function ItemForm({
           <Input
             id="stock"
             name="stock"
+            type="number"
+            min="0"
+            step="1"
             inputMode="numeric"
             defaultValue={item?.stock?.toString() ?? ''}
             placeholder="Tyhjä = rajoittamaton"
@@ -198,6 +211,8 @@ export function ItemForm({
           <Input
             id="sortOrder"
             name="sortOrder"
+            type="number"
+            step="1"
             inputMode="numeric"
             defaultValue={item?.sortOrder ?? 0}
           />
@@ -209,6 +224,10 @@ export function ItemForm({
         <Input
           id="imageUrl"
           name="imageUrl"
+          type="url"
+          inputMode="url"
+          spellCheck={false}
+          autoCapitalize="none"
           defaultValue={item?.imageUrl ?? ''}
           placeholder="https://… tai tyhjä (näytetään Ei kuvaa)"
         />

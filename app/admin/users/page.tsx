@@ -65,7 +65,7 @@ export default async function AdminUsersPage() {
                 // Demoting a superadmin drops them back to their derived role.
                 const demoteTo = deriveRole(user.email, null);
                 return (
-                  <tr key={user.id} className="border-b last:border-0">
+                  <tr key={user.id} className="border-b transition-colors last:border-0 hover:bg-muted/40">
                     <td className="px-4 py-3 font-medium">
                       {user.email}
                       {isMe && (

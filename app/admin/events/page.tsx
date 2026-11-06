@@ -59,7 +59,7 @@ export default async function AdminEventsPage() {
               {events.map((event) => {
                 const over = isEventOver(event.endsAt);
                 return (
-                  <tr key={event.id} className="border-b last:border-0">
+                  <tr key={event.id} className="border-b transition-colors last:border-0 hover:bg-muted/40">
                     <td className="px-4 py-3 font-medium">
                       <Link
                         href={`/item/${event.slug}`}

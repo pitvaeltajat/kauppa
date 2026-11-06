@@ -135,4 +135,18 @@
     color: var(--color-foreground);
     -webkit-font-smoothing: antialiased;
   }
+
+  /* Tailwind v4's Preflight no longer gives buttons a pointer cursor. Restore
+     it for every clickable control (the Button component, the bare icon
+     buttons in the cart and forms, <summary>, role=button). */
+  button:not(:disabled),
+  summary,
+  [role='button']:not([aria-disabled='true']) {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  [aria-disabled='true'] {
+    cursor: not-allowed;
+  }
 }

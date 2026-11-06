@@ -177,7 +177,7 @@ function ReportTable({
           </thead>
           <tbody>
             {rows.map((row) => (
-              <tr key={row.key} className="border-b last:border-0">
+              <tr key={row.key} className="border-b transition-colors last:border-0 hover:bg-muted/40">
                 <td className="px-4 py-2">{row.label}</td>
                 <td className="px-4 py-2 text-right text-muted-foreground">{row.units}</td>
                 <td className="px-4 py-2 text-right font-medium">{formatCents(row.revenueCents)}</td>

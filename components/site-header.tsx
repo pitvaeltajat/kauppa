@@ -1,8 +1,12 @@
 import Link from 'next/link';
 import type { Category } from '@prisma/client';
 import { CartButton } from '@/components/cart-button';
+import { isEventAdmin, isSuperAdmin, type Role } from '@/lib/admin';
 
-export function SiteHeader({ categories }: { categories: Category[] }) {
+export function SiteHeader({ categories, role }: { categories: Category[]; role?: string }) {
+  const r = (role ?? null) as Role | null;
+  const showAdmin = isEventAdmin(r); // event admins + superadmins
+  const showUsers = isSuperAdmin(r); // superadmins only
   return (
     <header className="sticky top-0 z-40 border-b bg-header text-header-foreground shadow-sm">
       <div className="container flex h-14 items-center justify-between gap-4">
@@ -26,6 +30,22 @@ export function SiteHeader({ categories }: { categories: Category[] }) {
                 {category.name}
               </Link>
             ))}
+            {showAdmin && (
+              <Link
+                href="/admin"
+                className="text-sm font-semibold text-cta hover:underline"
+              >
+                Hallinta
+              </Link>
+            )}
+            {showUsers && (
+              <Link
+                href="/admin/users"
+                className="text-sm text-header-foreground/80 hover:text-header-foreground hover:underline"
+              >
+                Käyttäjät
+              </Link>
+            )}
           </nav>
         </div>
         <CartButton />
@@ -44,6 +64,16 @@ export function SiteHeader({ categories }: { categories: Category[] }) {
             {category.name}
           </Link>
         ))}
+        {showAdmin && (
+          <Link href="/admin" className="shrink-0 text-xs font-semibold text-cta hover:underline">
+            Hallinta
+          </Link>
+        )}
+        {showUsers && (
+          <Link href="/admin/users" className="shrink-0 text-xs text-header-foreground/80 hover:underline">
+            Käyttäjät
+          </Link>
+        )}
       </nav>
     </header>
   );

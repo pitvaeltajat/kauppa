@@ -94,19 +94,25 @@ export const authConfig: NextAuthConfig = {
       }
     : undefined,
   callbacks: {
-    // Refuse a deactivated (departed) member even though their pitva-domain
-    // address would otherwise derive EVENT_ADMIN — the Workspace sync soft-
-    // deletes people who leave the member group, and this is what makes that
-    // stick. Blocking here (before `jwt`) also stops `ensureUser` resurrecting
-    // the row.
-    async signIn({ user }) {
+    // While the shop is "kesken" (WIP), only standing SUPERADMINs may sign in.
+    // A pitva-domain address still *derives* EVENT_ADMIN, but that no longer
+    // lets anyone in — the row has to already carry SUPERADMIN (set by
+    // `pnpm db:admin` / the admin UI). A departed member (deletedAt, set by the
+    // Workspace sync) is refused regardless. Blocking here, before `jwt`, also
+    // stops `ensureUser` creating/resurrecting a row for a refused sign-in.
+    // To open the shop to the whole troop later, drop the role check and keep
+    // just the `deletedAt == null` guard.
+    // Dev login is localhost-only and gates itself in `authorize()`, so it
+    // bypasses this — otherwise there'd be no way to test as a plain user.
+    async signIn({ user, account }) {
+      if (account?.provider === 'dev-login') return true;
       const email = user?.email?.trim().toLowerCase();
       if (!email) return false;
       const existing = await prisma.user.findUnique({
         where: { email },
-        select: { deletedAt: true },
+        select: { role: true, deletedAt: true },
       });
-      return existing?.deletedAt == null;
+      return existing?.role === 'SUPERADMIN' && existing.deletedAt == null;
     },
     // `user` is only present on an actual sign-in, so the database write
     // happens once per person, not on every request.

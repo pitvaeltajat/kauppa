@@ -16,6 +16,12 @@ export default async function AdminEventsPage() {
   const events = await prisma.item.findMany({
     where: { isEvent: true },
     orderBy: [{ startsAt: 'desc' }, { name: 'asc' }],
+    include: {
+      // Paid/handed-over order lines ≈ registrations (one line per order per event).
+      _count: {
+        select: { orderLines: { where: { order: { status: { in: ['PAID', 'COMPLETED'] } } } } },
+      },
+    },
   });
 
   return (
@@ -82,6 +88,11 @@ export default async function AdminEventsPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex justify-end gap-2">
+                        <Link href={`/admin/events/${event.id}/ilmoittautuneet`}>
+                          <Button type="button" size="sm" variant="outline">
+                            Ilmoittautuneet ({event._count.orderLines})
+                          </Button>
+                        </Link>
                         <Link href={`/admin/events/${event.id}`}>
                           <Button type="button" size="sm" variant="outline">
                             Muokkaa

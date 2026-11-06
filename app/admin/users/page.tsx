@@ -23,7 +23,10 @@ export default async function AdminUsersPage() {
   const session = await auth();
   const myEmail = session?.user?.email?.trim().toLowerCase();
 
+  // Deactivated (departed) members are hidden; the Workspace sync restores them
+  // automatically if they rejoin the member group.
   const users = await prisma.user.findMany({
+    where: { deletedAt: null },
     orderBy: [{ role: 'desc' }, { createdAt: 'asc' }],
   });
 

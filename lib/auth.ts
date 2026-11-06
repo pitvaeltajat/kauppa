@@ -94,6 +94,20 @@ export const authConfig: NextAuthConfig = {
       }
     : undefined,
   callbacks: {
+    // Refuse a deactivated (departed) member even though their pitva-domain
+    // address would otherwise derive EVENT_ADMIN — the Workspace sync soft-
+    // deletes people who leave the member group, and this is what makes that
+    // stick. Blocking here (before `jwt`) also stops `ensureUser` resurrecting
+    // the row.
+    async signIn({ user }) {
+      const email = user?.email?.trim().toLowerCase();
+      if (!email) return false;
+      const existing = await prisma.user.findUnique({
+        where: { email },
+        select: { deletedAt: true },
+      });
+      return existing?.deletedAt == null;
+    },
     // `user` is only present on an actual sign-in, so the database write
     // happens once per person, not on every request.
     async jwt({ token, user, account }) {

@@ -14,6 +14,9 @@ export {
 export {
   renderKammiConfirmationEmail,
   sendKammiConfirmationEmail,
+  renderKammiFeedbackEmail,
+  sendKammiFeedbackEmail,
+  sendKammiHostNotificationEmail,
   type KammiEmailData,
 } from './kammiBooking';
 export { SUBJECT_PREFIX } from './ses-client';

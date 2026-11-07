@@ -66,6 +66,10 @@ export type CreateHoldInput = {
   email: string | null;
   name: string | null;
   phone: string | null;
+  organization: string | null;
+  eventInfo: string | null;
+  hostQuestions: string | null;
+  billingEmail: string | null;
 };
 
 export type CreateHoldResult =
@@ -108,6 +112,10 @@ export async function createKammiHold(input: CreateHoldInput): Promise<CreateHol
         email: input.email,
         name: input.name,
         phone: input.phone,
+        organization: input.organization,
+        eventInfo: input.eventInfo,
+        hostQuestions: input.hostQuestions,
+        billingEmail: input.billingEmail,
         totalCents: price.totalCents,
         holdExpiresAt: new Date(Date.now() + HOLD_MINUTES * 60_000),
       },

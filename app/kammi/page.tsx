@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import { Phone, Mail } from 'lucide-react';
 import { formatCents } from '@/lib/money';
 import { dayStatuses } from '@/lib/kammi';
+import { auth } from '@/lib/auth';
+import { getUserRole, isSuperAdmin } from '@/lib/admin';
 import { getKammiSettings, getBusyRanges, bookingWindow } from '@/lib/kammiBookings';
 import { KammiBooking } from '@/components/kammi-booking';
 
@@ -16,7 +18,12 @@ export default async function KammiPage() {
   const settings = await getKammiSettings();
   const { fromISO, toISO } = bookingWindow(6);
 
-  if (!settings.active) {
+  const session = await auth();
+  const superAdmin = isSuperAdmin(await getUserRole(session?.user?.email ?? null));
+
+  // Not active: regular visitors get the notice; a superadmin still sees the
+  // calendar below (with a preview banner) so they can preview before go-live.
+  if (!settings.active && !superAdmin) {
     return (
       <div className="container py-12">
         <h1 className="text-2xl font-bold">Kammin varaus</h1>
@@ -34,6 +41,12 @@ export default async function KammiPage() {
 
   return (
     <div className="container py-8">
+      {!settings.active && superAdmin && (
+        <p className="mb-4 rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-sm text-warning">
+          Esikatselu: Kammin verkkovaraus ei ole vielä käytössä (näkyy vain pääylläpitäjille).
+          Ota käyttöön kohdassa Hallinta → Kammi.
+        </p>
+      )}
       <h1 className="text-2xl font-bold">Varaa Kammi</h1>
       <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
         Tarkista vapaat vuorot kalenterista ja varaa Kammi. Vuoro on varattu, kun maksu on

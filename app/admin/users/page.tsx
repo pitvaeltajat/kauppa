@@ -34,11 +34,6 @@ export default async function AdminUsersPage() {
     <div>
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Käyttäjät</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Tapahtumavastaavan roolin saa automaattisesti jokainen pitva-tunnuksella kirjautuva.
-          Pääylläpitäjän (täydet oikeudet) nimittää vain toinen pääylläpitäjä täältä. Ensimmäinen
-          luodaan seed-komennolla (KAUPPA_BOOTSTRAP_ADMIN_EMAILS) tai <code>pnpm db:admin sähköposti</code>.
-        </p>
       </div>
 
       {users.length === 0 ? (

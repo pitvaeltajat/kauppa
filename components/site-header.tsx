@@ -21,6 +21,9 @@ export function SiteHeader({ categories, role }: { categories: Category[]; role?
             <Link href="/" className="text-sm text-header-foreground/80 hover:text-header-foreground hover:underline">
               Etusivu
             </Link>
+            <Link href="/kammi" className="text-sm text-header-foreground/80 hover:text-header-foreground hover:underline">
+              Varaa Kammi
+            </Link>
             {categories.map((category) => (
               <Link
                 key={category.id}
@@ -54,6 +57,9 @@ export function SiteHeader({ categories, role }: { categories: Category[]; role?
       <nav className="container flex gap-3 overflow-x-auto pb-2 md:hidden">
         <Link href="/" className="shrink-0 text-xs text-header-foreground/80 hover:underline">
           Etusivu
+        </Link>
+        <Link href="/kammi" className="shrink-0 text-xs text-header-foreground/80 hover:underline">
+          Varaa Kammi
         </Link>
         {categories.map((category) => (
           <Link

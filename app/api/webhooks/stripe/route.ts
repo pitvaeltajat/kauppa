@@ -3,7 +3,8 @@ import type Stripe from 'stripe';
 import { prisma } from '@/lib/prisma';
 import { getStripe } from '@/lib/stripe';
 import { applyQuantityToStock } from '@/lib/orders';
-import { trySendEmail, sendOrderReceiptEmail, sendNewOrderAdminEmail } from '@/lib/emails';
+import { trySendEmail, sendOrderReceiptEmail, sendNewOrderAdminEmail, sendKammiConfirmationEmail } from '@/lib/emails';
+import { confirmKammiBooking, cancelKammiBooking } from '@/lib/kammiBookings';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,6 +44,14 @@ export async function POST(req: Request) {
           await trySendEmail(`order receipt ${orderId}`, () => sendOrderReceiptEmail(orderId));
           await trySendEmail(`new-order notice ${orderId}`, () => sendNewOrderAdminEmail(orderId));
         }
+      } else if (session.metadata?.kammiBookingId) {
+        const bookingId = session.metadata.kammiBookingId;
+        const newlyConfirmed = await confirmKammiBooking(bookingId, session.id ?? null);
+        if (newlyConfirmed) {
+          await trySendEmail(`kammi confirmation ${bookingId}`, () =>
+            sendKammiConfirmationEmail(bookingId),
+          );
+        }
       } else {
         console.warn('checkout.session.completed ilman orderId:ta', session.id);
       }
@@ -56,6 +65,9 @@ export async function POST(req: Request) {
           where: { id: orderId, status: 'RECEIVED' },
           data: { status: 'CANCELLED' },
         });
+      } else if (session.metadata?.kammiBookingId) {
+        // The hold also lapses on its own timer, but cancel promptly to free dates.
+        await cancelKammiBooking(session.metadata.kammiBookingId);
       }
       break;
     }

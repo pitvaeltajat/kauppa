@@ -164,3 +164,67 @@ enum OrderStatus {
   COMPLETED
   CANCELLED
 }
+
+/// A booking of the kammi (the troop's rental cabin). A special one-cabin flow:
+/// pick dates on /kammi, pay, and get the door keycode + instructions by email
+/// — only paying reveals them. Availability master data lives in Google
+/// Calendar; a CONFIRMED booking also writes an event there.
+///
+/// `startDate`..`endDate` is a half-open range `[startDate, endDate)`: the guest
+/// leaves on `endDate`, which is free again for the next arrival. Overlaps are
+/// forbidden at the database level by an exclusion constraint over that range
+/// for non-CANCELLED rows (see the migration — Prisma can't express it). A
+/// PENDING hold past `holdExpiresAt` is stale and gets cancelled, freeing the
+/// dates; the hard guarantee is that two CONFIRMED bookings can never overlap.
+model KammiBooking {
+  id              String        @id @default(cuid())
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  startDate       DateTime      @db.Date
+  endDate         DateTime      @db.Date
+  nights          Int
+  /// Which rate applied: SCOUT (partiolainen) or OTHER (muu).
+  tier            KammiTier     @default(OTHER)
+  status          BookingStatus @default(PENDING)
+  email           String?
+  name            String?
+  phone           String?
+  totalCents      Int
+  stripeSessionId String?       @unique
+  holdExpiresAt   DateTime?
+  googleEventId   String?
+  paidAt          DateTime?
+
+  @@index([status, startDate])
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+enum KammiTier {
+  SCOUT
+  OTHER
+}
+
+/// Singleton settings for the kammi rental (exactly one row, id "singleton"),
+/// edited in admin so prices, keycode and instructions change without a deploy.
+/// Prices mirror the published list: a flat weekend package (Fri→Sun) and a
+/// per-night weekday rate, each in a scout and a non-scout tier (cents).
+model KammiSettings {
+  id                 String   @id @default("singleton")
+  updatedAt          DateTime @updatedAt
+  active             Boolean  @default(false)
+  weekendScoutCents  Int      @default(20000)
+  weekendOtherCents  Int      @default(30000)
+  weekdayScoutCents  Int      @default(5000)
+  weekdayOtherCents  Int      @default(10000)
+  minNights          Int      @default(1)
+  maxNights          Int      @default(14)
+  /// Door keycode — only the paid confirmation email carries it, never a public page.
+  keycode            String   @default("")
+  /// Free-text instructions appended to the confirmation email.
+  instructions       String   @default("")
+}

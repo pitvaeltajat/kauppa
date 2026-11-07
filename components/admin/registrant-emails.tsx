@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Copy, Check, Mail } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 
 /**
  * Copy the attendee emails as a comma-separated list, or open a mail draft with
@@ -36,10 +36,8 @@ export function RegistrantEmails({ emails, subject }: { emails: string[]; subjec
           {copied ? <Check className="text-success" /> : <Copy />}
           {copied ? 'Kopioitu!' : `Kopioi sähköpostit (${emails.length})`}
         </Button>
-        <a href={mailto}>
-          <Button type="button" size="sm" variant="outline">
-            <Mail /> Lähetä sähköposti (BCC)
-          </Button>
+        <a href={mailto} className={buttonVariants({ size: 'sm', variant: 'outline' })}>
+          <Mail /> Lähetä sähköposti (BCC)
         </a>
       </div>
       <textarea

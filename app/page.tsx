@@ -1,11 +1,16 @@
 import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Plus } from 'lucide-react';
+import { auth } from '@/lib/auth';
+import { getUserRole, isSuperAdmin } from '@/lib/admin';
 import { CategoryTile } from '@/components/category-tile';
 import { ItemCard } from '@/components/item-card';
+import { ButtonLink } from '@/components/ui/button-link';
 import { listedItemWhere } from '@/lib/catalog';
 
 export default async function HomePage() {
+  const session = await auth();
+  const superAdmin = isSuperAdmin(await getUserRole(session?.user?.email ?? null));
   const listed = listedItemWhere();
   const [categories, items] = await Promise.all([
     prisma.category.findMany({
@@ -44,6 +49,21 @@ export default async function HomePage() {
       </section>
 
       <div className="container">
+        {/* Admin shortcuts — only superadmins see this. */}
+        {superAdmin && (
+          <div className="flex flex-wrap gap-2 pt-6">
+            <ButtonLink href="/admin/items/new" variant="cta" size="sm">
+              <Plus /> Lisää tuote
+            </ButtonLink>
+            <ButtonLink href="/admin/categories/new" variant="outline" size="sm">
+              <Plus /> Lisää kategoria
+            </ButtonLink>
+            <ButtonLink href="/admin" variant="outline" size="sm">
+              Hallinta
+            </ButtonLink>
+          </div>
+        )}
+
         {/* Category tiles */}
         <section className="grid gap-4 py-8 sm:grid-cols-2 lg:grid-cols-3">
           {grouped.map((category) => (

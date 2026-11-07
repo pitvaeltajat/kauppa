@@ -99,7 +99,7 @@ export default async function EventRegistrationsPage({
               </thead>
               <tbody>
                 {rows.map((row) => (
-                  <tr key={row.id} className="border-b align-top last:border-0">
+                  <tr key={row.id} className="border-b align-top transition-colors last:border-0 hover:bg-muted/40">
                     <td className="px-4 py-3 font-medium">{row.name ?? '—'}</td>
                     <td className="px-4 py-3 text-muted-foreground">{row.email ?? '—'}</td>
                     <td className="px-4 py-3 text-right">{row.quantity}</td>

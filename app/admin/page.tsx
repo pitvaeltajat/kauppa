@@ -43,6 +43,7 @@ export default async function AdminOrdersPage({
 
   const counts = await prisma.order.groupBy({ by: ['status'], _count: { _all: true } });
   const countBy = Object.fromEntries(counts.map((c) => [c.status, c._count._all]));
+  const totalCount = counts.reduce((sum, c) => sum + c._count._all, 0);
 
   const total = orders.reduce((sum, o) => sum + o.totalCents, 0);
 
@@ -65,7 +66,7 @@ export default async function AdminOrdersPage({
               : 'bg-secondary text-secondary-foreground hover:bg-secondary/70'
           }`}
         >
-          Kaikki ({countBy.RECEIVED + countBy.PAID + countBy.COMPLETED + countBy.CANCELLED || 0})
+          Kaikki ({totalCount})
         </Link>
         {STATUSES.map((s) => (
           <Link

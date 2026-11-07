@@ -3,7 +3,13 @@ import type Stripe from 'stripe';
 import { prisma } from '@/lib/prisma';
 import { getStripe } from '@/lib/stripe';
 import { applyQuantityToStock } from '@/lib/orders';
-import { trySendEmail, sendOrderReceiptEmail, sendNewOrderAdminEmail, sendKammiConfirmationEmail } from '@/lib/emails';
+import {
+  trySendEmail,
+  sendOrderReceiptEmail,
+  sendNewOrderAdminEmail,
+  sendKammiConfirmationEmail,
+  sendKammiHostNotificationEmail,
+} from '@/lib/emails';
 import { confirmKammiBooking, cancelKammiBooking } from '@/lib/kammiBookings';
 
 export const dynamic = 'force-dynamic';
@@ -50,6 +56,9 @@ export async function POST(req: Request) {
         if (newlyConfirmed) {
           await trySendEmail(`kammi confirmation ${bookingId}`, () =>
             sendKammiConfirmationEmail(bookingId),
+          );
+          await trySendEmail(`kammi host notice ${bookingId}`, () =>
+            sendKammiHostNotificationEmail(bookingId),
           );
         }
       } else {

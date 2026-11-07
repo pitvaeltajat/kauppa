@@ -10,19 +10,15 @@ import { toISODate, type KammiTier } from '@/lib/kammi';
  * keycode on payment. Needs STRIPE_SECRET_KEY.
  */
 export async function POST(req: Request) {
-  let payload: {
-    startDate?: unknown;
-    endDate?: unknown;
-    tier?: unknown;
-    email?: unknown;
-    name?: unknown;
-    phone?: unknown;
-  };
+  let payload: Record<string, unknown>;
   try {
     payload = await req.json();
   } catch {
     return NextResponse.json({ error: 'Virheellinen pyyntö.' }, { status: 400 });
   }
+
+  const str = (v: unknown, max: number): string | null =>
+    typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : null;
 
   const startISO = typeof payload.startDate === 'string' ? payload.startDate : '';
   const endISO = typeof payload.endDate === 'string' ? payload.endDate : '';
@@ -31,15 +27,31 @@ export async function POST(req: Request) {
     typeof payload.email === 'string' && payload.email.includes('@')
       ? payload.email.trim().slice(0, 254)
       : null;
-  const name =
-    typeof payload.name === 'string' && payload.name.trim() ? payload.name.trim().slice(0, 200) : null;
-  const phone =
-    typeof payload.phone === 'string' && payload.phone.trim() ? payload.phone.trim().slice(0, 60) : null;
+  const name = str(payload.name, 200);
+  const phone = str(payload.phone, 60);
+  const organization = str(payload.organization, 200);
+  const eventInfo = str(payload.eventInfo, 2000);
+  const hostQuestions = str(payload.hostQuestions, 2000);
+  const billingEmail =
+    typeof payload.billingEmail === 'string' && payload.billingEmail.includes('@')
+      ? payload.billingEmail.trim().slice(0, 254)
+      : null;
 
   if (!email) return NextResponse.json({ error: 'Anna sähköposti kuittia varten.' }, { status: 400 });
   if (!name) return NextResponse.json({ error: 'Anna nimi.' }, { status: 400 });
 
-  const hold = await createKammiHold({ startISO, endISO, tier, email, name, phone });
+  const hold = await createKammiHold({
+    startISO,
+    endISO,
+    tier,
+    email,
+    name,
+    phone,
+    organization,
+    eventInfo,
+    hostQuestions,
+    billingEmail,
+  });
   if (!hold.ok) return NextResponse.json({ error: hold.error }, { status: 400 });
   const booking = hold.booking;
 

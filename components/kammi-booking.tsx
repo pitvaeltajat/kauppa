@@ -6,6 +6,7 @@ import { addDays, nightsBetween, computeKammiPrice, type KammiPrices, type Kammi
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 
 type DayStatus = { m: boolean; n: boolean }; // morningBusy, nightBusy
 
@@ -43,6 +44,10 @@ export function KammiBooking({
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [organization, setOrganization] = useState('');
+  const [eventInfo, setEventInfo] = useState('');
+  const [hostQuestions, setHostQuestions] = useState('');
+  const [billingEmail, setBillingEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -92,7 +97,18 @@ export function KammiBooking({
       const res = await fetch('/api/kammi/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ startDate: start, endDate: end, tier, name, email, phone }),
+        body: JSON.stringify({
+          startDate: start,
+          endDate: end,
+          tier,
+          name,
+          email,
+          phone,
+          organization,
+          eventInfo,
+          hostQuestions,
+          billingEmail,
+        }),
       });
       const data = (await res.json()) as { url?: string; error?: string };
       if (!res.ok || !data.url) {
@@ -262,8 +278,24 @@ export function KammiBooking({
             <Input id="k-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="etunimi@example.com" />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="k-phone">Puhelin (valinnainen)</Label>
+            <Label htmlFor="k-phone">Puhelinnumero</Label>
             <Input id="k-phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="040 1234567" />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="k-org">Edustamasi taho</Label>
+            <Input id="k-org" value={organization} onChange={(e) => setOrganization(e.target.value)} placeholder="esim. lippukunta tai yksityinen" />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="k-info">Tapahtuman tiedot</Label>
+            <Textarea id="k-info" rows={3} value={eventInfo} onChange={(e) => setEventInfo(e.target.value)} placeholder="Millainen tapahtuma, osallistujamäärä…" />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="k-q">Kysymykset kämppäisännälle (valinnainen)</Label>
+            <Textarea id="k-q" rows={2} value={hostQuestions} onChange={(e) => setHostQuestions(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="k-bill">Laskutusosoite / sähköposti (valinnainen)</Label>
+            <Input id="k-bill" type="email" value={billingEmail} onChange={(e) => setBillingEmail(e.target.value)} placeholder="jos eri kuin yllä" />
           </div>
         </div>
 

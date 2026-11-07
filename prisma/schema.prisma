@@ -189,11 +189,21 @@ model KammiBooking {
   email           String?
   name            String?
   phone           String?
+  /// The organisation the booker represents ("Varaajan edustama taho").
+  organization    String?
+  /// Free description of the event/visit ("Tapahtuman tiedot").
+  eventInfo       String?
+  /// Questions for the cabin host ("Kysymykset kämppäisännälle").
+  hostQuestions   String?
+  /// Invoicing email if different from the contact ("Laskutusosoite").
+  billingEmail    String?
   totalCents      Int
   stripeSessionId String?       @unique
   holdExpiresAt   DateTime?
   googleEventId   String?
   paidAt          DateTime?
+  /// When the post-stay feedback request was sent, so it is sent only once.
+  feedbackSentAt  DateTime?
 
   @@index([status, startDate])
 }

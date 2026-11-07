@@ -38,17 +38,27 @@ export default async function AdminKammiPage() {
         ) : (
           <div className="space-y-3">
             {bookings.map((b) => (
-              <div key={b.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-card p-4 shadow-sm">
-                <div className="text-sm">
+              <div key={b.id} className="flex flex-wrap items-start justify-between gap-3 rounded-lg border bg-card p-4 shadow-sm">
+                <div className="min-w-0 text-sm">
                   <p className="font-semibold">
                     {fi(b.startDate)} – {fi(b.endDate)}
                     <span className="ml-2 font-normal text-muted-foreground">{b.nights} yötä · {b.tier === 'SCOUT' ? 'Partiolainen' : 'Muu'}</span>
                   </p>
                   <p className="mt-0.5 text-muted-foreground">
                     {b.name ?? 'Ei nimeä'}
+                    {b.organization ? ` · ${b.organization}` : ''}
                     {b.email ? ` · ${b.email}` : ''}
                     {b.phone ? ` · ${b.phone}` : ''}
                   </p>
+                  {b.eventInfo && <p className="mt-1 text-muted-foreground">{b.eventInfo}</p>}
+                  {b.hostQuestions && (
+                    <p className="mt-1 text-muted-foreground">
+                      <span className="font-medium text-foreground">Kysymys kämppäisännälle:</span> {b.hostQuestions}
+                    </p>
+                  )}
+                  {b.billingEmail && (
+                    <p className="mt-1 text-xs text-muted-foreground">Laskutus: {b.billingEmail}</p>
+                  )}
                 </div>
                 <div className="flex items-center gap-3">
                   {b.status === 'CONFIRMED' ? (

@@ -11,6 +11,11 @@ export {
   sendNewOrderAdminEmail,
   type OrderEmailData,
 } from './orderEmails';
+export {
+  renderKammiConfirmationEmail,
+  sendKammiConfirmationEmail,
+  type KammiEmailData,
+} from './kammiBooking';
 export { SUBJECT_PREFIX } from './ses-client';
 export type { EmailContent } from './layout';
 

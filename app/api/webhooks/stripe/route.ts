@@ -3,6 +3,7 @@ import type Stripe from 'stripe';
 import { prisma } from '@/lib/prisma';
 import { getStripe } from '@/lib/stripe';
 import { applyQuantityToStock } from '@/lib/orders';
+import { trySendEmail, sendOrderReceiptEmail, sendNewOrderAdminEmail } from '@/lib/emails';
 
 export const dynamic = 'force-dynamic';
 
@@ -33,8 +34,18 @@ export async function POST(req: Request) {
     case 'checkout.session.completed': {
       const session = event.data.object;
       const orderId = session.metadata?.orderId;
-      if (orderId) await markOrderPaid(orderId, session);
-      else console.warn('checkout.session.completed ilman orderId:ta', session.id);
+      if (orderId) {
+        const newlyPaid = await markOrderPaid(orderId, session);
+        // Only mail on the real transition, so a duplicate webhook delivery
+        // doesn't send the receipt twice. Failures are logged, not thrown —
+        // a broken mailer must not make Stripe retry the whole payment.
+        if (newlyPaid) {
+          await trySendEmail(`order receipt ${orderId}`, () => sendOrderReceiptEmail(orderId));
+          await trySendEmail(`new-order notice ${orderId}`, () => sendNewOrderAdminEmail(orderId));
+        }
+      } else {
+        console.warn('checkout.session.completed ilman orderId:ta', session.id);
+      }
       break;
     }
     case 'checkout.session.expired': {
@@ -55,13 +66,17 @@ export async function POST(req: Request) {
   return NextResponse.json({ received: true });
 }
 
-async function markOrderPaid(orderId: string, session: Stripe.Checkout.Session) {
-  await prisma.$transaction(async (tx) => {
+/** Returns true only when this call performed the RECEIVED→PAID transition. */
+async function markOrderPaid(
+  orderId: string,
+  session: Stripe.Checkout.Session,
+): Promise<boolean> {
+  return prisma.$transaction(async (tx) => {
     const order = await tx.order.findUnique({
       where: { id: orderId },
       include: { lines: true },
     });
-    if (!order || order.status === 'PAID' || order.status === 'COMPLETED') return;
+    if (!order || order.status === 'PAID' || order.status === 'COMPLETED') return false;
 
     const itemRows = await tx.item.findMany({
       where: { id: { in: order.lines.map((line) => line.itemId) } },
@@ -98,5 +113,6 @@ async function markOrderPaid(orderId: string, session: Stripe.Checkout.Session) 
         name: order.name ?? session.customer_details?.name ?? null,
       },
     });
+    return true;
   });
 }

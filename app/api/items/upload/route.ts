@@ -1,42 +1,72 @@
-import { handleUpload, type HandleUploadBody } from '@vercel/blob/client';
+import { randomUUID } from 'node:crypto';
 import { NextResponse } from 'next/server';
+import { S3Client } from '@aws-sdk/client-s3';
+import { createPresignedPost } from '@aws-sdk/s3-presigned-post';
 import { adminRole } from '@/lib/admin-guard';
 import { isEventAdmin } from '@/lib/admin';
 
 /**
- * Client-upload token endpoint for product/event images (Vercel Blob).
+ * Presigned-POST endpoint for product/event images (S3), same shape as klapi's
+ * `/api/item/uploadImage`. The admin form asks here for a short-lived presigned
+ * POST, then uploads the file straight to the public bucket — going direct to
+ * S3 sidesteps the 4.5 MB function body limit, so a phone photo uploads fine.
+ * We only gate who may get one (event admins and superadmins) and hand back the
+ * final public URL for the form to store in `Item.imageUrl`.
  *
- * The admin form uploads the file straight to Blob with `upload()` from
- * `@vercel/blob/client`; that call first POSTs here to mint a short-lived,
- * scoped token. Going direct to Blob sidesteps the 4.5 MB function body limit,
- * so a phone photo uploads fine. We only gate who may get a token — event
- * admins and superadmins, the same people who may edit items.
- *
- * Needs `BLOB_READ_WRITE_TOKEN` in the environment (set when the Blob store is
- * linked to the project); `handleUpload` reads it automatically.
+ * Reuses the SES IAM credentials (`KAUPPA_AWS_*`); the key additionally needs
+ * `s3:PutObject` on `KAUPPA_AWS_BUCKET_NAME`. `NEXT_PUBLIC_KAUPPA_ITEM_PHOTOS_URL`
+ * is the bucket's public base URL.
  */
+const EXT_BY_TYPE: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+  'image/avif': 'avif',
+  'image/gif': 'gif',
+};
+
 export async function POST(request: Request): Promise<NextResponse> {
-  const body = (await request.json()) as HandleUploadBody;
+  if (!isEventAdmin(await adminRole())) {
+    return NextResponse.json({ error: 'Ei oikeuksia ladata kuvia.' }, { status: 401 });
+  }
+
+  const { contentType } = (await request.json()) as { contentType?: string };
+  const ext = contentType ? EXT_BY_TYPE[contentType] : undefined;
+  if (!ext) {
+    return NextResponse.json(
+      { error: 'Vain kuvatiedostot kelpaavat (JPG, PNG, WebP, AVIF, GIF).' },
+      { status: 400 },
+    );
+  }
+
+  const bucket = process.env.KAUPPA_AWS_BUCKET_NAME;
+  const publicBase = process.env.NEXT_PUBLIC_KAUPPA_ITEM_PHOTOS_URL;
+  if (!bucket || !publicBase) {
+    return NextResponse.json({ error: 'Kuvapalvelua ei ole määritetty.' }, { status: 500 });
+  }
+
+  const key = `items/${randomUUID()}.${ext}`;
 
   try {
-    const result = await handleUpload({
-      body,
-      request,
-      onBeforeGenerateToken: async () => {
-        if (!isEventAdmin(await adminRole())) throw new Error('Ei oikeuksia ladata kuvia.');
-        return {
-          allowedContentTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif'],
-          maximumSizeInBytes: 8 * 1024 * 1024,
-          addRandomSuffix: true,
-        };
+    const client = new S3Client({
+      region: process.env.KAUPPA_AWS_REGION ?? '',
+      credentials: {
+        accessKeyId: process.env.KAUPPA_AWS_ACCESS_KEY_ID ?? '',
+        secretAccessKey: process.env.KAUPPA_AWS_SECRET_ACCESS_KEY ?? '',
       },
-      // Fires from Blob after the upload; nothing to persist here — the form
-      // posts the returned URL as part of the item itself. (Skipped on
-      // localhost, where Blob can't reach a callback URL.)
-      onUploadCompleted: async () => {},
     });
-    return NextResponse.json(result);
+    const { url, fields } = await createPresignedPost(client, {
+      Bucket: bucket,
+      Key: key,
+      Conditions: [
+        ['content-length-range', 0, 10 * 1024 * 1024], // up to 10 MB
+        ['eq', '$Content-Type', contentType!],
+      ],
+      Fields: { 'Content-Type': contentType! },
+      Expires: 600,
+    });
+    return NextResponse.json({ url, fields, publicUrl: `${publicBase.replace(/\/$/, '')}/${key}` });
   } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 400 });
+    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
   }
 }

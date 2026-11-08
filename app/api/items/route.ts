@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { withEventQuestions } from '@/lib/questions';
 
 /**
  * Fresh catalog rows + checkout questions for the cart. The cart only stores
@@ -29,6 +30,7 @@ export async function GET(req: Request) {
       priceCents: true,
       imageUrl: true,
       stock: true,
+      isEvent: true,
       questions: { orderBy: { sortOrder: 'asc' } },
     },
   });
@@ -41,13 +43,16 @@ export async function GET(req: Request) {
       priceCents: item.priceCents,
       imageUrl: item.imageUrl,
       stock: item.stock,
-      questions: item.questions.map((q) => ({
-        id: q.id,
-        prompt: q.prompt,
-        type: q.type,
-        required: q.required,
-        options: q.options as string[],
-      })),
+      questions: withEventQuestions(
+        item.isEvent,
+        item.questions.map((q) => ({
+          id: q.id,
+          prompt: q.prompt,
+          type: q.type,
+          required: q.required,
+          options: q.options as string[],
+        })),
+      ),
     })),
   });
 }

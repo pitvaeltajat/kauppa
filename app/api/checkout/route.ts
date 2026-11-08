@@ -2,7 +2,12 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getStripe } from '@/lib/stripe';
 import { buildCheckout, type CheckoutRequestItem } from '@/lib/checkout';
-import { validateAndBuildAnswers, type AnswersByItem, type ItemQuestionLike } from '@/lib/questions';
+import {
+  validateAndBuildAnswers,
+  withEventQuestions,
+  type AnswersByItem,
+  type ItemQuestionLike,
+} from '@/lib/questions';
 
 /**
  * Creates an Order row and a Stripe Checkout Session for the cart. Prices,
@@ -48,16 +53,21 @@ export async function POST(req: Request) {
     where: { itemId: { in: itemIds } },
     orderBy: { sortOrder: 'asc' },
   });
-  const questionsByItem: Record<string, ItemQuestionLike[]> = {};
-  for (const itemId of itemIds) questionsByItem[itemId] = [];
+  const eventItemIds = new Set(items.filter((i) => i.isEvent).map((i) => i.id));
+  const dbQuestionsByItem: Record<string, ItemQuestionLike[]> = {};
+  for (const itemId of itemIds) dbQuestionsByItem[itemId] = [];
   for (const q of questionRows) {
-    questionsByItem[q.itemId]?.push({
+    dbQuestionsByItem[q.itemId]?.push({
       id: q.id,
       prompt: q.prompt,
       type: q.type,
       required: q.required,
       options: q.options as string[],
     });
+  }
+  const questionsByItem: Record<string, ItemQuestionLike[]> = {};
+  for (const itemId of itemIds) {
+    questionsByItem[itemId] = withEventQuestions(eventItemIds.has(itemId), dbQuestionsByItem[itemId]);
   }
   const answers = (typeof payload.answers === 'object' && payload.answers !== null
     ? (payload.answers as AnswersByItem)

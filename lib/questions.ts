@@ -17,6 +17,27 @@ export type ItemQuestionLike = {
   options: string[];
 };
 
+/**
+ * Every event (isEvent) asks for the participant's name at checkout, always
+ * required and always first — injected server-side (not a DB row) so it can't
+ * be deleted and needs no backfill. The reserved id never collides with a cuid.
+ */
+export const PARTICIPANT_NAME_QUESTION: ItemQuestionLike = {
+  id: 'osallistujan-nimi',
+  prompt: 'Osallistujan nimi',
+  type: 'TEXT',
+  required: true,
+  options: [],
+};
+
+/** Prepends the mandatory participant-name question for events, else unchanged. */
+export function withEventQuestions<T extends ItemQuestionLike>(
+  isEvent: boolean,
+  questions: T[],
+): (T | ItemQuestionLike)[] {
+  return isEvent ? [PARTICIPANT_NAME_QUESTION, ...questions] : questions;
+}
+
 export type AnswerValue = string | string[];
 export type AnswersByItem = Record<string, Record<string, AnswerValue>>;
 

@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { parseQuestionDrafts, validateAndBuildAnswers, type ItemQuestionLike } from '@/lib/questions';
+import {
+  parseQuestionDrafts,
+  validateAndBuildAnswers,
+  withEventQuestions,
+  PARTICIPANT_NAME_QUESTION,
+  type ItemQuestionLike,
+} from '@/lib/questions';
 
 const sizeQuestion: ItemQuestionLike = {
   id: 'q1',
@@ -98,6 +104,26 @@ describe('validateAndBuildAnswers', () => {
     const result = validateAndBuildAnswers({ empty: [] }, undefined);
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.snapshotsByItem.empty).toEqual([]);
+  });
+});
+
+describe('withEventQuestions', () => {
+  it('prepends a mandatory participant name for events', () => {
+    const result = withEventQuestions(true, [nameQuestion]);
+    expect(result).toEqual([PARTICIPANT_NAME_QUESTION, nameQuestion]);
+    expect(result[0].required).toBe(true);
+  });
+
+  it('leaves non-events untouched', () => {
+    expect(withEventQuestions(false, [nameQuestion])).toEqual([nameQuestion]);
+  });
+
+  it('makes checkout reject an event without the participant name', () => {
+    const questions = { evt: withEventQuestions(true, []) };
+    expect(validateAndBuildAnswers(questions, { evt: {} }).ok).toBe(false);
+    const ok = validateAndBuildAnswers(questions, { evt: { 'osallistujan-nimi': 'Aatu Vaelta' } });
+    expect(ok.ok).toBe(true);
+    if (ok.ok) expect(ok.snapshotsByItem.evt[0].answer).toBe('Aatu Vaelta');
   });
 });
 

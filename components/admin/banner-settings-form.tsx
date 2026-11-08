@@ -2,7 +2,6 @@
 
 import { useRef, useState, useActionState } from 'react';
 import { Upload } from 'lucide-react';
-import { upload } from '@vercel/blob/client';
 import { saveSiteSettings } from '@/lib/actions/site';
 import { SiteBanner } from '@/components/site-banner';
 import { Button } from '@/components/ui/button';
@@ -23,13 +22,29 @@ export function BannerSettingsForm({ bannerImageUrl }: { bannerImageUrl: string 
     setUploadError(null);
     setUploading(true);
     try {
-      const blob = await upload(file.name, file, {
-        access: 'public',
-        handleUploadUrl: '/api/items/upload',
+      // Ask the server for a presigned POST, then upload straight to S3.
+      const signed = await fetch('/api/items/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contentType: file.type }),
       });
-      setImageUrl(blob.url);
+      if (!signed.ok) {
+        const { error } = await signed.json().catch(() => ({ error: '' }));
+        throw new Error(error || 'presign failed');
+      }
+      const { url, fields, publicUrl } = (await signed.json()) as {
+        url: string;
+        fields: Record<string, string>;
+        publicUrl: string;
+      };
+      const body = new FormData();
+      Object.entries(fields).forEach(([key, value]) => body.append(key, value));
+      body.append('file', file);
+      const uploaded = await fetch(url, { method: 'POST', body });
+      if (!uploaded.ok) throw new Error('upload failed');
+      setImageUrl(publicUrl);
     } catch {
-      setUploadError('Kuvan lataus epäonnistui. Tarkista tiedostomuoto (JPG/PNG/WebP) ja koko (enintään 8 MB).');
+      setUploadError('Kuvan lataus epäonnistui. Tarkista tiedostomuoto (JPG/PNG/WebP) ja koko (enintään 10 MB).');
     } finally {
       setUploading(false);
     }

@@ -30,6 +30,7 @@ export function KammiBooking({
   prices,
   minNights,
   maxNights,
+  pitvaMember,
 }: {
   today: string;
   windowEnd: string;
@@ -37,6 +38,7 @@ export function KammiBooking({
   prices: KammiPrices;
   minNights: number;
   maxNights: number;
+  pitvaMember: boolean;
 }) {
   const [start, setStart] = useState<string | null>(null);
   const [end, setEnd] = useState<string | null>(null);
@@ -85,6 +87,8 @@ export function KammiBooking({
     [start, end, tier, prices],
   );
   const nights = start && end ? nightsBetween(start, end) : 0;
+  // A logged-in pitva member's scout stay is free (the server enforces this too).
+  const isFree = pitvaMember && tier === 'SCOUT';
 
   async function book() {
     setError(null);
@@ -264,8 +268,17 @@ export function KammiBooking({
         {price && (
           <div className="flex items-center justify-between border-t pt-3 text-sm">
             <span>Hinta</span>
-            <span className="text-lg font-bold">{formatCents(price.totalCents)}</span>
+            {isFree ? (
+              <span className="text-lg font-bold text-success">Maksuton (partio)</span>
+            ) : (
+              <span className="text-lg font-bold">{formatCents(price.totalCents)}</span>
+            )}
           </div>
+        )}
+        {pitvaMember && (
+          <p className="text-xs text-muted-foreground">
+            PitVa-jäsenille partiotoiminnan varaus on maksuton. Muu käyttö normaalihintaan.
+          </p>
         )}
 
         <div className="space-y-3 border-t pt-3">
@@ -304,10 +317,12 @@ export function KammiBooking({
         )}
 
         <Button variant="cta" size="lg" className="w-full" disabled={loading || !start || !end} onClick={book}>
-          {loading ? 'Siirretään maksuun…' : 'Varaa ja maksa'}
+          {loading ? (isFree ? 'Varataan…' : 'Siirretään maksuun…') : isFree ? 'Varaa (maksuton)' : 'Varaa ja maksa'}
         </Button>
         <p className="text-center text-xs text-muted-foreground">
-          Vuoro varmistuu maksamalla. Ovikoodi ja ohjeet tulevat sähköpostiin maksun jälkeen.
+          {isFree
+            ? 'Ovikoodi ja ohjeet tulevat sähköpostiisi heti varauksen jälkeen.'
+            : 'Vuoro varmistuu maksamalla. Ovikoodi ja ohjeet tulevat sähköpostiin maksun jälkeen.'}
         </p>
       </div>
     </div>

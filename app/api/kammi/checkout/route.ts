@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getStripe } from '@/lib/stripe';
+import { auth } from '@/lib/auth';
+import { getUserRole, isEventAdmin } from '@/lib/admin';
 import { createKammiHold } from '@/lib/kammiBookings';
+import { trySendEmail, sendKammiConfirmationEmail, sendKammiHostNotificationEmail } from '@/lib/emails';
 import { toISODate, type KammiTier } from '@/lib/kammi';
 
 /**
@@ -40,7 +43,13 @@ export async function POST(req: Request) {
   if (!email) return NextResponse.json({ error: 'Anna sähköposti kuittia varten.' }, { status: 400 });
   if (!name) return NextResponse.json({ error: 'Anna nimi.' }, { status: 400 });
 
-  const hold = await createKammiHold({
+  // A logged-in pitva member's scout booking is free — decided here from the
+  // session, never from anything the browser sent.
+  const session = await auth();
+  const pitvaMember = isEventAdmin(await getUserRole(session?.user?.email ?? null));
+  const free = pitvaMember && tier === 'SCOUT';
+
+  const holdInput = {
     startISO,
     endISO,
     tier,
@@ -51,7 +60,22 @@ export async function POST(req: Request) {
     eventInfo,
     hostQuestions,
     billingEmail,
-  });
+  };
+
+  if (free) {
+    const result = await createKammiHold(holdInput, { free: true });
+    if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 });
+    // Confirmed immediately — send the keycode and notify the host.
+    await trySendEmail(`kammi confirmation ${result.booking.id}`, () =>
+      sendKammiConfirmationEmail(result.booking.id),
+    );
+    await trySendEmail(`kammi host notice ${result.booking.id}`, () =>
+      sendKammiHostNotificationEmail(result.booking.id),
+    );
+    return NextResponse.json({ url: '/kammi/kiitos' });
+  }
+
+  const hold = await createKammiHold(holdInput);
   if (!hold.ok) return NextResponse.json({ error: hold.error }, { status: 400 });
   const booking = hold.booking;
 

@@ -1,5 +1,5 @@
 import { getGoogleAccessToken } from '@/lib/googleAuth';
-import { toISODate, type DateRange } from '@/lib/kammi';
+import { toISODate, addDays, type DateRange } from '@/lib/kammi';
 
 /**
  * Read/write the kammi (cabin) Google Calendar — the master record of what is
@@ -54,6 +54,32 @@ function endpointDate(point: { date?: string; dateTime?: string } | undefined): 
 }
 
 /**
+ * One Google event → a booking date range [start, end), where `end` is the
+ * CHECKOUT day (half-open: that day's night is free for the next arrival).
+ *
+ * The subtlety: an all-day event uses an EXCLUSIVE `end.date` — a Fri–Sun block
+ * (leave Sunday) is stored as end=Monday. So its last covered day (end-1) is the
+ * departure/checkout day, not an occupied night: nights run to Saturday, Sunday
+ * is the changeover, Monday is free. A single-day block keeps its one night.
+ * A timed event's `end.dateTime` already lands on the real checkout day, so it
+ * is used as-is. Returns null for cancelled / unparseable events.
+ */
+export function eventToRange(event: GoogleEvent): DateRange | null {
+  if (event.status === 'cancelled') return null;
+  const start = endpointDate(event.start);
+  if (!start) return null;
+  const allDayEnd = !!event.end?.date; // all-day end is exclusive
+  let end = endpointDate(event.end);
+  if (!end || end <= start) {
+    end = addDays(start, 1); // timed/zero-length: blocks its own day
+  } else if (allDayEnd) {
+    end = addDays(end, -1); // last covered day = checkout, not a night
+    if (end <= start) end = addDays(start, 1); // a one-day block keeps one night
+  }
+  return { start, end, label: event.summary };
+}
+
+/**
  * Busy ranges on the kammi calendar between two ISO dates. Returns [] (and logs)
  * when the calendar isn't configured or the read fails — availability then rests
  * on kauppa's own bookings alone, which is safe (it can only over-report free
@@ -75,13 +101,8 @@ export async function fetchKammiBusyRanges(fromISO: string, toISO: string): Prom
 
     const ranges: DateRange[] = [];
     for (const event of data.items ?? []) {
-      if (event.status === 'cancelled') continue;
-      const start = endpointDate(event.start);
-      let end = endpointDate(event.end);
-      if (!start) continue;
-      // A timed or zero-length event still blocks its own day.
-      if (!end || end <= start) end = toISODate(new Date(new Date(`${start}T00:00:00Z`).getTime() + 86_400_000));
-      ranges.push({ start, end, label: event.summary });
+      const range = eventToRange(event);
+      if (range) ranges.push(range);
     }
     return ranges;
   } catch (error) {
@@ -91,10 +112,12 @@ export async function fetchKammiBusyRanges(fromISO: string, toISO: string): Prom
 }
 
 /**
- * Write a confirmed booking to the calendar as an all-day event. Returns the
+ * Write a confirmed booking to the calendar as an all-day event. `endISO` is the
+ * checkout day; Google's all-day end is exclusive, so the event is written to
+ * cover THROUGH the checkout day (end = checkout + 1) — the same convention the
+ * kämppäisäntä uses by hand, so it round-trips with `eventToRange`. Returns the
  * event id, or null if the calendar isn't configured / the write failed (the
- * booking is still confirmed and the keycode still sent — the calendar entry is
- * a convenience, re-addable by hand).
+ * booking is still confirmed and the keycode still sent — re-addable by hand).
  */
 export async function createKammiEvent(input: {
   summary: string;
@@ -113,7 +136,7 @@ export async function createKammiEvent(input: {
           summary: input.summary,
           description: input.description,
           start: { date: input.startISO },
-          end: { date: input.endISO },
+          end: { date: addDays(input.endISO, 1) },
         }),
       },
     );

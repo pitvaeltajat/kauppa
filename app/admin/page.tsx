@@ -154,14 +154,6 @@ export default async function AdminOrdersPage({
                 {order.status === 'RECEIVED' && (
                   <StatusButton orderId={order.id} status="PAID" label="Merkitse maksetuksi" />
                 )}
-                {order.status !== 'COMPLETED' && order.status !== 'CANCELLED' && (
-                  <StatusButton
-                    orderId={order.id}
-                    status="COMPLETED"
-                    label="Merkitse luovutetuksi"
-                    variant="outline"
-                  />
-                )}
                 {(order.status === 'RECEIVED' || order.status === 'PAID') && (
                   <StatusButton
                     orderId={order.id}

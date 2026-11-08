@@ -238,13 +238,18 @@ export function KammiBooking({
                         disabled={past}
                         onClick={() => handleDay(iso)}
                         style={dayCellStyle(iso)}
-                        className={`flex aspect-square items-center justify-center rounded-md border text-sm transition-colors ${
+                        className={`flex aspect-square flex-col items-center justify-center overflow-hidden rounded-md border text-sm leading-none transition-colors ${
                           past ? 'cursor-not-allowed text-muted-foreground/40' : 'hover:border-primary'
                         } ${selected ? 'font-bold text-cta-foreground ring-2 ring-primary' : ''}`}
                         title={labels[iso] ? `${fiDate(iso)}: ${labels[iso]}` : undefined}
                         aria-label={`${fiDate(iso)}${labels[iso] ? ` – varattu: ${labels[iso]}` : statuses[iso]?.n ? ' (varattu)' : ''}`}
                       >
-                        {day}
+                        <span>{day}</span>
+                        {labels[iso] && (
+                          <span className="mt-0.5 w-full truncate px-0.5 text-[8px] font-medium leading-none opacity-80">
+                            {labels[iso]}
+                          </span>
+                        )}
                       </button>
                     );
                   })}

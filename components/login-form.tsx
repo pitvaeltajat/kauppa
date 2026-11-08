@@ -6,7 +6,7 @@ import { signIn } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export function LoginForm({
   devEnabled,
@@ -44,9 +44,6 @@ export function LoginForm({
     <Card className="w-full max-w-md">
       <CardHeader>
         <CardTitle>Kirjaudu sisään</CardTitle>
-        <CardDescription>
-          Hallintatyökalut ovat PitVa-väelle. Kirjaudu Google-tilillä (PitVa-sähköposti).
-        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <Button className="w-full" variant="secondary" onClick={googleSignIn} disabled={loading}>

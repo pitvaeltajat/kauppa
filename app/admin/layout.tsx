@@ -20,6 +20,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           { href: '/admin/items', label: 'Tuotteet' },
           { href: '/admin/categories', label: 'Kategoriat' },
           { href: '/admin/kammi', label: 'Kammi' },
+          { href: '/admin/asetukset', label: 'Asetukset' },
           { href: '/admin/users', label: 'Käyttäjät' },
           { href: '/admin/reports', label: 'Raportit' },
           { href: '/admin/payouts', label: 'Tilitykset' },

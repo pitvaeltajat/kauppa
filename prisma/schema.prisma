@@ -219,6 +219,15 @@ enum KammiTier {
   OTHER
 }
 
+/// Singleton shop-wide settings (exactly one row, id "singleton"), edited in
+/// admin. Currently just the front-page banner background image.
+model SiteSettings {
+  id             String   @id @default("singleton")
+  updatedAt      DateTime @updatedAt
+  /// Background photo for the front-page banner. NULL = plain banner, no photo.
+  bannerImageUrl String?
+}
+
 /// Singleton settings for the kammi rental (exactly one row, id "singleton"),
 /// edited in admin so prices, keycode and instructions change without a deploy.
 /// Prices mirror the published list: a flat weekend package (Fri→Sun) and a

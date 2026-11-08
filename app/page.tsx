@@ -5,13 +5,16 @@ import { auth } from '@/lib/auth';
 import { getUserRole, isSuperAdmin } from '@/lib/admin';
 import { CategoryTile } from '@/components/category-tile';
 import { ItemCard } from '@/components/item-card';
+import { SiteBanner } from '@/components/site-banner';
 import { ButtonLink } from '@/components/ui/button-link';
 import { listedItemWhere } from '@/lib/catalog';
+import { getSiteSettings } from '@/lib/siteSettings';
 
 export default async function HomePage() {
   const session = await auth();
   const superAdmin = isSuperAdmin(await getUserRole(session?.user?.email ?? null));
   const listed = listedItemWhere();
+  const settings = await getSiteSettings();
   const [categories, items] = await Promise.all([
     prisma.category.findMany({
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
@@ -31,22 +34,7 @@ export default async function HomePage() {
 
   return (
     <div>
-      {/* Hero (navy band, matching the header) */}
-      <section className="bg-header text-header-foreground">
-        <div className="container py-12 md:py-16">
-          <h1 className="max-w-2xl text-2xl font-bold md:text-3xl">
-            Pitkäjärven Vaeltajien verkkokauppa
-          </h1>
-          <p className="mt-3 max-w-2xl text-sm text-header-foreground/80 md:text-base">
-            Nettikauppa ja ilmoittautumisportaali. Täältä voit ostaa huiveja, merkkejä ja
-            PitVa-tuotteita sekä ilmoittautua tapahtumiin. Tuotteet saat kokouksessa
-            ryhmänjohtajaltasi tai noutamalla ne sovitusti kololta.
-          </p>
-          <p className="mt-3 text-xs text-header-foreground/60">
-            Kysymykset: info@pitkajarvenvaeltajat.fi
-          </p>
-        </div>
-      </section>
+      <SiteBanner imageUrl={settings?.bannerImageUrl} />
 
       <div className="container">
         {/* Admin shortcuts — only superadmins see this. */}

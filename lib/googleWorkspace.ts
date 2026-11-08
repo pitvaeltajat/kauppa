@@ -133,3 +133,32 @@ export async function fetchWorkspaceRoster(): Promise<WorkspaceMember[]> {
       };
     });
 }
+
+/**
+ * Resolves any address a person has — primary **or alias** — to their Workspace
+ * primary email, lowercased. That primary is the one key everything else uses:
+ * `fetchWorkspaceRoster` stores it, and Google returns it (never an alias) in
+ * the OIDC token at login. So a SUPERADMIN grant has to land on the primary too
+ * — this lets a human type the short alias (`eero@`) and still hit the right
+ * row (`eero.sahlberg@`).
+ *
+ * The Directory `GET /users/{userKey}` endpoint accepts an alias as the key and
+ * answers with the account's `primaryEmail`. An address Workspace doesn't know
+ * (404) falls back to itself, so off-domain grants and local testing still work.
+ */
+export async function resolveToPrimaryEmail(email: string): Promise<string> {
+  const normalized = email.trim().toLowerCase();
+  const token = await getGoogleAccessToken(SCOPES, requireEnv('GOOGLE_WORKSPACE_SUBJECT'));
+
+  const url = `${DIRECTORY_URL}/users/${encodeURIComponent(normalized)}`;
+  const response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  if (response.status === 404) return normalized;
+  if (!response.ok) {
+    throw new Error(
+      `Directory API /users/${normalized} failed (${response.status}): ${await response.text()}`,
+    );
+  }
+
+  const user = (await response.json()) as DirectoryUser;
+  return user.primaryEmail?.trim().toLowerCase() || normalized;
+}

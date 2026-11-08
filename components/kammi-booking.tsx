@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { Loader2 } from 'lucide-react';
 import { formatCents } from '@/lib/money';
 import { addDays, nightsBetween, computeKammiPrice, type KammiPrices, type KammiTier } from '@/lib/kammi';
 import { Button } from '@/components/ui/button';
@@ -25,13 +26,13 @@ function fiDate(iso: string): string {
 
 export function KammiBooking({
   today,
-  windowEnd,
-  statuses,
+  windowEnd: initialWindowEnd,
+  statuses: initialStatuses,
   prices,
   minNights,
   maxNights,
   pitvaMember,
-  labels,
+  labels: initialLabels,
 }: {
   today: string;
   windowEnd: string;
@@ -43,6 +44,11 @@ export function KammiBooking({
   /** iso → who holds that night (shown to logged-in viewers only). */
   labels: Record<string, string>;
 }) {
+  // Availability grows as the visitor loads further months (see loadMore).
+  const [windowEnd, setWindowEnd] = useState(initialWindowEnd);
+  const [statuses, setStatuses] = useState(initialStatuses);
+  const [labels, setLabels] = useState(initialLabels);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [start, setStart] = useState<string | null>(null);
   const [end, setEnd] = useState<string | null>(null);
   const [tier, setTier] = useState<KammiTier>('OTHER');
@@ -127,6 +133,25 @@ export function KammiBooking({
       setError('Yhteysvirhe. Yritä uudelleen.');
     } finally {
       setLoading(false);
+    }
+  }
+
+  // Fetch the next few months' availability and extend the calendar.
+  async function loadMore() {
+    setLoadingMore(true);
+    const to = addDays(windowEnd, 6 * 31);
+    try {
+      const res = await fetch(`/api/kammi/availability?from=${windowEnd}&to=${to}`);
+      const data = (await res.json()) as { statuses?: Record<string, DayStatus>; labels?: Record<string, string> };
+      if (res.ok && data.statuses) {
+        setStatuses((prev) => ({ ...prev, ...data.statuses }));
+        setLabels((prev) => ({ ...prev, ...data.labels }));
+        setWindowEnd(to);
+      }
+    } catch {
+      // Leave the window as-is; the visitor can retry.
+    } finally {
+      setLoadingMore(false);
     }
   }
 
@@ -227,6 +252,18 @@ export function KammiBooking({
               </div>
             );
           })}
+        </div>
+
+        <div className="mt-6 flex justify-center">
+          <Button variant="outline" onClick={loadMore} disabled={loadingMore}>
+            {loadingMore ? (
+              <>
+                <Loader2 className="size-4 animate-spin" /> Ladataan…
+              </>
+            ) : (
+              'Näytä lisää kuukausia'
+            )}
+          </Button>
         </div>
       </div>
 

@@ -105,6 +105,12 @@ describe('dayStatuses (half-coloured changeover days)', () => {
     expect(map.get('2027-01-29')).toEqual({ morningBusy: false, nightBusy: true }); // Fri night booked
     expect(map.get('2027-01-30')).toEqual({ morningBusy: true, nightBusy: false }); // Sat changeover: bookable
   });
+  it('fills the middle day of a multi-night stay completely', () => {
+    const map = dayStatuses([{ start: '2027-01-29', end: '2027-01-31' }], '2027-01-29', '2027-02-01');
+    expect(map.get('2027-01-29')).toEqual({ morningBusy: false, nightBusy: true }); // Fri arrival
+    expect(map.get('2027-01-30')).toEqual({ morningBusy: true, nightBusy: true }); // Sat fully taken
+    expect(map.get('2027-01-31')).toEqual({ morningBusy: true, nightBusy: false }); // Sun checkout
+  });
 });
 
 describe('validateBookingDates', () => {

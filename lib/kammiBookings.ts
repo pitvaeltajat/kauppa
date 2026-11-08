@@ -77,11 +77,18 @@ export type CreateHoldResult =
   | { ok: false; error: string };
 
 /**
- * Validate and reserve a hold for the requested stay. The database exclusion
- * constraint is the race-proof guarantee; the pre-check gives a friendly error
- * for the common case and avoids creating a doomed Stripe session.
+ * Validate and reserve a stay. The database exclusion constraint is the
+ * race-proof guarantee; the pre-check gives a friendly error for the common
+ * case and avoids creating a doomed Stripe session.
+ *
+ * With `free`, the booking is created already CONFIRMED at price 0 and written
+ * to the calendar — used for a logged-in pitva member's scout booking, which
+ * skips payment. The caller must have verified that eligibility server-side.
  */
-export async function createKammiHold(input: CreateHoldInput): Promise<CreateHoldResult> {
+export async function createKammiHold(
+  input: CreateHoldInput,
+  { free = false }: { free?: boolean } = {},
+): Promise<CreateHoldResult> {
   const settings = await getKammiSettings();
   if (!settings.active) return { ok: false, error: 'Kammin varaus ei ole juuri nyt käytössä.' };
 
@@ -108,7 +115,7 @@ export async function createKammiHold(input: CreateHoldInput): Promise<CreateHol
         endDate: parseISODate(input.endISO),
         nights: validation.nights,
         tier: input.tier,
-        status: 'PENDING',
+        status: free ? 'CONFIRMED' : 'PENDING',
         email: input.email,
         name: input.name,
         phone: input.phone,
@@ -116,10 +123,29 @@ export async function createKammiHold(input: CreateHoldInput): Promise<CreateHol
         eventInfo: input.eventInfo,
         hostQuestions: input.hostQuestions,
         billingEmail: input.billingEmail,
-        totalCents: price.totalCents,
-        holdExpiresAt: new Date(Date.now() + HOLD_MINUTES * 60_000),
+        totalCents: free ? 0 : price.totalCents,
+        holdExpiresAt: free ? null : new Date(Date.now() + HOLD_MINUTES * 60_000),
+        paidAt: free ? new Date() : null,
       },
     });
+    if (free) {
+      // No webhook will fire, so write the calendar entry here (best-effort).
+      const eventId = await createKammiEvent({
+        summary: `Kammi varattu — ${booking.name ?? booking.email ?? 'varaus'}`,
+        description: `Partiovaraus (maksuton) kauppa.pitva.fi:n kautta.${booking.email ? ` ${booking.email}` : ''}`,
+        startISO: toISODate(booking.startDate),
+        endISO: toISODate(booking.endDate),
+      });
+      if (eventId) {
+        return {
+          ok: true,
+          booking: await prisma.kammiBooking.update({
+            where: { id: booking.id },
+            data: { googleEventId: eventId },
+          }),
+        };
+      }
+    }
     return { ok: true, booking };
   } catch (error) {
     // The exclusion constraint fired — someone else took these dates in the gap

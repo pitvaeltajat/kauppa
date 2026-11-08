@@ -30,7 +30,8 @@ export const PARTICIPANT_NAME_QUESTION: ItemQuestionLike = {
   options: [],
 };
 
-/** Prepends the mandatory participant-name question for events, else unchanged. */
+/** Prepends the mandatory participant-name question for events, else unchanged.
+ * The cart renders this one specially: one name field per unit of quantity. */
 export function withEventQuestions<T extends ItemQuestionLike>(
   isEvent: boolean,
   questions: T[],
@@ -54,6 +55,39 @@ export type BuildSnapshotsResult =
 
 function isChoiceType(type: string): type is 'RADIO' | 'CHECKBOX' {
   return type === 'RADIO' || type === 'CHECKBOX';
+}
+
+export type ParticipantResult =
+  | { ok: true; snapshot: AnswerSnapshot | null }
+  | { ok: false; error: string };
+
+/**
+ * One participant name per unit bought (quantity) for an event line, all
+ * required. Returns the snapshot to prepend to the line's answers, or null for
+ * a non-event. `raw` is whatever the cart sent for the participant field.
+ */
+export function buildParticipantNames(
+  isEvent: boolean,
+  quantity: number,
+  raw: unknown,
+): ParticipantResult {
+  if (!isEvent) return { ok: true, snapshot: null };
+  const list = Array.isArray(raw) ? raw : raw === undefined ? [] : [raw];
+  const names: string[] = [];
+  for (let i = 0; i < quantity; i++) {
+    const name = typeof list[i] === 'string' ? (list[i] as string).trim() : '';
+    if (!name) return { ok: false, error: 'Anna jokaisen osallistujan nimi.' };
+    names.push(name.slice(0, 200));
+  }
+  return {
+    ok: true,
+    snapshot: {
+      questionId: PARTICIPANT_NAME_QUESTION.id,
+      prompt: PARTICIPANT_NAME_QUESTION.prompt,
+      type: 'TEXT',
+      answer: names,
+    },
+  };
 }
 
 /**

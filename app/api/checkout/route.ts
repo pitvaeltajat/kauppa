@@ -4,7 +4,8 @@ import { getStripe } from '@/lib/stripe';
 import { buildCheckout, type CheckoutRequestItem } from '@/lib/checkout';
 import {
   validateAndBuildAnswers,
-  withEventQuestions,
+  buildParticipantNames,
+  PARTICIPANT_NAME_QUESTION,
   type AnswersByItem,
   type ItemQuestionLike,
 } from '@/lib/questions';
@@ -70,10 +71,10 @@ export async function POST(req: Request) {
     orderBy: { sortOrder: 'asc' },
   });
   const eventItemIds = new Set(items.filter((i) => i.isEvent).map((i) => i.id));
-  const dbQuestionsByItem: Record<string, ItemQuestionLike[]> = {};
-  for (const itemId of itemIds) dbQuestionsByItem[itemId] = [];
+  const questionsByItem: Record<string, ItemQuestionLike[]> = {};
+  for (const itemId of itemIds) questionsByItem[itemId] = [];
   for (const q of questionRows) {
-    dbQuestionsByItem[q.itemId]?.push({
+    questionsByItem[q.itemId]?.push({
       id: q.id,
       prompt: q.prompt,
       type: q.type,
@@ -81,16 +82,25 @@ export async function POST(req: Request) {
       options: q.options as string[],
     });
   }
-  const questionsByItem: Record<string, ItemQuestionLike[]> = {};
-  for (const itemId of itemIds) {
-    questionsByItem[itemId] = withEventQuestions(eventItemIds.has(itemId), dbQuestionsByItem[itemId]);
-  }
   const answers = (typeof payload.answers === 'object' && payload.answers !== null
     ? (payload.answers as AnswersByItem)
     : undefined);
   const answerResult = validateAndBuildAnswers(questionsByItem, answers);
   if (!answerResult.ok) {
     return NextResponse.json({ error: answerResult.error }, { status: 400 });
+  }
+
+  // Events require one participant name per unit — validated against the real
+  // quantity and prepended to that line's answer snapshot.
+  for (const line of result.lines) {
+    const raw = answers?.[line.itemId]?.[PARTICIPANT_NAME_QUESTION.id];
+    const participants = buildParticipantNames(eventItemIds.has(line.itemId), line.quantity, raw);
+    if (!participants.ok) {
+      return NextResponse.json({ error: participants.error }, { status: 400 });
+    }
+    if (participants.snapshot) {
+      (answerResult.snapshotsByItem[line.itemId] ??= []).unshift(participants.snapshot);
+    }
   }
 
   const email =

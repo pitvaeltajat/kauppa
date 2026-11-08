@@ -16,6 +16,7 @@ import { ButtonLink } from '@/components/ui/button-link';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ItemImage } from '@/components/item-image';
+import { PARTICIPANT_NAME_QUESTION } from '@/lib/questions';
 
 type CheckoutQuestion = {
   id: string;
@@ -128,10 +129,29 @@ export function CartShell() {
     }));
   }
 
-  function missingAnswerMessage(item: FetchedItem): string | null {
+  // One participant name per unit: edit the name at `index` in the array.
+  function setParticipantName(itemId: string, index: number, value: string) {
+    setAnswers((prev) => {
+      const current = prev[itemId]?.[PARTICIPANT_NAME_QUESTION.id];
+      const names = Array.isArray(current) ? [...current] : [];
+      names[index] = value;
+      return { ...prev, [itemId]: { ...prev[itemId], [PARTICIPANT_NAME_QUESTION.id]: names } };
+    });
+  }
+
+  function missingAnswerMessage(item: FetchedItem, quantity: number): string | null {
     const itemAnswers = answers[item.id] ?? {};
     for (const question of item.questions) {
       const value = itemAnswers[question.id];
+      if (question.id === PARTICIPANT_NAME_QUESTION.id) {
+        const names = Array.isArray(value) ? value : [];
+        for (let i = 0; i < quantity; i++) {
+          if (!names[i] || names[i].trim() === '') {
+            return `Anna jokaisen osallistujan nimi (${item.name}).`;
+          }
+        }
+        continue;
+      }
       const empty =
         value === undefined || value === '' || (Array.isArray(value) && value.length === 0);
       if (empty) {
@@ -147,9 +167,9 @@ export function CartShell() {
       setError('Osa tuotteista ei ole enää myynnissä. Poista ne korista.');
       return;
     }
-    for (const { item } of lines) {
+    for (const { cartItem, item } of lines) {
       if (item && item.questions.length > 0) {
-        const missing = missingAnswerMessage(item);
+        const missing = missingAnswerMessage(item, cartItem.quantity);
         if (missing) {
           setError(missing);
           return;
@@ -277,6 +297,29 @@ export function CartShell() {
                 <div className="mt-4 space-y-4 rounded-md bg-background p-4">
                   {item.questions.map((question) => {
                     const current = answers[item.id]?.[question.id];
+
+                    // Participant name: one field per unit in the cart.
+                    if (question.id === PARTICIPANT_NAME_QUESTION.id) {
+                      const names = Array.isArray(current) ? current : [];
+                      return (
+                        <div key={question.id} className="space-y-2">
+                          {Array.from({ length: cartItem.quantity }).map((_, i) => (
+                            <div key={i} className="space-y-1">
+                              <Label className="text-xs font-medium">
+                                {question.prompt}
+                                {cartItem.quantity > 1 && ` ${i + 1}`}
+                              </Label>
+                              <Input
+                                value={names[i] ?? ''}
+                                onChange={(e) => setParticipantName(item.id, i, e.target.value)}
+                                placeholder={question.prompt}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    }
+
                     return (
                       <div key={question.id} className="space-y-2">
                         <Label className="text-xs font-medium">

@@ -3,6 +3,7 @@ import {
   parseQuestionDrafts,
   validateAndBuildAnswers,
   withEventQuestions,
+  buildParticipantNames,
   PARTICIPANT_NAME_QUESTION,
   type ItemQuestionLike,
 } from '@/lib/questions';
@@ -118,12 +119,33 @@ describe('withEventQuestions', () => {
     expect(withEventQuestions(false, [nameQuestion])).toEqual([nameQuestion]);
   });
 
-  it('makes checkout reject an event without the participant name', () => {
-    const questions = { evt: withEventQuestions(true, []) };
-    expect(validateAndBuildAnswers(questions, { evt: {} }).ok).toBe(false);
-    const ok = validateAndBuildAnswers(questions, { evt: { 'osallistujan-nimi': 'Aatu Vaelta' } });
-    expect(ok.ok).toBe(true);
-    if (ok.ok) expect(ok.snapshotsByItem.evt[0].answer).toBe('Aatu Vaelta');
+  it('still prepends the question for the cart to render', () => {
+    expect(withEventQuestions(true, [])[0]).toBe(PARTICIPANT_NAME_QUESTION);
+  });
+});
+
+describe('buildParticipantNames', () => {
+  it('returns no snapshot for a non-event', () => {
+    const r = buildParticipantNames(false, 3, undefined);
+    expect(r).toEqual({ ok: true, snapshot: null });
+  });
+
+  it('requires one name per unit of quantity', () => {
+    expect(buildParticipantNames(true, 3, ['Aatu', 'Bea']).ok).toBe(false);
+    expect(buildParticipantNames(true, 3, ['Aatu', '  ', 'Cee']).ok).toBe(false);
+    expect(buildParticipantNames(true, 1, undefined).ok).toBe(false);
+  });
+
+  it('snapshots all names, trimmed, when complete', () => {
+    const r = buildParticipantNames(true, 3, [' Aatu ', 'Bea', 'Cee', 'extra ignored']);
+    expect(r.ok).toBe(true);
+    if (r.ok)
+      expect(r.snapshot).toEqual({
+        questionId: 'osallistujan-nimi',
+        prompt: 'Osallistujan nimi',
+        type: 'TEXT',
+        answer: ['Aatu', 'Bea', 'Cee'],
+      });
   });
 });
 

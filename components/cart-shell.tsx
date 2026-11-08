@@ -5,6 +5,12 @@ import Link from 'next/link';
 import { Minus, Plus, Trash2, ShoppingCart } from 'lucide-react';
 import { cartStore, useCart } from '@/lib/cart';
 import { formatCents } from '@/lib/money';
+import {
+  type DiscountCodeLike,
+  discountApplies,
+  discountedUnitCents,
+  normalizeCode,
+} from '@/lib/discount';
 import { Button } from '@/components/ui/button';
 import { ButtonLink } from '@/components/ui/button-link';
 import { Input } from '@/components/ui/input';
@@ -26,6 +32,7 @@ type FetchedItem = {
   priceCents: number;
   imageUrl: string | null;
   stock: number | null;
+  leaderDiscount: boolean;
   questions: CheckoutQuestion[];
 };
 
@@ -40,6 +47,10 @@ export function CartShell() {
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [codeInput, setCodeInput] = useState('');
+  const [discount, setDiscount] = useState<DiscountCodeLike | null>(null);
+  const [codeError, setCodeError] = useState<string | null>(null);
+  const [codeChecking, setCodeChecking] = useState(false);
 
   const ids = useMemo(() => items.map((i) => i.id).sort(), [items]);
 
@@ -72,6 +83,43 @@ export function CartShell() {
     (sum, { cartItem, item }) => sum + (item?.priceCents ?? 0) * cartItem.quantity,
     0,
   );
+
+  // Discount preview (UX only — checkout re-validates against the database).
+  const discountCents = discount
+    ? lines.reduce((sum, { cartItem, item }) => {
+        if (!item || !discountApplies(discount, item)) return sum;
+        const saved = item.priceCents - discountedUnitCents(item.priceCents, discount.percentOff);
+        return sum + saved * cartItem.quantity;
+      }, 0)
+    : 0;
+
+  async function applyCode() {
+    const code = normalizeCode(codeInput);
+    if (!code) return;
+    setCodeError(null);
+    setCodeChecking(true);
+    try {
+      const res = await fetch(`/api/discount?code=${encodeURIComponent(code)}`);
+      const data = (await res.json()) as { discount?: DiscountCodeLike; error?: string };
+      if (!res.ok || !data.discount) {
+        setDiscount(null);
+        setCodeError(data.error ?? 'Alennuskoodi ei kelpaa.');
+        return;
+      }
+      setDiscount(data.discount);
+      setCodeInput(data.discount.code);
+    } catch {
+      setCodeError('Koodin tarkistus epäonnistui. Yritä uudelleen.');
+    } finally {
+      setCodeChecking(false);
+    }
+  }
+
+  function removeCode() {
+    setDiscount(null);
+    setCodeInput('');
+    setCodeError(null);
+  }
 
   function setAnswer(itemId: string, questionId: string, value: string | string[]) {
     setAnswers((prev) => ({
@@ -118,6 +166,7 @@ export function CartShell() {
           answers,
           email: email.trim() || undefined,
           name: name.trim() || undefined,
+          discountCode: discount?.code,
         }),
       });
       const data = (await res.json()) as { url?: string; error?: string };
@@ -313,9 +362,80 @@ export function CartShell() {
       <div className="h-fit space-y-4 rounded-lg border bg-card p-5 shadow-sm">
         <h2 className="text-lg font-bold">Yhteenveto</h2>
 
-        <div className="flex items-center justify-between text-sm">
-          <span>Yhteensä</span>
-          <span className="text-lg font-bold">{formatCents(totalCents)}</span>
+        {/* Discount code */}
+        <div className="space-y-2 border-b pb-4">
+          <Label htmlFor="discount-code">Alennuskoodi</Label>
+          {discount ? (
+            <div className="flex items-center justify-between gap-2 rounded-md bg-primary/10 px-3 py-2 text-sm">
+              <span>
+                <span className="font-mono font-semibold">{discount.code}</span>
+                <span className="ml-1 text-muted-foreground">−{discount.percentOff} %</span>
+              </span>
+              <button
+                type="button"
+                className="text-muted-foreground underline-offset-2 hover:text-destructive hover:underline"
+                onClick={removeCode}
+              >
+                Poista
+              </button>
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <Input
+                id="discount-code"
+                value={codeInput}
+                onChange={(e) => setCodeInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    applyCode();
+                  }
+                }}
+                placeholder="esim. JOHTAJA"
+                spellCheck={false}
+                autoCapitalize="characters"
+                className="font-mono uppercase"
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={codeChecking || !codeInput.trim()}
+                onClick={applyCode}
+              >
+                {codeChecking ? '…' : 'Käytä'}
+              </Button>
+            </div>
+          )}
+          {codeError && <p className="text-xs text-destructive">{codeError}</p>}
+          {discount?.leaderOnly && discountCents === 0 && (
+            <p className="text-xs text-muted-foreground">
+              Koodi koskee vain tapahtumia, joissa johtajien alennus on käytössä.
+            </p>
+          )}
+        </div>
+
+        <div className="space-y-1.5 text-sm">
+          {discountCents > 0 ? (
+            <>
+              <div className="flex items-center justify-between text-muted-foreground">
+                <span>Välisumma</span>
+                <span>{formatCents(totalCents)}</span>
+              </div>
+              <div className="flex items-center justify-between text-primary">
+                <span>Alennus ({discount?.code})</span>
+                <span>−{formatCents(discountCents)}</span>
+              </div>
+              <div className="flex items-center justify-between pt-1 font-bold">
+                <span>Yhteensä</span>
+                <span className="text-lg">{formatCents(totalCents - discountCents)}</span>
+              </div>
+            </>
+          ) : (
+            <div className="flex items-center justify-between">
+              <span>Yhteensä</span>
+              <span className="text-lg font-bold">{formatCents(totalCents)}</span>
+            </div>
+          )}
         </div>
 
         <div className="space-y-3 border-t pt-4">

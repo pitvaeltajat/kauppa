@@ -31,6 +31,7 @@ export async function GET(req: Request) {
       imageUrl: true,
       stock: true,
       isEvent: true,
+      leaderDiscount: true,
       questions: { orderBy: { sortOrder: 'asc' } },
     },
   });
@@ -43,6 +44,7 @@ export async function GET(req: Request) {
       priceCents: item.priceCents,
       imageUrl: item.imageUrl,
       stock: item.stock,
+      leaderDiscount: item.leaderDiscount,
       questions: withEventQuestions(
         item.isEvent,
         item.questions.map((q) => ({

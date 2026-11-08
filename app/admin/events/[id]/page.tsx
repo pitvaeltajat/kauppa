@@ -32,6 +32,7 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
     startsAt: item.startsAt ? item.startsAt.toISOString().slice(0, 10) : null,
     endsAt: item.endsAt ? item.endsAt.toISOString().slice(0, 10) : null,
     hidden: item.hidden,
+    leaderDiscount: item.leaderDiscount,
     questions: item.questions.map((q) => ({
       id: q.id,
       prompt: q.prompt,

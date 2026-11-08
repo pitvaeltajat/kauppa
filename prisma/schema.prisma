@@ -74,6 +74,9 @@ model Item {
   /// reachable and buyable at its direct /item/<slug> link. Used for events
   /// shared by link only; also applied automatically once an event is over.
   hidden      Boolean        @default(false)
+  /// This event opts into the "leaders' discount": a DiscountCode with
+  /// `leaderOnly` (e.g. JOHTAJA) only discounts lines whose item has this set.
+  leaderDiscount Boolean     @default(false)
   sortOrder   Int            @default(0)
   categoryId  String
   category    Category       @relation(fields: [categoryId], references: [id], onDelete: Cascade)
@@ -122,6 +125,23 @@ enum QuestionType {
   NUMBER
   RADIO
   CHECKBOX
+}
+
+/// A reusable discount code the buyer types in the cart. Percentage off,
+/// optionally expiring. `leaderOnly` is the one scope switch: a leaderOnly code
+/// (e.g. JOHTAJA, 50 %) discounts only lines whose Item has `leaderDiscount`;
+/// a normal code discounts the whole cart. `code` is stored uppercased and is
+/// matched case-insensitively.
+model DiscountCode {
+  id          String    @id @default(cuid())
+  code        String    @unique
+  description String    @default("")
+  percentOff  Int
+  leaderOnly  Boolean   @default(false)
+  active      Boolean   @default(true)
+  validUntil  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
 
 /// One checkout. Lines are a snapshot: renaming or deleting an item later does

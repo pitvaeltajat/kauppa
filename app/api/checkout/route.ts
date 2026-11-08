@@ -8,6 +8,8 @@ import {
   type AnswersByItem,
   type ItemQuestionLike,
 } from '@/lib/questions';
+import { loadValidDiscount } from '@/lib/discountCodes';
+import { normalizeCode } from '@/lib/discount';
 
 /**
  * Creates an Order row and a Stripe Checkout Session for the cart. Prices,
@@ -16,7 +18,13 @@ import {
  * STRIPE_SECRET_KEY (sk_test_) set.
  */
 export async function POST(req: Request) {
-  let payload: { items?: unknown; email?: unknown; name?: unknown; answers?: unknown };
+  let payload: {
+    items?: unknown;
+    email?: unknown;
+    name?: unknown;
+    answers?: unknown;
+    discountCode?: unknown;
+  };
   try {
     payload = await req.json();
   } catch {
@@ -42,7 +50,15 @@ export async function POST(req: Request) {
   const items = await prisma.item.findMany({
     where: { id: { in: requested.map((r) => r.id).filter((id): id is string => typeof id === 'string') } },
   });
-  const result = buildCheckout(requested, items);
+  // Resolve the optional discount code. A typed-but-invalid code is rejected so
+  // the buyer isn't silently charged full price; an empty field is fine.
+  const typedCode = typeof payload.discountCode === 'string' ? normalizeCode(payload.discountCode) : '';
+  const discount = typedCode ? await loadValidDiscount(typedCode) : null;
+  if (typedCode && !discount) {
+    return NextResponse.json({ error: 'Alennuskoodi ei kelpaa.' }, { status: 400 });
+  }
+
+  const result = buildCheckout(requested, items, discount);
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: 400 });
   }

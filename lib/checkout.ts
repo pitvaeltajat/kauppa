@@ -2,6 +2,13 @@
 // and the items looked up from the database, and either returns the line-item
 // snapshot to charge or a Finnish error message the storefront can show.
 
+import {
+  type DiscountCodeLike,
+  discountApplies,
+  discountedUnitCents,
+  discountLabel,
+} from '@/lib/discount';
+
 export type CheckoutRequestItem = { id: string; quantity: number };
 
 export type BuildableItem = {
@@ -10,6 +17,8 @@ export type BuildableItem = {
   priceCents: number;
   stock: number | null;
   active: boolean;
+  /** Event opted into the leaders' discount (ignored by non-leader codes). */
+  leaderDiscount?: boolean;
 };
 
 export type ComputedLine = {
@@ -20,7 +29,15 @@ export type ComputedLine = {
 };
 
 export type BuildResult =
-  | { ok: true; lines: ComputedLine[]; totalCents: number }
+  | {
+      ok: true;
+      lines: ComputedLine[];
+      totalCents: number;
+      /** Cents saved by the discount, 0 when none applied. */
+      discountCents: number;
+      /** The code that actually discounted a line, else null. */
+      appliedCode: string | null;
+    }
   | { ok: false; error: string };
 
 const MAX_QUANTITY = 99;
@@ -28,6 +45,7 @@ const MAX_QUANTITY = 99;
 export function buildCheckout(
   requested: CheckoutRequestItem[],
   items: BuildableItem[],
+  discount?: DiscountCodeLike | null,
 ): BuildResult {
   // Collapse duplicate ids and drop invalid quantities.
   const wanted = new Map<string, number>();
@@ -45,6 +63,8 @@ export function buildCheckout(
 
   const byId = new Map(items.map((i) => [i.id, i]));
   const lines: ComputedLine[] = [];
+  let discountCents = 0;
+  let appliedCode: string | null = null;
   for (const [id, quantity] of wanted) {
     const item = byId.get(id);
     if (!item) {
@@ -59,11 +79,25 @@ export function buildCheckout(
         error: `"${item.name}" on loppunut varastosta (jäljellä ${item.stock} kpl).`,
       };
     }
-    lines.push({ itemId: item.id, name: item.name, priceCents: item.priceCents, quantity });
+
+    // Apply the discount per unit so Stripe line items and the order snapshot
+    // stay in integer cents. A leaderOnly code skips lines that didn't opt in.
+    let priceCents = item.priceCents;
+    let name = item.name;
+    if (discount && discount.percentOff > 0 && discountApplies(discount, item)) {
+      const discounted = discountedUnitCents(item.priceCents, discount.percentOff);
+      if (discounted < item.priceCents) {
+        discountCents += (item.priceCents - discounted) * quantity;
+        appliedCode = discount.code;
+        priceCents = discounted;
+        name = `${item.name} (${discountLabel(discount.code, discount.percentOff)})`;
+      }
+    }
+    lines.push({ itemId: item.id, name, priceCents, quantity });
   }
 
   // The database is the source of truth for prices; the total is recomputed
   // here rather than trusting whatever the browser sent.
   const totalCents = lines.reduce((sum, l) => sum + l.priceCents * l.quantity, 0);
-  return { ok: true, lines, totalCents };
+  return { ok: true, lines, totalCents, discountCents, appliedCode };
 }

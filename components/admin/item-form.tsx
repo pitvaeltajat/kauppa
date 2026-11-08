@@ -29,6 +29,7 @@ export type ItemFormValues = {
   startsAt: string | null;
   endsAt: string | null;
   hidden: boolean;
+  leaderDiscount: boolean;
   questions: {
     id: string;
     prompt: string;
@@ -200,6 +201,21 @@ export function ItemForm({
               className="size-4 accent-[hsl(244,51%,24%)]"
             />
             Piilota etusivulta — näkyy vain suoralla linkillä
+          </label>
+          <label className="flex items-start gap-2 text-sm sm:col-span-2">
+            <input
+              type="checkbox"
+              name="leaderDiscount"
+              defaultChecked={item?.leaderDiscount ?? false}
+              className="mt-0.5 size-4 accent-[hsl(244,51%,24%)]"
+            />
+            <span>
+              Tässä tapahtumassa on käytössä johtajien alennus
+              <span className="block text-xs text-muted-foreground">
+                Johtajien alennuskoodi (esim. JOHTAJA) toimii vain näin merkityissä tapahtumissa.
+                Koodit hallitaan kohdassa Alennuskoodit.
+              </span>
+            </span>
           </label>
         </div>
       )}

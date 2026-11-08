@@ -9,6 +9,7 @@ import { getUserRole, isEventAdmin, isSuperAdmin, type Role } from '@/lib/admin'
 import { slugify } from '@/lib/slug';
 import { parseEurosInput } from '@/lib/money';
 import { parseQuestionDrafts } from '@/lib/questions';
+import { normalizeCode } from '@/lib/discount';
 
 export type ActionResult = { error?: string };
 
@@ -83,6 +84,8 @@ export async function saveItem(
     if (endsAt < startsAt) return { error: 'Päättymispäivä ei voi olla ennen alkamispäivää.' };
   }
   const hidden = formData.get('hidden') === 'on';
+  // Leaders' discount is an event-only opt-in (a leaderOnly code discounts it).
+  const leaderDiscount = isEvent && formData.get('leaderDiscount') === 'on';
 
   // Events live in Tapahtumat; a non-event takes the category the form chose.
   const categoryId = isEvent
@@ -154,6 +157,7 @@ export async function saveItem(
     startsAt,
     endsAt,
     hidden,
+    leaderDiscount,
   };
 
   if (id) {
@@ -278,6 +282,60 @@ export async function deleteCategory(formData: FormData): Promise<void> {
   revalidatePath('/', 'layout');
   // Re-render the categories page to reflect the change.
   redirect('/admin/categories');
+}
+
+// --- Discount codes -------------------------------------------------------
+
+export async function saveDiscount(
+  prev: ActionResult | undefined,
+  formData: FormData,
+): Promise<ActionResult> {
+  if (!isSuperAdmin(await currentRole())) return { error: 'Ei käyttöoikeutta. Kirjaudu sisään.' };
+
+  const id = ((formData.get('id') as string) ?? '').trim() || undefined;
+  const code = normalizeCode(((formData.get('code') as string) ?? '').trim());
+  if (!/^[A-ZÅÄÖ0-9]{2,32}$/.test(code)) {
+    return { error: 'Koodi: 2–32 kirjainta tai numeroa (ei välilyöntejä).' };
+  }
+
+  const percentOff = Number(((formData.get('percentOff') as string) ?? '').trim());
+  if (!Number.isInteger(percentOff) || percentOff < 1 || percentOff > 100) {
+    return { error: 'Alennusprosentti on 1–100.' };
+  }
+
+  const validUntilRaw = ((formData.get('validUntil') as string) ?? '').trim();
+  const validUntil = validUntilRaw ? parseDate(validUntilRaw) : null;
+  if (validUntilRaw && !validUntil) return { error: 'Virheellinen päättymispäivä.' };
+
+  const existing = await prisma.discountCode.findUnique({ where: { code } });
+  if (existing && existing.id !== id) {
+    return { error: `Koodi "${code}" on jo käytössä.` };
+  }
+
+  const data = {
+    code,
+    description: ((formData.get('description') as string) ?? '').trim(),
+    percentOff,
+    leaderOnly: formData.get('leaderOnly') === 'on',
+    active: formData.get('active') === 'on',
+    validUntil,
+  };
+
+  if (id) {
+    await prisma.discountCode.update({ where: { id }, data });
+  } else {
+    await prisma.discountCode.create({ data });
+  }
+  revalidatePath('/admin/discounts');
+  redirect('/admin/discounts');
+}
+
+export async function deleteDiscount(formData: FormData): Promise<void> {
+  if (!isSuperAdmin(await currentRole())) return;
+  const id = ((formData.get('id') as string) ?? '').trim();
+  if (!id) return;
+  await prisma.discountCode.delete({ where: { id } });
+  redirect('/admin/discounts');
 }
 
 // --- Orders ---------------------------------------------------------------

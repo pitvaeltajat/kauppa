@@ -58,9 +58,6 @@ export default async function HomePage() {
             <ButtonLink href="/admin/categories/new" variant="outline" size="sm">
               <Plus /> Lisää kategoria
             </ButtonLink>
-            <ButtonLink href="/admin" variant="outline" size="sm">
-              Hallinta
-            </ButtonLink>
           </div>
         )}
 

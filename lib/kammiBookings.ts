@@ -33,9 +33,13 @@ export async function expireStaleHolds(): Promise<void> {
   });
 }
 
-/** A booking's date range as ISO strings. */
-function bookingRange(b: Pick<KammiBooking, 'startDate' | 'endDate'>): DateRange {
-  return { start: toISODate(b.startDate), end: toISODate(b.endDate) };
+/** A booking's date range as ISO strings, labelled with who booked it. */
+function bookingRange(b: Pick<KammiBooking, 'startDate' | 'endDate' | 'name' | 'organization'>): DateRange {
+  return {
+    start: toISODate(b.startDate),
+    end: toISODate(b.endDate),
+    label: b.organization || b.name || 'Varaus',
+  };
 }
 
 /**
@@ -52,7 +56,7 @@ export async function getBusyRanges(fromISO: string, toISO: string): Promise<Dat
         endDate: { gt: parseISODate(fromISO) },
         startDate: { lt: parseISODate(toISO) },
       },
-      select: { startDate: true, endDate: true },
+      select: { startDate: true, endDate: true, name: true, organization: true },
     }),
     fetchKammiBusyRanges(fromISO, toISO),
   ]);

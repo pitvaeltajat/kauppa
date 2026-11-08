@@ -31,6 +31,7 @@ export function KammiBooking({
   minNights,
   maxNights,
   pitvaMember,
+  labels,
 }: {
   today: string;
   windowEnd: string;
@@ -39,6 +40,8 @@ export function KammiBooking({
   minNights: number;
   maxNights: number;
   pitvaMember: boolean;
+  /** iso → who holds that night (shown to logged-in viewers only). */
+  labels: Record<string, string>;
 }) {
   const [start, setStart] = useState<string | null>(null);
   const [end, setEnd] = useState<string | null>(null);
@@ -213,7 +216,8 @@ export function KammiBooking({
                         className={`flex aspect-square items-center justify-center rounded-md border text-sm transition-colors ${
                           past ? 'cursor-not-allowed text-muted-foreground/40' : 'hover:border-primary'
                         } ${selected ? 'font-bold text-cta-foreground ring-2 ring-primary' : ''}`}
-                        aria-label={`${fiDate(iso)}${statuses[iso]?.n ? ' (varattu)' : ''}`}
+                        title={labels[iso] ? `${fiDate(iso)}: ${labels[iso]}` : undefined}
+                        aria-label={`${fiDate(iso)}${labels[iso] ? ` – varattu: ${labels[iso]}` : statuses[iso]?.n ? ' (varattu)' : ''}`}
                       >
                         {day}
                       </button>

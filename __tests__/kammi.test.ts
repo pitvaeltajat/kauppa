@@ -11,6 +11,7 @@ import {
   rangeIsFree,
   type KammiPrices,
 } from '@/lib/kammi';
+import { eventToRange } from '@/lib/googleCalendar';
 
 const prices: KammiPrices = {
   weekendScoutCents: 20000,
@@ -64,6 +65,37 @@ describe('pricing', () => {
     expect(mixed.weekendNights).toBe(2);
     expect(mixed.weekdayNights).toBe(1);
     expect(mixed.totalCents).toBe(25000);
+  });
+});
+
+describe('eventToRange (Google calendar → booking range)', () => {
+  // Dec 2026: 11 Fri, 12 Sat, 13 Sun, 14 Mon.
+  it('treats an all-day block\'s last day as checkout, not a night', () => {
+    // Fri–Sun block is stored end=Mon (exclusive): leave Sunday, Monday free.
+    expect(eventToRange({ start: { date: '2026-12-11' }, end: { date: '2026-12-14' }, summary: 'Helsingin Siniset' })).toEqual({
+      start: '2026-12-11',
+      end: '2026-12-13',
+      label: 'Helsingin Siniset',
+    });
+    // Sat–Sun block (end=Mon): 1 night Sat, checkout Sunday.
+    expect(eventToRange({ start: { date: '2026-12-12' }, end: { date: '2026-12-14' } })).toMatchObject({
+      start: '2026-12-12',
+      end: '2026-12-13',
+    });
+  });
+  it('keeps a single-day all-day block as one night', () => {
+    expect(eventToRange({ start: { date: '2026-11-02' }, end: { date: '2026-11-03' } })).toMatchObject({
+      start: '2026-11-02',
+      end: '2026-11-03',
+    });
+  });
+  it('uses a timed event\'s end as-is (already the checkout day)', () => {
+    expect(
+      eventToRange({ start: { dateTime: '2026-12-11T16:00:00+02:00' }, end: { dateTime: '2026-12-13T18:00:00+02:00' } }),
+    ).toMatchObject({ start: '2026-12-11', end: '2026-12-13' });
+  });
+  it('skips cancelled events', () => {
+    expect(eventToRange({ status: 'cancelled', start: { date: '2026-12-11' }, end: { date: '2026-12-14' } })).toBeNull();
   });
 });
 

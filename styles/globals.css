@@ -1,29 +1,18 @@
 @import 'tailwindcss';
 
+@custom-variant dark (&:is(.dark *));
+
 @utility container {
   margin-inline: auto;
   padding-inline: 1rem;
+  @media (width >= --theme(--breakpoint-sm)) {
+    max-width: none;
+  }
   @media (width >= 1280px) {
     max-width: 1280px;
   }
 }
 
-/*
-  ── Brand palette (Pitkäjärven Vaeltajat "Värit" sheet) ─────────────────────
-  Copied verbatim from Klapi's styles/globals.css and Budu's app/globals.css so
-  that arriving here reads as the same product as the services it links to.
-
-    light blue  #BBD1FB   hsl(219 89% 86%)   CTA button, raised surfaces
-    dark blue   #221E5D   hsl(244 51% 24%)   header/app bar, body text, links
-    gray        #C9C5C3   hsl(20  7% 82%)    borders and muted surfaces
-    brown       #82593E   hsl(24 35% 38%)    warning
-    cream       #FBE7B2   hsl(44 90% 84%)    text on a solid brown fill
-    red         #A23936   hsl(2  50% 42%)    destructive
-    green       #2E6B51  (150 45% 30%)        status only — the sheet has no green
-
-  If the brand tokens move in Klapi/Budu/landeri, move them here as well — the
-  store, being the public shop, is the one of these apps most people meet first.
-*/
 @theme {
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
@@ -68,15 +57,73 @@
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
+
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+  --animate-progress-indeterminate: progress-indeterminate 1.2s ease-in-out
+    infinite;
+
+  @keyframes accordion-down {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+    }
+  }
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+    to {
+      height: 0;
+    }
+  }
+  @keyframes progress-indeterminate {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(400%);
+    }
+  }
 }
 
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
 @layer base {
   *,
+  ::after,
   ::before,
-  ::after {
-    border-color: var(--color-border, currentcolor);
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
   }
+}
 
+/*
+  ── Brand palette (Pitväeltäjät "Värit" sheet) ────────────────────────────
+  The two blues are the pääväri pair; the app must read as one of them first.
+
+    light blue  #BBD1FB   hsl(219 89% 86%)   raised/selected surfaces, dark-mode primary
+    dark blue   #221E5D   hsl(244 51% 24%)   primary, app bar, all body text
+    gray        #C9C5C3   hsl(20  5% 78%)    borders and muted surfaces
+    brown       #82593E   hsl(24 35% 38%)    warning
+    cream       #FBE7B2   hsl(44 90% 84%)    text on a solid brown fill
+    red         #A23936   hsl(2  50% 42%)    destructive
+
+  The tokens below are those six, plus lighter/darker steps of the same hue
+  where a surface needs one (a page wash, a hover fill, a dark-mode chip).
+  Nothing here is a hue the sheet doesn't contain, with one exception noted at
+  --success: the sheet has no green, and "palautettu" has to stay green.
+*/
+@layer base {
   :root {
     /* The light blue, opened up until body text clears 13:1 on it. */
     --background: 219 89% 96%;
@@ -88,19 +135,35 @@
     --popover: 0 0% 100%;
     --popover-foreground: 244 51% 24%;
 
-    /* Brand dark blue: every link, icon and bg-primary/10 chip. */
+    /* Brand dark blue. `primary` is the brand *ink*: every link, icon, spinner
+       and `bg-primary/10` chip, plus the small solid indicators (checked
+       Checkbox, active FilterChip, tooltip). It is not the filled button —
+       that's --cta. */
     --primary: 244 51% 24%;
     --primary-foreground: 219 89% 97%;
 
-    /* Brand light blue, exactly: the filled call-to-action button. */
+    /* Brand light blue, exactly: the filled call-to-action button. Its own pair
+       rather than `primary`, because primary has to stay dark enough to be
+       readable as text on white — #BBD1FB is a 1.5:1 whisper there. */
     --cta: 219 89% 86%;
     --cta-foreground: 244 51% 24%;
+    /* Hover goes a step *deeper*, not translucent: `bg-cta/80` over a white
+       card would lighten the button, which reads as the press doing less.
+       Shared by both themes — `.dark` doesn't override it. */
     --cta-hover: 219 85% 80%;
 
-    /* The quieter button beside a --cta one. */
+    /* Brand gray. The quieter button beside a --cta one (a dialog's "Peruuta")
+       and the neutral chip. It was the light blue until the filled button took
+       that over — two light-blue buttons side by side in a dialog read as two
+       confirms. */
     --secondary: 20 6% 87%;
     --secondary-foreground: 244 51% 24%;
 
+    /* The quiet surface: EmptyState, Skeleton, the kaman kuva box, every
+       hover:bg-muted. This one is NOT the sheet's gray, deliberately — that
+       gray is warm (#C9C5C3), and a block of it next to the light-blue page
+       reads pink. The gray keeps its warmth where it is only a line
+       (--border/--input); at full-block size it goes cool instead. */
     --muted: 220 22% 93%;
     --muted-foreground: 244 14% 40%;
 
@@ -111,6 +174,9 @@
     --destructive: 2 50% 42%;
     --destructive-foreground: 0 0% 100%;
 
+    /* The sheet has no green. Kept as a status colour because "palautettu" /
+       "saatavilla" have to read as green, but pulled down to the palette's
+       muted, earthy register so it sits beside the red and the brown. */
     --success: 150 45% 30%;
     --success-foreground: 0 0% 100%;
 
@@ -118,7 +184,12 @@
     --warning: 24 35% 38%;
     --warning-foreground: 44 90% 84%;
 
-    /* The app bar: fixed brand surface, stays dark-on-light. */
+    /* The app bar. Its own pair rather than `primary`, because it is a fixed
+       brand surface that stays dark-on-light in both themes.
+
+       Opaque. It used to carry an alpha, which let 8% of the page through and
+       composited to #322F6A rather than the #221E5D it names — the brand navy
+       everywhere else, Budu's top bar included, is the flat colour. */
     --header: 244 51% 24%;
     --header-foreground: 219 89% 97%;
 
@@ -130,23 +201,332 @@
     --radius: 0.375rem;
   }
 
+  .dark {
+    /* Dark mode is the brand dark blue: the page is that navy taken down, the
+       Card is very nearly #221E5D itself, and the light blue becomes the
+       primary — the inverse of the light theme, and of the two compositions on
+       the brand sheet. */
+    --background: 244 45% 9%;
+    --foreground: 219 60% 93%;
+
+    --card: 244 45% 15%;
+    --card-foreground: 219 60% 93%;
+
+    --popover: 244 45% 15%;
+    --popover-foreground: 219 60% 93%;
+
+    /* Brand light blue, exactly — here it is both the ink and the filled
+       button, so --cta repeats it. */
+    --primary: 219 89% 86%;
+    --primary-foreground: 244 51% 15%;
+
+    --cta: 219 89% 86%;
+    --cta-foreground: 244 51% 15%;
+
+    /* One notch ABOVE --card, never equal to it. These two are the "raised
+       chip" surfaces — the secondary Badge/Button, the gray Badge, Skeleton,
+       the kaman kuva box, a disabled Input, every hover:bg-muted. All of those
+       sit on a Card, so at --card's own lightness they render as nothing at
+       all: an invisible admin badge, a skeleton that doesn't appear to load, a
+       photo box with no box. They were 17% — identical to --card — until it was
+       noticed on the role badge in /admin.
+
+       The ladder is --background 9% → --card/--popover 15% → --accent 21% →
+       --secondary/--muted 24%, all on the brand navy hue. 24% keeps
+       --muted-foreground text on top at 5.9:1; don't raise it without
+       re-checking that, and don't collapse it back onto --card. */
+    --secondary: 244 30% 24%;
+    --secondary-foreground: 219 60% 93%;
+
+    --muted: 244 30% 24%;
+    --muted-foreground: 220 25% 70%;
+
+    --accent: 244 32% 21%;
+    --accent-foreground: 219 60% 93%;
+
+    /* The brand red/brown/green, lightened until each still works as *text* on
+       its own 10%-tint Badge over a Card (the sheet's own values are far too
+       dark to read on this background). */
+    --destructive: 3 60% 62%;
+    --destructive-foreground: 244 51% 15%;
+
+    --success: 150 40% 48%;
+    --success-foreground: 244 51% 15%;
+
+    --warning: 26 45% 55%;
+    --warning-foreground: 244 51% 15%;
+
+    /* The same #221E5D as in light mode — the app bar is the brand block, so
+       it does not follow the theme down. Here it is *lighter* than the page it
+       floats over, which is the point: it reads as the dark blue in both. */
+    --header: 244 51% 24%;
+    --header-foreground: 219 89% 97%;
+
+    --border: 244 28% 26%;
+    --input: 244 28% 26%;
+    --ring: 219 89% 86%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
   body {
-    background-color: var(--color-background);
-    color: var(--color-foreground);
-    -webkit-font-smoothing: antialiased;
+    @apply bg-background text-foreground;
   }
-
-  /* Tailwind v4's Preflight no longer gives buttons a pointer cursor. Restore
-     it for every clickable control (the Button component, the bare icon
-     buttons in the cart and forms, <summary>, role=button). */
-  button:not(:disabled),
+  a:hover,
+  button:hover {
+    text-decoration: none;
+  }
+  /* A tap or double-click on something clickable must not paint a text
+     selection — on the kiosk touchscreen a long press did exactly that.
+     `.cursor-pointer` catches the `<div onClick>` cards and rows. Fields keep
+     selection explicitly: Safari lets a `none` ancestor lock an input inside a
+     `<label>`. */
+  a,
+  button,
+  label,
   summary,
-  [role='button']:not([aria-disabled='true']) {
-    cursor: pointer;
+  select,
+  [role='button'],
+  [role='checkbox'],
+  [role='switch'],
+  [role='tab'],
+  [role='menuitem'],
+  [role='option'],
+  .cursor-pointer {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  input,
+  textarea,
+  [contenteditable] {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+  /* Klapi pads `main` by 100px for its fixed header; kauppa's header is
+     `sticky`, so it occupies layout space and `main` needs no top padding. */
+}
+
+/* ── tailwindcss-animate replacements for Tailwind v4 ── */
+
+@keyframes tw-enter {
+  from {
+    opacity: var(--tw-enter-opacity, 1);
+    transform: translate3d(var(--tw-enter-translate-x, 0), var(--tw-enter-translate-y, 0), 0)
+      scale3d(var(--tw-enter-scale, 1), var(--tw-enter-scale, 1), var(--tw-enter-scale, 1));
+  }
+}
+
+@keyframes tw-exit {
+  to {
+    opacity: var(--tw-exit-opacity, 1);
+    transform: translate3d(var(--tw-exit-translate-x, 0), var(--tw-exit-translate-y, 0), 0)
+      scale3d(var(--tw-exit-scale, 1), var(--tw-exit-scale, 1), var(--tw-exit-scale, 1));
+  }
+}
+
+@utility animate-in {
+  animation-name: tw-enter;
+  animation-duration: 150ms;
+  --tw-enter-opacity: initial;
+  --tw-enter-scale: initial;
+  --tw-enter-translate-x: initial;
+  --tw-enter-translate-y: initial;
+}
+
+@utility animate-out {
+  animation-name: tw-exit;
+  animation-duration: 150ms;
+  --tw-exit-opacity: initial;
+  --tw-exit-scale: initial;
+  --tw-exit-translate-x: initial;
+  --tw-exit-translate-y: initial;
+}
+
+@utility fade-in-0 {
+  --tw-enter-opacity: 0;
+}
+
+@utility fade-out-0 {
+  --tw-exit-opacity: 0;
+}
+
+@utility zoom-in-95 {
+  --tw-enter-scale: 0.95;
+}
+
+@utility zoom-out-95 {
+  --tw-exit-scale: 0.95;
+}
+
+@utility slide-in-from-right {
+  --tw-enter-translate-x: 100%;
+}
+
+@utility slide-out-to-right {
+  --tw-exit-translate-x: 100%;
+}
+
+@utility slide-in-from-left {
+  --tw-enter-translate-x: -100%;
+}
+
+@utility slide-out-to-left {
+  --tw-exit-translate-x: -100%;
+}
+
+@utility slide-in-from-top {
+  --tw-enter-translate-y: -100%;
+}
+
+@utility slide-out-to-top {
+  --tw-exit-translate-y: -100%;
+}
+
+@utility slide-in-from-bottom {
+  --tw-enter-translate-y: 100%;
+}
+
+@utility slide-out-to-bottom {
+  --tw-exit-translate-y: 100%;
+}
+
+/* Touch browsers (iOS Safari especially) zoom the viewport when focusing a
+   form control whose font-size is below 16px. Pin form controls to 16px on
+   coarse pointers so focusing the cart description, the search field, the
+   loaner autocomplete, etc. never triggers an annoying auto-zoom. Left in the
+   un-layered cascade on purpose so it wins over Tailwind's `text-sm` utility. */
+@media (pointer: coarse) {
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
+
+/* react-datepicker ships only a light theme. Repaint its calendar with our
+   dark-mode design tokens. Every selector is scoped under `.dark`, so it has
+   higher specificity than the library's single-class defaults (and therefore
+   wins regardless of stylesheet import order) while leaving light mode on the
+   stock appearance. Left un-layered on purpose so it beats the bundled
+   react-datepicker.css. */
+.dark .react-datepicker {
+  background-color: hsl(var(--popover));
+  border-color: hsl(var(--border));
+  color: hsl(var(--popover-foreground));
+}
+
+.dark .react-datepicker__header {
+  background-color: hsl(var(--muted));
+  border-bottom-color: hsl(var(--border));
+}
+
+.dark .react-datepicker__current-month,
+.dark .react-datepicker-time__header,
+.dark .react-datepicker-year-header,
+.dark .react-datepicker__day-name,
+.dark .react-datepicker__day,
+.dark .react-datepicker__time-name {
+  color: hsl(var(--popover-foreground));
+}
+
+/* The library's own hover rules are `…:not([aria-disabled='true']):hover`, which
+   ties these on specificity and then wins on source order (its stylesheet is
+   imported from the component, after this file) — leaving a near-white hover
+   fill under our light text. Match its shape so ours outranks it. */
+.dark .react-datepicker__day:not([aria-disabled='true']):hover,
+.dark .react-datepicker__month-text:not([aria-disabled='true']):hover,
+.dark .react-datepicker__quarter-text:not([aria-disabled='true']):hover,
+.dark .react-datepicker__year-text:not([aria-disabled='true']):hover {
+  background-color: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+}
+
+/* The faint range fill between the two endpoints. */
+.dark .react-datepicker__day--in-range,
+.dark .react-datepicker__day--in-selecting-range {
+  background-color: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+}
+
+/* Selected endpoints / keyboard focus sit on the primary colour. */
+.dark .react-datepicker__day--selected,
+.dark .react-datepicker__day--range-start,
+.dark .react-datepicker__day--range-end,
+.dark .react-datepicker__day--selecting-range-start,
+.dark .react-datepicker__day--selecting-range-end,
+.dark .react-datepicker__day--keyboard-selected,
+.dark .react-datepicker__day--selected:not([aria-disabled='true']):hover,
+.dark .react-datepicker__day--range-start:not([aria-disabled='true']):hover,
+.dark .react-datepicker__day--range-end:not([aria-disabled='true']):hover {
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+.dark .react-datepicker__day--today {
+  font-weight: 700;
+}
+
+.dark .react-datepicker__day--disabled,
+.dark .react-datepicker__day--disabled:hover {
+  color: hsl(var(--muted-foreground));
+  background-color: transparent;
+  opacity: 0.5;
+}
+
+/* Prev/next month chevrons are drawn with a border colour. */
+.dark .react-datepicker__navigation-icon::before,
+.dark .react-datepicker__year-read-view--down-arrow,
+.dark .react-datepicker__month-read-view--down-arrow {
+  border-color: hsl(var(--muted-foreground));
+}
+
+.dark .react-datepicker__navigation:hover *::before {
+  border-color: hsl(var(--foreground));
+}
+
+/* The little pointer triangle on popup (non-inline) calendars. */
+.dark .react-datepicker__triangle {
+  fill: hsl(var(--popover));
+  color: hsl(var(--popover));
+  stroke: hsl(var(--border));
+}
+
+.dark .react-datepicker__today-button {
+  background-color: hsl(var(--muted));
+  border-top-color: hsl(var(--border));
+  color: hsl(var(--popover-foreground));
+}
+
+/* react-datepicker sizes its day cells in fixed rem (1.7rem ≈ 27px), which on a
+   phone leaves the app's primary interaction — picking the loan window — well
+   under the ~44px touch target everyone else designs for. Below `sm` the
+   calendar spans the panel instead and the days share that width evenly. Both
+   themes; un-layered like the rest of this block so it beats the bundled
+   react-datepicker.css. */
+@media (max-width: 639px) {
+  .react-datepicker,
+  .react-datepicker .react-datepicker__month-container {
+    width: 100%;
   }
 
-  button:disabled,
-  [aria-disabled='true'] {
-    cursor: not-allowed;
+  .react-datepicker .react-datepicker__day-names,
+  .react-datepicker .react-datepicker__week {
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .react-datepicker .react-datepicker__day,
+  .react-datepicker .react-datepicker__day-name {
+    flex: 1 1 0;
+    width: auto;
+    margin: 0.1rem 0;
+    line-height: 2.5rem;
+  }
+
+  .react-datepicker .react-datepicker__month {
+    margin: 0.4rem 0.3rem;
   }
 }

@@ -1,7 +1,5 @@
 @import 'tailwindcss';
 
-@custom-variant dark (&:is(.dark *));
-
 @utility container {
   margin-inline: auto;
   padding-inline: 1rem;
@@ -200,72 +198,6 @@
 
     --radius: 0.375rem;
   }
-
-  .dark {
-    /* Dark mode is the brand dark blue: the page is that navy taken down, the
-       Card is very nearly #221E5D itself, and the light blue becomes the
-       primary — the inverse of the light theme, and of the two compositions on
-       the brand sheet. */
-    --background: 244 45% 9%;
-    --foreground: 219 60% 93%;
-
-    --card: 244 45% 15%;
-    --card-foreground: 219 60% 93%;
-
-    --popover: 244 45% 15%;
-    --popover-foreground: 219 60% 93%;
-
-    /* Brand light blue, exactly — here it is both the ink and the filled
-       button, so --cta repeats it. */
-    --primary: 219 89% 86%;
-    --primary-foreground: 244 51% 15%;
-
-    --cta: 219 89% 86%;
-    --cta-foreground: 244 51% 15%;
-
-    /* One notch ABOVE --card, never equal to it. These two are the "raised
-       chip" surfaces — the secondary Badge/Button, the gray Badge, Skeleton,
-       the kaman kuva box, a disabled Input, every hover:bg-muted. All of those
-       sit on a Card, so at --card's own lightness they render as nothing at
-       all: an invisible admin badge, a skeleton that doesn't appear to load, a
-       photo box with no box. They were 17% — identical to --card — until it was
-       noticed on the role badge in /admin.
-
-       The ladder is --background 9% → --card/--popover 15% → --accent 21% →
-       --secondary/--muted 24%, all on the brand navy hue. 24% keeps
-       --muted-foreground text on top at 5.9:1; don't raise it without
-       re-checking that, and don't collapse it back onto --card. */
-    --secondary: 244 30% 24%;
-    --secondary-foreground: 219 60% 93%;
-
-    --muted: 244 30% 24%;
-    --muted-foreground: 220 25% 70%;
-
-    --accent: 244 32% 21%;
-    --accent-foreground: 219 60% 93%;
-
-    /* The brand red/brown/green, lightened until each still works as *text* on
-       its own 10%-tint Badge over a Card (the sheet's own values are far too
-       dark to read on this background). */
-    --destructive: 3 60% 62%;
-    --destructive-foreground: 244 51% 15%;
-
-    --success: 150 40% 48%;
-    --success-foreground: 244 51% 15%;
-
-    --warning: 26 45% 55%;
-    --warning-foreground: 244 51% 15%;
-
-    /* The same #221E5D as in light mode — the app bar is the brand block, so
-       it does not follow the theme down. Here it is *lighter* than the page it
-       floats over, which is the point: it reads as the dark blue in both. */
-    --header: 244 51% 24%;
-    --header-foreground: 219 89% 97%;
-
-    --border: 244 28% 26%;
-    --input: 244 28% 26%;
-    --ring: 219 89% 86%;
-  }
 }
 
 @layer base {
@@ -404,100 +336,6 @@
   select {
     font-size: 16px;
   }
-}
-
-/* react-datepicker ships only a light theme. Repaint its calendar with our
-   dark-mode design tokens. Every selector is scoped under `.dark`, so it has
-   higher specificity than the library's single-class defaults (and therefore
-   wins regardless of stylesheet import order) while leaving light mode on the
-   stock appearance. Left un-layered on purpose so it beats the bundled
-   react-datepicker.css. */
-.dark .react-datepicker {
-  background-color: hsl(var(--popover));
-  border-color: hsl(var(--border));
-  color: hsl(var(--popover-foreground));
-}
-
-.dark .react-datepicker__header {
-  background-color: hsl(var(--muted));
-  border-bottom-color: hsl(var(--border));
-}
-
-.dark .react-datepicker__current-month,
-.dark .react-datepicker-time__header,
-.dark .react-datepicker-year-header,
-.dark .react-datepicker__day-name,
-.dark .react-datepicker__day,
-.dark .react-datepicker__time-name {
-  color: hsl(var(--popover-foreground));
-}
-
-/* The library's own hover rules are `…:not([aria-disabled='true']):hover`, which
-   ties these on specificity and then wins on source order (its stylesheet is
-   imported from the component, after this file) — leaving a near-white hover
-   fill under our light text. Match its shape so ours outranks it. */
-.dark .react-datepicker__day:not([aria-disabled='true']):hover,
-.dark .react-datepicker__month-text:not([aria-disabled='true']):hover,
-.dark .react-datepicker__quarter-text:not([aria-disabled='true']):hover,
-.dark .react-datepicker__year-text:not([aria-disabled='true']):hover {
-  background-color: hsl(var(--accent));
-  color: hsl(var(--accent-foreground));
-}
-
-/* The faint range fill between the two endpoints. */
-.dark .react-datepicker__day--in-range,
-.dark .react-datepicker__day--in-selecting-range {
-  background-color: hsl(var(--accent));
-  color: hsl(var(--accent-foreground));
-}
-
-/* Selected endpoints / keyboard focus sit on the primary colour. */
-.dark .react-datepicker__day--selected,
-.dark .react-datepicker__day--range-start,
-.dark .react-datepicker__day--range-end,
-.dark .react-datepicker__day--selecting-range-start,
-.dark .react-datepicker__day--selecting-range-end,
-.dark .react-datepicker__day--keyboard-selected,
-.dark .react-datepicker__day--selected:not([aria-disabled='true']):hover,
-.dark .react-datepicker__day--range-start:not([aria-disabled='true']):hover,
-.dark .react-datepicker__day--range-end:not([aria-disabled='true']):hover {
-  background-color: hsl(var(--primary));
-  color: hsl(var(--primary-foreground));
-}
-
-.dark .react-datepicker__day--today {
-  font-weight: 700;
-}
-
-.dark .react-datepicker__day--disabled,
-.dark .react-datepicker__day--disabled:hover {
-  color: hsl(var(--muted-foreground));
-  background-color: transparent;
-  opacity: 0.5;
-}
-
-/* Prev/next month chevrons are drawn with a border colour. */
-.dark .react-datepicker__navigation-icon::before,
-.dark .react-datepicker__year-read-view--down-arrow,
-.dark .react-datepicker__month-read-view--down-arrow {
-  border-color: hsl(var(--muted-foreground));
-}
-
-.dark .react-datepicker__navigation:hover *::before {
-  border-color: hsl(var(--foreground));
-}
-
-/* The little pointer triangle on popup (non-inline) calendars. */
-.dark .react-datepicker__triangle {
-  fill: hsl(var(--popover));
-  color: hsl(var(--popover));
-  stroke: hsl(var(--border));
-}
-
-.dark .react-datepicker__today-button {
-  background-color: hsl(var(--muted));
-  border-top-color: hsl(var(--border));
-  color: hsl(var(--popover-foreground));
 }
 
 /* react-datepicker sizes its day cells in fixed rem (1.7rem ≈ 27px), which on a

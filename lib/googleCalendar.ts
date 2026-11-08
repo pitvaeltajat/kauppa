@@ -40,6 +40,7 @@ async function token(): Promise<string> {
 
 type GoogleEvent = {
   status?: string;
+  summary?: string;
   start?: { date?: string; dateTime?: string };
   end?: { date?: string; dateTime?: string };
 };
@@ -80,7 +81,7 @@ export async function fetchKammiBusyRanges(fromISO: string, toISO: string): Prom
       if (!start) continue;
       // A timed or zero-length event still blocks its own day.
       if (!end || end <= start) end = toISODate(new Date(new Date(`${start}T00:00:00Z`).getTime() + 86_400_000));
-      ranges.push({ start, end });
+      ranges.push({ start, end, label: event.summary });
     }
     return ranges;
   } catch (error) {

@@ -113,12 +113,27 @@ export function dayStatuses(ranges: DateRange[], fromISO: string, toISO: string)
   return map;
 }
 
+/**
+ * Who holds each occupied night: a 'YYYY-MM-DD' → label map from the labelled
+ * ranges, for the "who is who" tooltip shown to logged-in users.
+ */
+export function labelsByDay(ranges: DateRange[], fromISO: string, toISO: string): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const { start, end, label } of ranges) {
+    if (!label) continue;
+    for (let d = start < fromISO ? fromISO : start; d < end && d < toISO; d = addDays(d, 1)) {
+      if (!out[d]) out[d] = label;
+    }
+  }
+  return out;
+}
+
 /** Half-open overlap: [aStart,aEnd) and [bStart,bEnd) share at least one night. */
 export function rangesOverlap(aStart: string, aEnd: string, bStart: string, bEnd: string): boolean {
   return aStart < bEnd && bStart < aEnd;
 }
 
-export type DateRange = { start: string; end: string };
+export type DateRange = { start: string; end: string; label?: string };
 
 /**
  * Every occupied night across the given ranges as a Set of 'YYYY-MM-DD'. A

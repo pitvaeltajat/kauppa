@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { Phone, Mail } from 'lucide-react';
 import { formatCents } from '@/lib/money';
-import { dayStatuses } from '@/lib/kammi';
+import { dayStatuses, labelsByDay } from '@/lib/kammi';
 import { auth } from '@/lib/auth';
 import { getUserRole, isSuperAdmin, isEventAdmin } from '@/lib/admin';
 import { getKammiSettings, getBusyRanges, bookingWindow } from '@/lib/kammiBookings';
@@ -41,6 +41,9 @@ export default async function KammiPage() {
   const statusMap = dayStatuses(busy, fromISO, toISO);
   const statuses: Record<string, { m: boolean; n: boolean }> = {};
   for (const [iso, s] of statusMap) statuses[iso] = { m: s.morningBusy, n: s.nightBusy };
+
+  // Who holds each booked night — shown only to logged-in viewers.
+  const labels = session?.user?.email ? labelsByDay(busy, fromISO, toISO) : {};
 
   return (
     <div className="container py-8">
@@ -90,6 +93,7 @@ export default async function KammiPage() {
           minNights={settings.minNights}
           maxNights={settings.maxNights}
           pitvaMember={pitvaMember}
+          labels={labels}
         />
       </div>
 

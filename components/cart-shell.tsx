@@ -34,6 +34,7 @@ type Answers = Record<string, Record<string, string | string[]>>;
 export function CartShell() {
   const { items } = useCart();
   const [catalog, setCatalog] = useState<Map<string, FetchedItem>>(new Map());
+  const [catalogLoaded, setCatalogLoaded] = useState(false);
   const [answers, setAnswers] = useState<Answers>({});
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
@@ -46,11 +47,13 @@ export function CartShell() {
   useEffect(() => {
     if (ids.length === 0) return;
     let cancelled = false;
+    setCatalogLoaded(false);
     fetch(`/api/items?ids=${ids.map(encodeURIComponent).join(',')}`)
       .then((r) => r.json())
       .then((data: { items?: FetchedItem[] }) => {
         if (cancelled) return;
         setCatalog(new Map((data.items ?? []).map((item) => [item.id, item])));
+        setCatalogLoaded(true);
       })
       .catch(() => {
         if (!cancelled) setError('Tuotteita ei voitu ladata. Päivitä sivu.');
@@ -174,10 +177,15 @@ export function CartShell() {
                     {formatCents(item.priceCents)} / kpl
                   </p>
                 </>
-              ) : (
+              ) : catalogLoaded ? (
                 <>
                   <p className="font-medium">Tuote ei ole enää myynnissä</p>
                   <p className="text-sm text-muted-foreground">Poista tuote korista jatkaaksesi.</p>
+                </>
+              ) : (
+                <>
+                  <div className="h-5 w-40 max-w-full animate-pulse rounded bg-muted" />
+                  <div className="mt-1.5 h-4 w-24 animate-pulse rounded bg-muted" />
                 </>
               )}
               <div className="mt-2 flex items-center gap-3">

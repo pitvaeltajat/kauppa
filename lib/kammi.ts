@@ -103,12 +103,14 @@ export function dayStatuses(ranges: DateRange[], fromISO: string, toISO: string)
   const map = new Map<string, DayStatus>();
   for (let d = fromISO; d < toISO; d = addDays(d, 1)) map.set(d, { morningBusy: false, nightBusy: false });
   for (const { start, end } of ranges) {
+    // Every booked night makes its own evening and the next morning busy, so a
+    // multi-night stay fills the days in between completely.
     for (let d = start; d < end; d = addDays(d, 1)) {
-      const s = map.get(d);
-      if (s) s.nightBusy = true;
+      const night = map.get(d);
+      if (night) night.nightBusy = true;
+      const morning = map.get(addDays(d, 1));
+      if (morning) morning.morningBusy = true;
     }
-    const s = map.get(end);
-    if (s) s.morningBusy = true;
   }
   return map;
 }

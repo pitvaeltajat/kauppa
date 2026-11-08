@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useActionState } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Upload } from 'lucide-react';
 import type { Category } from '@prisma/client';
+import { upload } from '@vercel/blob/client';
 import { saveItem } from '@/lib/actions/admin';
 import { QUESTION_TYPES, type QuestionType } from '@/lib/questions';
 import { Button } from '@/components/ui/button';
@@ -11,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
+import { ItemImage } from '@/components/item-image';
 
 export type ItemFormValues = {
   id?: string;
@@ -75,9 +77,32 @@ export function ItemForm({
     item?.questions?.map(draftFromQuestion) ?? [],
   );
   const [isEvent, setIsEvent] = useState(item?.isEvent ?? eventMode);
+  const [imageUrl, setImageUrl] = useState(item?.imageUrl ?? '');
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   function updateQuestion(key: string, patch: Partial<QuestionDraft>) {
     setQuestions((prev) => prev.map((q) => (q.key === key ? { ...q, ...patch } : q)));
+  }
+
+  async function onPickImage(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = ''; // let the same file be re-picked after a failure
+    if (!file) return;
+    setUploadError(null);
+    setUploading(true);
+    try {
+      const blob = await upload(file.name, file, {
+        access: 'public',
+        handleUploadUrl: '/api/items/upload',
+      });
+      setImageUrl(blob.url);
+    } catch {
+      setUploadError('Kuvan lataus epäonnistui. Tarkista tiedostomuoto (JPG/PNG/WebP) ja koko (enintään 8 MB).');
+    } finally {
+      setUploading(false);
+    }
   }
 
   return (
@@ -220,17 +245,49 @@ export function ItemForm({
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="imageUrl">Kuvan URL</Label>
-        <Input
-          id="imageUrl"
-          name="imageUrl"
-          type="url"
-          inputMode="url"
-          spellCheck={false}
-          autoCapitalize="none"
-          defaultValue={item?.imageUrl ?? ''}
-          placeholder="https://… tai tyhjä (näytetään Ei kuvaa)"
-        />
+        <Label htmlFor="imageUrl">Kuva</Label>
+        <input type="hidden" name="imageUrl" value={imageUrl} />
+        <div className="flex gap-4">
+          <div className="w-24 shrink-0">
+            <ItemImage src={imageUrl || null} alt="Tuotekuvan esikatselu" />
+          </div>
+          <div className="flex-1 space-y-2">
+            <Input
+              id="imageUrl"
+              type="url"
+              inputMode="url"
+              spellCheck={false}
+              autoCapitalize="none"
+              value={imageUrl}
+              onChange={(e) => setImageUrl(e.target.value)}
+              placeholder="https://… tai lataa kuva alta"
+            />
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/avif,image/gif"
+              className="hidden"
+              onChange={onPickImage}
+            />
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                disabled={uploading}
+                onClick={() => fileRef.current?.click()}
+              >
+                <Upload /> {uploading ? 'Ladataan…' : 'Lataa kuva'}
+              </Button>
+              {imageUrl && !uploading && (
+                <Button type="button" size="sm" variant="ghost" onClick={() => setImageUrl('')}>
+                  Poista kuva
+                </Button>
+              )}
+            </div>
+            {uploadError && <p className="text-xs text-destructive">{uploadError}</p>}
+          </div>
+        </div>
       </div>
 
       <div className="space-y-1.5">

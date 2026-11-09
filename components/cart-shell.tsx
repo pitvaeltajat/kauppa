@@ -55,7 +55,6 @@ export function CartShell() {
   const [catalogLoaded, setCatalogLoaded] = useState(false);
   const [answers, setAnswers] = useState<Answers>({});
   const [email, setEmail] = useState('');
-  const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [codeInput, setCodeInput] = useState('');
@@ -206,7 +205,6 @@ export function CartShell() {
           items: items.map((i) => ({ id: i.id, quantity: i.quantity })),
           answers,
           email: email.trim() || undefined,
-          name: name.trim() || undefined,
           discountCode: discount?.code,
           paymentMethod: invoiceCheckout ? 'invoice' : 'card',
         }),
@@ -520,15 +518,6 @@ export function CartShell() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="vanhempi@example.com"
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="name">{eventOnly ? 'Ilmoittautujan nimi' : 'Nimi'}</Label>
-            <Input
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Etunimi Sukunimi"
             />
           </div>
         </div>

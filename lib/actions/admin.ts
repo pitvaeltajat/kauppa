@@ -313,6 +313,12 @@ export async function saveDiscount(
   if (existing && existing.id !== id) {
     return { error: `Koodi "${code}" on jo käytössä.` };
   }
+  if (id) {
+    const current = await prisma.discountCode.findUnique({ where: { id }, select: { code: true } });
+    if (current?.code === 'JOHTAJA') {
+      return { error: 'JOHTAJA-koodi on järjestelmäkoodi eikä sitä voi muuttaa.' };
+    }
+  }
 
   const data = {
     code,
@@ -336,6 +342,8 @@ export async function deleteDiscount(formData: FormData): Promise<void> {
   if (!isSuperAdmin(await currentRole())) return;
   const id = ((formData.get('id') as string) ?? '').trim();
   if (!id) return;
+  const discount = await prisma.discountCode.findUnique({ where: { id }, select: { code: true } });
+  if (!discount || discount.code === 'JOHTAJA') return;
   await prisma.discountCode.delete({ where: { id } });
   redirect('/admin/discounts');
 }

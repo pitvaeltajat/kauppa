@@ -5,8 +5,8 @@ import { getGoogleAccessToken, requireEnv } from '@/lib/googleAuth';
  *
  * Authenticates as a **service account with domain-wide delegation**, not as a
  * signed-in person: the SA impersonates `GOOGLE_WORKSPACE_SUBJECT` (an account
- * with the "read users" admin privilege) — the only Google auth flow that works
- * unattended (see `lib/googleAuth`). kauppa reuses klapi's
+ * with the "read users" admin privilege). This is the only Google auth flow that works
+ * unattended (see `lib/googleAuth`). kontti reuses klapi's
  * `klapi-workspace-sync` service account, so these two scopes are already
  * authorised in Admin console → Security → API controls → Domain-wide
  * delegation.
@@ -21,7 +21,7 @@ const SCOPES = [
 
 /** One Workspace person as the sync cares about them. */
 export type WorkspaceMember = {
-  /** Primary email, lowercased — the key we match kauppa's `User.email` on. */
+  /** Primary email, lowercased. This is the key we match kontti's `User.email` on. */
   email: string;
   /** Full name from the directory, or null if Workspace has none. */
   name: string | null;
@@ -80,8 +80,8 @@ type DirectoryMember = {
  * archived.
  *
  * The "belongs to the group" test has a wrinkle. The member group can carry a
- * `type: CUSTOMER` member — Workspace's "the whole organisation is in this
- * group" entry — which the API returns verbatim instead of expanding. When it
+ * `type: CUSTOMER` member. This is Workspace's "the whole organisation is in this
+ * group" entry, which the API returns verbatim instead of expanding. When it
  * is present we treat every domain user as a member, which is what it means.
  *
  * Throws rather than returning an empty roster: a wrong read must never read as

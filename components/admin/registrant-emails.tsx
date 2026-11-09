@@ -22,7 +22,7 @@ export function RegistrantEmails({ emails, subject }: { emails: string[]; subjec
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Clipboard blocked (e.g. insecure context) — the textarea below is the
+      // Clipboard blocked (e.g. insecure context). The textarea below is the
       // fallback: the list is selectable there.
     }
   }

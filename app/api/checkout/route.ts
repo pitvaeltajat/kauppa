@@ -14,7 +14,7 @@ import { normalizeCode } from '@/lib/discount';
 
 /**
  * Creates an Order row and a Stripe Checkout Session for the cart. Prices,
- * stock and any item question answers are re-validated against the database —
+ * stock and any item question answers are re-validated against the database.
  * nothing the browser sent is trusted. In test mode this needs
  * STRIPE_SECRET_KEY (sk_test_) set.
  */
@@ -162,7 +162,7 @@ export async function POST(req: Request) {
     await prisma.order.delete({ where: { id: order.id } }).catch(() => {});
     console.error('Checkout-sessionin luonti epäonnistui:', err);
     return NextResponse.json(
-      { error: 'Maksun alustus epäonnistui. Onko Stripe konfiguroitu? Tarkista STRIPE_SECRET_KEY.' },
+      { error: 'Maksua ei voitu aloittaa. Yritä uudelleen tai ota yhteyttä ylläpitoon.' },
       { status: 500 },
     );
   }

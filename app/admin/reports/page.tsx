@@ -6,7 +6,7 @@ import { requireSuperAdmin } from '@/lib/admin-guard';
 
 export const metadata: Metadata = { title: 'Myyntiraportti' };
 
-// Sales come from our own database — the source of truth for what was sold.
+// Sales come from our own database, the source of truth for what was sold.
 // A sale is an order that was actually paid (PAID) or handed over (COMPLETED);
 // RECEIVED (awaiting payment) and CANCELLED do not count. The period filters on
 // the order date (createdAt), since paidAt is not set on every path.
@@ -14,7 +14,7 @@ const PERIODS = ['all', 'month', 'year', 'prev-year'] as const;
 type Period = (typeof PERIODS)[number];
 
 const PERIOD_LABEL: Record<Period, string> = {
-  all: 'Kaikki aika',
+  all: 'Kaikki',
   month: 'Kuluva kuukausi',
   year: 'Kuluva vuosi',
   'prev-year': 'Edellinen vuosi',
@@ -124,7 +124,7 @@ export default async function AdminReportsPage({
       <div className="mb-8 grid gap-4 sm:grid-cols-3">
         <SummaryTile label="Myynti yhteensä" value={formatCents(revenueCents)} />
         <SummaryTile label="Tilauksia" value={String(orderIds.size)} />
-        <SummaryTile label="Tuotteita myyty" value={`${unitsSold} kpl`} />
+        <SummaryTile label="Myytyjä tuotteita" value={`${unitsSold} kpl`} />
       </div>
 
       {lines.length === 0 ? (

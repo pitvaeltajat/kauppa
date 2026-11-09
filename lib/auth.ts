@@ -96,14 +96,14 @@ export const authConfig: NextAuthConfig = {
   callbacks: {
     // While the shop is "kesken" (WIP), only standing SUPERADMINs may sign in.
     // A pitva-domain address still *derives* EVENT_ADMIN, but that no longer
-    // lets anyone in — the row has to already carry SUPERADMIN (set by
+    // lets anyone in. The row has to already carry SUPERADMIN (set by
     // `pnpm db:admin` / the admin UI). A departed member (deletedAt, set by the
     // Workspace sync) is refused regardless. Blocking here, before `jwt`, also
     // stops `ensureUser` creating/resurrecting a row for a refused sign-in.
     // To open the shop to the whole troop later, drop the role check and keep
     // just the `deletedAt == null` guard.
     // Dev login is localhost-only and gates itself in `authorize()`, so it
-    // bypasses this — otherwise there'd be no way to test as a plain user.
+    // bypasses this. Otherwise there'd be no way to test as a plain user.
     async signIn({ user, account }) {
       if (account?.provider === 'dev-login') return true;
       const email = user?.email?.trim().toLowerCase();

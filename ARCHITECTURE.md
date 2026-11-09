@@ -6,16 +6,16 @@
 Category 1──n Item 1──n OrderLine n──1 Order
 ```
 
-- **Category** — a shop section (`PitVa-tuotteet`, `Tapahtumat`,
+- **Category**: a shop section (`PitVa-tuotteet`, `Tapahtumat`,
   `Huivit ja merkit`). Fully editable from `/admin/categories`; nothing is
   hardcoded.
-- **Item** — one sellable thing. `priceCents` is the single source of truth
-  (int cents, no floats). `stock: Int | null` — `null` means unlimited (bundle
+- **Item**: one sellable thing. `priceCents` is the single source of truth
+  (int cents, no floats). `stock: Int | null`; `null` means unlimited (bundle
   offers, event registrations). `active: false` hides an item from the store
   and the checkout but keeps its order history (admin "Piilota").
-- **Order** — one checkout. Status lifecycle:
+- **Order**: one checkout. Status lifecycle:
   `RECEIVED → PAID → COMPLETED | CANCELLED`.
-- **OrderLine** — a snapshot of what was bought (`name`, `priceCents`,
+- **OrderLine**: a snapshot of what was bought (`name`, `priceCents`,
   `quantity`). Renaming or deleting an item later never rewrites history.
 
 ## Checkout flow
@@ -27,7 +27,7 @@ Category 1──n Item 1──n OrderLine n──1 Order
    line with `buildCheckout` (`lib/checkout.ts`): active item, stock, quantity
    cap, and a total recomputed from DB prices. It creates the `Order`
    (RECEIVED) with its lines, then a Stripe Checkout Session using
-   `price_data` (no Stripe Product/Price sync — the DB is the catalog).
+   `price_data` (no Stripe Product/Price sync; the DB is the catalog).
    `metadata.orderId` links the two. If creating the session fails, the order
    row is rolled back.
 3. Stripe hosts the checkout. The browser is redirected to `session.url`; the
@@ -45,14 +45,14 @@ Category 1──n Item 1──n OrderLine n──1 Order
 
 `/admin` is guarded in `app/admin/layout.tsx` by `auth()` + `isAdminUser`
 (`lib/admin.ts`), and every server action (`lib/actions/admin.ts`) re-runs the
-same check — the UI is never enough.
+same check. The UI is never enough.
 
 **Roles live in the database.** Signing in (`lib/auth.ts` jwt callback, only
 on an actual sign-in) upserts a `User` row with role `USER`. Only rows with
 role `ADMIN` pass the guard. Roles are managed under `/admin/users`
 (setUserRole); you cannot demote yourself. The first admin comes from the seed
 (`KAUPPA_BOOTSTRAP_ADMIN_EMAILS`) or `pnpm db:admin <email>`.
-`GOOGLE_WORKSPACE_DOMAIN` only restricts who can sign in at all — it grants no
+`GOOGLE_WORKSPACE_DOMAIN` only restricts who can sign in at all. It grants no
 admin rights.
 
 Orders: list with status filter, expandable line items (including the buyer's
@@ -85,11 +85,11 @@ If the brand tokens move in the other apps, move them here too.
 
 ## Deliberate simplifications (v1)
 
-- No item variants/sizes — the huppari sizes are currently handled by noting
+- No item variants/sizes. The huppari sizes are currently handled by noting
   the size choice at pickup. A future `options` field on Item would carry them.
-- No custom email (SES) — Stripe sends the receipt; order emails can follow the
+- No custom email (SES). Stripe sends the receipt; order emails can follow the
   Klapi SES pattern later.
-- No product photo upload — `imageUrl` is a URL text field; S3 upload is a
+- No product photo upload. `imageUrl` is a URL text field; S3 upload is a
   follow-up.
 - `price_data` for Checkout means no Stripe-side product catalog to keep in
   sync; fine until prices are managed outside the app.

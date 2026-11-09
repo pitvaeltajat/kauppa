@@ -31,9 +31,9 @@ export default async function SuccessPage({
           {order ? (
             <>
               <p className="text-sm text-muted-foreground">
-                Tilauksesi{' '}
+                Tilaus{' '}
                 <span className="font-medium text-foreground">#{order.id.slice(-8).toUpperCase()}</span>{' '}
-                on vahvistettu ja maksu vastaanotettu. Kuitti on lähetetty sähköpostiisi.
+                on vahvistettu ja maksu on vastaanotettu. Kuitti on lähetetty sähköpostiisi.
               </p>
               <div className="divide-y rounded-md border">
                 {order.lines.map((line) => {
@@ -76,19 +76,19 @@ export default async function SuccessPage({
             </>
           ) : (
             <p className="text-sm text-muted-foreground">
-              Maksu on vastaanotettu. Jos et saanut kuittia, ota yhteyttä tuote- ja
-              tilausasioissa: info@pitkajarvenvaeltajat.fi.
+              Maksu on vastaanotettu. Jos kuitti ei tullut perille, ota yhteyttä:
+              info@pitkajarvenvaeltajat.fi.
             </p>
           )}
 
           <div className="rounded-md bg-accent/60 px-4 py-3 text-xs text-muted-foreground">
-            Tuotteet luovutetaan kokouksessa ryhmänjohtajaltasi tai sovitusti kololta — tästä
-            kaupasta ei lähetetä postituksia. Tapahtumatuote vahvistaa ilmoittautumisen.
+            Tuotteet noudetaan kokouksessa ryhmänjohtajalta tai erikseen sovittuna aikana kololta.
+            Emme postita tuotteita. Tapahtumatuotteen ostaminen vahvistaa ilmoittautumisen.
           </div>
 
           <div className="flex justify-center gap-3 pt-2">
             <ButtonLink href="/" variant="cta">
-              Takaisin kauppaan
+              Takaisin tuotteisiin
             </ButtonLink>
           </div>
         </CardContent>

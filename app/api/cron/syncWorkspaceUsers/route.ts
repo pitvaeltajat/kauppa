@@ -6,17 +6,17 @@ import { planWorkspaceSync, UserSyncAbort } from '@/lib/userSync';
 export const dynamic = 'force-dynamic';
 
 /**
- * Nightly Google Workspace → kauppa user sync (scheduled in vercel.json).
+ * Nightly Google Workspace → kontti user sync (scheduled in vercel.json).
  * Provisions a `User` row for every current troop member, keeps their names
  * current, and soft-deletes anyone who left the member group (restoring them if
- * they return) — so a departed member loses sign-in on their own. See
+ * they return), so a departed member loses sign-in on their own. See
  * `lib/userSync` for the reconcile rules and guards.
  *
  * Vercel Cron calls it with `Authorization: Bearer $CRON_SECRET` automatically.
  * `?dryRun=1` reports what a run would change without writing:
  *
  *   curl -H "Authorization: Bearer $CRON_SECRET" \
- *     "https://kauppa.pitva.fi/api/cron/syncWorkspaceUsers?dryRun=1"
+ *     "https://kontti.pitva.fi/api/cron/syncWorkspaceUsers?dryRun=1"
  */
 export async function GET(request: Request) {
   if (request.headers.get('authorization') !== `Bearer ${process.env.CRON_SECRET}`) {

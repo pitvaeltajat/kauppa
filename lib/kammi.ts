@@ -1,5 +1,5 @@
 // Pure kammi-booking logic: date math, price, validation and availability.
-// No Prisma, no network — so the rules that decide a price or reject a date
+// No Prisma, no network. The rules that decide a price or reject a date
 // range are unit-testable (see __tests__/kammi.test.ts). Dates are handled as
 // 'YYYY-MM-DD' strings (lexically comparable, timezone-free) for the half-open
 // range [start, end): the guest leaves on `end`, which is free again that day.
@@ -42,7 +42,7 @@ export type KammiPrices = {
 };
 
 /** A night (the night that begins on `iso`) is a weekend night if it starts on
- * a Friday or a Saturday — so pe→la and la→su are each one weekend night. */
+ * a Friday or a Saturday. Thus pe→la and la→su are each one weekend night. */
 export function isWeekendNight(iso: string): boolean {
   const dow = parseISODate(iso).getUTCDay();
   return dow === 5 || dow === 6; // Fri or Sat
@@ -58,7 +58,7 @@ export type KammiPrice = {
 /**
  * Price a stay from the published rules. A weekend night (Fri→Sat, Sat→Sun, or
  * both) is charged as ONE flat weekend package regardless of whether one or both
- * halves are taken — so pe–la alone and la–su alone each cost the full weekend
+ * halves are taken. Thus pe–la alone and la–su alone each cost the full weekend
  * price, and the two halves can be sold to different parties. Any non-weekend
  * (Sun–Thu) nights are added at the per-night weekday rate. Each in the chosen
  * tier. Long mixed stays still price sensibly; "pidemmät sovitaan erikseen".
@@ -96,7 +96,7 @@ export type DayStatus = {
 /**
  * Per-day occupancy across the busy ranges, for the calendar. A changeover day
  * (morningBusy but not nightBusy, or vice versa) is drawn half-coloured so it
- * reads as "still bookable from here" — e.g. a Saturday whose Friday night is
+ * reads as "still bookable from here", for example a Saturday whose Friday night is
  * taken but Saturday night is free.
  */
 export function dayStatuses(ranges: DateRange[], fromISO: string, toISO: string): Map<string, DayStatus> {
@@ -139,7 +139,7 @@ export type DateRange = { start: string; end: string; label?: string };
 
 /**
  * Every occupied night across the given ranges as a Set of 'YYYY-MM-DD'. A
- * night `d` is occupied when start ≤ d < end — the checkout day is NOT occupied.
+ * night `d` is occupied when start ≤ d < end. The checkout day is NOT occupied.
  * Used to grey out days in the booking calendar.
  */
 export function occupiedNights(ranges: DateRange[]): Set<string> {
@@ -156,7 +156,7 @@ export type BookingValidation =
 
 /**
  * Validate a requested range against the settings and today. Does NOT check
- * availability (that needs the DB/calendar) — only the shape of the request.
+ * availability (that needs the DB/calendar). This checks only the shape of the request.
  */
 export function validateBookingDates(input: {
   startISO: string;

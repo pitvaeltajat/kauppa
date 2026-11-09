@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { useActionState } from 'react';
+import Link from 'next/link';
 import { Plus, Trash2, Upload } from 'lucide-react';
 import type { Category } from '@prisma/client';
 import { saveItem } from '@/lib/actions/admin';
@@ -24,6 +25,7 @@ export type ItemFormValues = {
   description: string;
   sortOrder: number;
   active: boolean;
+  featured: boolean;
   isEvent: boolean;
   /** "YYYY-MM-DD" for the native date inputs, or null. */
   startsAt: string | null;
@@ -65,12 +67,14 @@ export function ItemForm({
   categories,
   item,
   eventMode = false,
+  returnHref = eventMode ? '/admin/events' : '/admin/items',
 }: {
   categories: Category[];
   item?: ItemFormValues;
   /** Events-only form (used by event admins): locks isEvent on, hides the
    * category picker (events go to Tapahtumat automatically). */
   eventMode?: boolean;
+  returnHref?: string;
 }) {
   const [state, action, pending] = useActionState(saveItem, undefined);
   const [questions, setQuestions] = useState<QuestionDraft[]>(
@@ -81,6 +85,8 @@ export function ItemForm({
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [startsAt, setStartsAt] = useState(item?.startsAt ?? '');
+  const [endsAt, setEndsAt] = useState(item?.endsAt ?? '');
 
   function updateQuestion(key: string, patch: Partial<QuestionDraft>) {
     setQuestions((prev) => prev.map((q) => (q.key === key ? { ...q, ...patch } : q)));
@@ -122,12 +128,15 @@ export function ItemForm({
   }
 
   return (
-    <form action={action} className="max-w-2xl space-y-5">
+    <form action={action} className="max-w-3xl space-y-6">
       {state?.error && (
-        <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        <p role="alert" className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
           {state.error}
         </p>
       )}
+      <p className="text-sm text-muted-foreground">
+        Täytä perustiedot ja julkaisuasetukset. Tähdellä (*) merkityt kentät ovat pakollisia.
+      </p>
       {item?.id && <input type="hidden" name="id" value={item.id} />}
       <input
         type="hidden"
@@ -148,7 +157,7 @@ export function ItemForm({
           <Input id="name" name="name" required defaultValue={item?.name ?? ''} />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="slug">Slug (URL-osio)</Label>
+            <Label htmlFor="slug">Tunnus URL-osoitteessa</Label>
           <Input
             id="slug"
             name="slug"
@@ -160,8 +169,8 @@ export function ItemForm({
           />
           <p id="slug-help" className="text-xs text-muted-foreground">
             Tuotteen osoite: <span className="font-mono">/item/{'{slug}'}</span>. Jätä tyhjäksi,
-            niin se muodostetaan nimestä. Pienet kirjaimet, numerot ja väliviivat (ä→a, ö→o).
-            Muutettuasi slugia vanha linkki ohjautuu uuteen.
+            niin tunnus muodostetaan nimestä. Käytä pieniä kirjaimia, numeroita ja väliviivoja
+            (ä→a, ö→o). Vanha osoite ohjautuu uuteen, jos muutat tunnusta.
           </p>
         </div>
       </div>
@@ -171,27 +180,57 @@ export function ItemForm({
       {eventMode ? (
         <input type="hidden" name="isEvent" value="on" />
       ) : (
-        <label className="flex items-center gap-2 text-sm">
+        <label className="flex items-start gap-2 rounded-md border bg-background p-4 text-sm">
           <input
             type="checkbox"
             name="isEvent"
             checked={isEvent}
             onChange={(e) => setIsEvent(e.target.checked)}
-            className="size-4 accent-[hsl(244,51%,24%)]"
+            className="mt-0.5 size-4 accent-[hsl(244,51%,24%)]"
           />
-          Tämä on tapahtuma (alkamis- ja päättymispäivä, piiloutuu listalta viikko päättymisen jälkeen)
+          <span>
+            <span className="font-medium">Tämä on tapahtuma</span>
+            <span className="mt-1 block text-xs text-muted-foreground">
+              Tapahtumalle kysytään päivämäärät, ja se poistuu etusivulta viikon kuluttua päättymisestä.
+            </span>
+          </span>
         </label>
       )}
 
       {isEvent && (
-        <div className="grid gap-4 sm:grid-cols-2 rounded-md border bg-background p-4">
+        <div className="space-y-4 rounded-md border bg-background p-4">
+          <div>
+            <h2 className="text-base font-semibold">Tapahtuman ajankohta</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Päättymispäivä voi olla sama kuin alkamispäivä.</p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label htmlFor="startsAt">Alkaa *</Label>
-            <Input id="startsAt" name="startsAt" type="date" required defaultValue={item?.startsAt ?? ''} />
+            <Input
+              id="startsAt"
+              name="startsAt"
+              type="date"
+              required
+              value={startsAt}
+              onChange={(e) => {
+                const next = e.target.value;
+                setStartsAt(next);
+                if (endsAt && next > endsAt) setEndsAt(next);
+              }}
+            />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="endsAt">Päättyy *</Label>
-            <Input id="endsAt" name="endsAt" type="date" required defaultValue={item?.endsAt ?? ''} />
+            <Input
+              id="endsAt"
+              name="endsAt"
+              type="date"
+              required
+              min={startsAt || undefined}
+              value={endsAt}
+              onChange={(e) => setEndsAt(e.target.value)}
+            />
+          </div>
           </div>
           <label className="flex items-center gap-2 text-sm sm:col-span-2">
             <input
@@ -260,7 +299,9 @@ export function ItemForm({
             inputMode="numeric"
             defaultValue={item?.stock?.toString() ?? ''}
             placeholder="Tyhjä = rajoittamaton"
+            aria-describedby="stock-help"
           />
+          <p id="stock-help" className="text-xs text-muted-foreground">Jätä tyhjäksi, jos määrä on rajaton.</p>
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="sortOrder">Järjestysnumero</Label>
@@ -328,6 +369,11 @@ export function ItemForm({
           name="description"
           rows={6}
           defaultValue={item?.description ?? ''}
+          placeholder={
+            isEvent
+              ? 'Kerro tapahtuman sisällöstä, paikasta ja tärkeistä ohjeista.'
+              : 'Kerro tuotteesta, koosta, materiaalista tai muista tärkeistä tiedoista.'
+          }
         />
       </div>
 
@@ -338,7 +384,17 @@ export function ItemForm({
           defaultChecked={item?.active ?? true}
           className="size-4 accent-[hsl(244,51%,24%)]"
         />
-        Näkyy kaupassa
+        Julkaistu
+      </label>
+
+      <label className="flex items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          name="featured"
+          defaultChecked={item?.featured ?? false}
+          className="size-4 accent-[hsl(244,51%,24%)]"
+        />
+        Nosta etusivulle <span className="text-xs text-muted-foreground">(näkyy Nostot-osiossa)</span>
       </label>
 
       {/* Checkout questions */}
@@ -368,12 +424,14 @@ export function ItemForm({
             <div className="flex items-center gap-2">
               <span className="text-xs font-medium text-muted-foreground">{index + 1}.</span>
               <Input
+                aria-label={`Kysymyksen ${index + 1} teksti`}
                 value={q.prompt}
                 onChange={(e) => updateQuestion(q.key, { prompt: e.target.value })}
                 placeholder="Kysymysteksti, esim. Hupparin koko"
                 className="flex-1"
               />
               <Select
+                aria-label={`Kysymyksen ${index + 1} tyyppi`}
                 value={q.type}
                 onChange={(e) => updateQuestion(q.key, { type: e.target.value as QuestionType })}
                 className="w-40"
@@ -409,6 +467,7 @@ export function ItemForm({
             </div>
             {(q.type === 'RADIO' || q.type === 'CHECKBOX') && (
               <Textarea
+                aria-label={`Kysymyksen ${index + 1} vaihtoehdot`}
                 rows={3}
                 value={q.optionsText}
                 onChange={(e) => updateQuestion(q.key, { optionsText: e.target.value })}
@@ -419,7 +478,13 @@ export function ItemForm({
         ))}
       </div>
 
-      <div className="flex gap-3">
+      <div className="flex flex-col-reverse gap-3 border-t pt-5 sm:flex-row sm:items-center">
+        <Link
+          href={returnHref}
+          className="inline-flex h-10 items-center justify-center rounded-md border border-input px-4 py-2 text-sm font-medium transition-colors hover:bg-accent"
+        >
+          Peruuta
+        </Link>
         <Button type="submit" disabled={pending}>
           {pending ? 'Tallennetaan…' : item ? 'Tallenna tuote' : 'Luo tuote'}
         </Button>

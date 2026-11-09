@@ -33,7 +33,7 @@ export function CategoryForm({ category }: { category?: CategoryFormValues }) {
           <Input id="name" name="name" required defaultValue={category?.name ?? ''} />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="slug">Slug (URL-osio)</Label>
+          <Label htmlFor="slug">Tunnus URL-osoitteessa</Label>
           <Input
             id="slug"
             name="slug"
@@ -44,8 +44,9 @@ export function CategoryForm({ category }: { category?: CategoryFormValues }) {
             aria-describedby="slug-help"
           />
           <p id="slug-help" className="text-xs text-muted-foreground">
-            Osaston osoite: <span className="font-mono">/category/{'{slug}'}</span>. Jätä tyhjäksi,
-            niin se muodostetaan nimestä. Pienet kirjaimet, numerot ja väliviivat (ä→a, ö→o).
+            Kategorian osoite: <span className="font-mono">/category/{'{slug}'}</span>. Jätä tyhjäksi,
+            niin tunnus muodostetaan nimestä. Käytä pieniä kirjaimia, numeroita ja väliviivoja
+            (ä→a, ö→o).
           </p>
         </div>
       </div>

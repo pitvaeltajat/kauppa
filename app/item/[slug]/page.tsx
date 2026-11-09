@@ -28,7 +28,7 @@ export default async function ItemPage({ params }: { params: Promise<{ slug: str
   });
 
   if (!item) {
-    // Maybe this is an old slug the item has since moved off — keep the shared
+    // Maybe this is an old slug the item has since moved off. Keep the shared
     // link working by redirecting to the current URL.
     const alias = await prisma.itemSlug.findUnique({ where: { slug }, include: { item: true } });
     if (alias?.item.active) permanentRedirect(`/item/${alias.item.slug}`);
@@ -71,7 +71,7 @@ export default async function ItemPage({ params }: { params: Promise<{ slug: str
 
           {eventOver && (
             <p className="mt-3 rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-sm text-warning">
-              Tämä tapahtuma on jo ollut. Ilmoittautuminen voi olla sulkeutunut.
+              Tapahtuma on jo päättynyt. Ilmoittautuminen ei välttämättä ole enää mahdollista.
             </p>
           )}
 
@@ -96,11 +96,11 @@ export default async function ItemPage({ params }: { params: Promise<{ slug: str
           </div>
 
           <Card className="mt-8 p-5 text-xs text-muted-foreground">
-            <p className="font-medium text-foreground">Nouto ja toimitustapa</p>
+            <p className="font-medium text-foreground">Nouto</p>
             <p className="mt-2">
-              Tuote maksetaan verkossa ja noudetaan kokouksessa ryhmänjohtajaltasi (tai
-              ilmoittautuessa tapahtuman osallistumismaksuna). Tapahtumatuotteella ostaminen on
-              ilmoittautumista. Maksusta saat kuitin sähköpostiisi.
+              Maksat tuotteen verkossa ja noudat sen kokouksessa ryhmänjohtajalta tai erikseen
+              sovittuna aikana kololta. Tapahtumatuotteen ostaminen toimii samalla
+              ilmoittautumisena. Saat kuitin sähköpostiisi.
             </p>
           </Card>
         </div>

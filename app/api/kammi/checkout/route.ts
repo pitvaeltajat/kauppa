@@ -40,8 +40,8 @@ export async function POST(req: Request) {
       ? payload.billingEmail.trim().slice(0, 254)
       : null;
 
-  if (!email) return NextResponse.json({ error: 'Anna sähköposti kuittia varten.' }, { status: 400 });
-  if (!name) return NextResponse.json({ error: 'Anna nimi.' }, { status: 400 });
+  if (!email) return NextResponse.json({ error: 'Anna sähköpostiosoite kuittia varten.' }, { status: 400 });
+  if (!name) return NextResponse.json({ error: 'Anna nimesi.' }, { status: 400 });
 
   // A logged-in pitva member's scout booking is free — decided here from the
   // session, never from anything the browser sent.
@@ -117,7 +117,7 @@ export async function POST(req: Request) {
       .catch(() => {});
     console.error('Kammi-checkoutin luonti epäonnistui:', err);
     return NextResponse.json(
-      { error: 'Maksun alustus epäonnistui. Yritä uudelleen.' },
+      { error: 'Maksua ei voitu aloittaa. Yritä uudelleen.' },
       { status: 500 },
     );
   }

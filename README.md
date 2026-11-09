@@ -1,4 +1,4 @@
-# kauppa — Pitkäjärven Vaeltajien verkkokauppa
+# kontti: Pitkäjärven Vaeltajien verkkokauppa
 
 Own web store for partiolippukunta Pitkäjärven Vaeltajat, replacing
 holvi.pitva.fi. Product catalog and orders live in Postgres, payments run
@@ -17,7 +17,7 @@ UI: **suomi**. Code, commits and comments: **englanti**.
 - Tailwind CSS v4 with the PitVa brand palette copied from Klapi's
   `styles/globals.css` (navy `#221E5D`, light blue `#BBD1FB`, wash `#ECF2FE`)
 - Vitest for the pure logic (money, slugs, checkout validation, stock)
-- Deployed to Vercel; proposed domain `kauppa.pitva.fi`
+- Deployed to Vercel; proposed domain `kontti.pitva.fi`
 
 ## Local development
 
@@ -31,16 +31,16 @@ pnpm db:seed                         # seed the 3 categories + catalog
 pnpm dev                             # http://localhost:3000
 ```
 
-`.env` holds the same `DATABASE_URL` as `.env.local` — the Prisma CLI and the
+`.env` holds the same `DATABASE_URL` as `.env.local`. The Prisma CLI and the
 seed script read only `.env`.
 
 ### Signing in locally
 
 Two options:
 
-1. **Google OAuth** — set `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`
+1. **Google OAuth**: set `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`
    (`AUTH_GOOGLE_*` or the Klapi-compatible `GOOGLE_CLIENT_*` names).
-2. **Dev login** — with `KAUPPA_DEV_LOGIN=1` (`.env.local` ships with it) the
+2. **Dev login**: with `KAUPPA_DEV_LOGIN=1` (`.env.local` ships with it) the
    `/login` page additionally offers a password-less sign-in with any
    `@example.com` address. It is ignored whenever `NODE_ENV` is `production`.
 
@@ -95,38 +95,38 @@ mark it paid manually.
 Pushes to `main` deploy through Vercel. Environment variables to set on the
 project:
 
-- `DATABASE_URL` — Postgres connection string (the team already runs Postgres;
+- `DATABASE_URL`: Postgres connection string (the team already runs Postgres;
   Neon is a drop-in if a new one is wanted)
-- `AUTH_SECRET` — `openssl rand -base64 32`
-- `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` — copy from Klapi/Budu's Google OAuth
+- `AUTH_SECRET`: `openssl rand -base64 32`
+- `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`: copy from Klapi/Budu's Google OAuth
   console entry, or its own
 - `GOOGLE_WORKSPACE_DOMAIN="pitkajarvenvaeltajat.fi"`
-- `STRIPE_SECRET_KEY` — `sk_test_…` now, `sk_live_…` when the account leaves
+- `STRIPE_SECRET_KEY`: `sk_test_…` now, `sk_live_…` when the account leaves
   sandbox
-- `STRIPE_WEBHOOK_SECRET` — from Dashboard → Developers → Webhooks (register
-  `https://kauppa.pitva.fi/api/webhooks/stripe`, events
+- `STRIPE_WEBHOOK_SECRET`: from Dashboard → Developers → Webhooks (register
+  `https://kontti.pitva.fi/api/webhooks/stripe`, events
   `checkout.session.completed` and `checkout.session.expired`)
-- `NEXT_PUBLIC_APP_URL="https://kauppa.pitva.fi"` — used for the success/cancel
+- `NEXT_PUBLIC_APP_URL="https://kontti.pitva.fi"`: used for the success/cancel
   URLs
 
-DNS: `kauppa.pitva.fi` CNAME to the Vercel deployment, in the same Route 53
+DNS: `kontti.pitva.fi` CNAME to the Vercel deployment, in the same Route 53
 hosted zone that points `atk.pitva.fi` and `klapi.pitva.fi`.
 
 ### Google Workspace user sync (optional)
 
 `/api/cron/syncWorkspaceUsers` runs nightly (see `vercel.json`) and reconciles
-kauppa's users against the troop's Google Workspace roster:
+kontti's users against the troop's Google Workspace roster:
 
-- a member of the Workspace group with no kauppa row **gets one** (role
+- a member of the Workspace group with no kontti row **gets one** (role
   `EVENT_ADMIN`, the same a pitva-domain sign-in grants), so the whole troop
   shows in `/admin/users` with names before anyone has logged in;
 - a name that changed in the directory **is refreshed**;
 - someone deleted, suspended, archived, or removed from the group **is
-  soft-deleted** — `deletedAt` is stamped and `lib/auth.ts` refuses their
+  soft-deleted**. `deletedAt` is stamped and `lib/auth.ts` refuses their
   sign-in, even though their pitva-domain address would otherwise still derive
   EVENT_ADMIN. Their row and any manual role survive;
 - someone who comes back **is restored**, but only if the sync was the one that
-  deactivated them (`User.deletedBySync`) — a user an admin deleted by hand
+  deactivated them (`User.deletedBySync`). A user an admin deleted by hand
   stays deleted.
 
 Three guards fence the destructive half: an empty active roster aborts the run
@@ -137,18 +137,18 @@ SUPERADMIN is never deactivated.
 **Setup** reuses klapi's `klapi-workspace-sync` service account, so the
 domain-wide delegation is already in place. Set on the Vercel project:
 
-- `GOOGLE_WORKSPACE_SA_KEY` — base64 of the SA JSON key (copy from klapi)
-- `GOOGLE_WORKSPACE_SUBJECT` — a Workspace admin to impersonate (copy from klapi)
-- `GOOGLE_WORKSPACE_GROUP` — `jasenet@pitkajarvenvaeltajat.fi`
-- `GOOGLE_WORKSPACE_EXCLUDE` — robot accounts to never provision (e.g. `admin@…`)
-- `CRON_SECRET` — `openssl rand -base64 32`; Vercel Cron sends it as the
+- `GOOGLE_WORKSPACE_SA_KEY`: base64 of the SA JSON key (copy from klapi)
+- `GOOGLE_WORKSPACE_SUBJECT`: a Workspace admin to impersonate (copy from klapi)
+- `GOOGLE_WORKSPACE_GROUP`: `jasenet@pitkajarvenvaeltajat.fi`
+- `GOOGLE_WORKSPACE_EXCLUDE`: robot accounts to never provision (e.g. `admin@…`)
+- `CRON_SECRET`: `openssl rand -base64 32`; Vercel Cron sends it as the
   `Authorization: Bearer` header and the route rejects anything else
 
 Dry run (writes nothing):
 
 ```bash
 curl -H "Authorization: Bearer $CRON_SECRET" \
-  "https://kauppa.pitva.fi/api/cron/syncWorkspaceUsers?dryRun=1"
+  "https://kontti.pitva.fi/api/cron/syncWorkspaceUsers?dryRun=1"
 ```
 
 A `unauthorized_client` error from the token exchange means the SA's client id

@@ -51,7 +51,7 @@ export async function setUserRole(formData: FormData): Promise<void> {
   const role = (formData.get('role') as string) ?? '';
   if (!id || (role !== 'SUPERADMIN' && role !== 'EVENT_ADMIN' && role !== 'USER')) return;
 
-  // Never demote yourself — there would be no one left to promote you back.
+  // Never demote yourself. There would be no one left to promote you back.
   const target = await prisma.user.findUnique({ where: { id } });
   if (!target || target.email === adminEmail) return;
 
@@ -66,11 +66,11 @@ export async function saveItem(
   formData: FormData,
 ): Promise<ActionResult> {
   const role = await currentRole();
-  if (!isEventAdmin(role)) return { error: 'Ei käyttöoikeutta. Kirjaudu sisään.' };
+  if (!isEventAdmin(role)) return { error: 'Sinulla ei ole tähän käyttöoikeutta. Kirjaudu sisään.' };
 
   const id = ((formData.get('id') as string) ?? '').trim() || undefined;
   const name = ((formData.get('name') as string) ?? '').trim();
-  if (!name) return { error: 'Nimi puuttuu.' };
+  if (!name) return { error: 'Anna tuotteelle nimi.' };
 
   // Event admins may only touch events; superadmins may create either kind.
   const isEvent = !isSuperAdmin(role) || formData.get('isEvent') === 'on';
@@ -80,7 +80,7 @@ export async function saveItem(
   if (isEvent) {
     startsAt = parseDate((formData.get('startsAt') as string) ?? '');
     endsAt = parseDate((formData.get('endsAt') as string) ?? '');
-    if (!startsAt || !endsAt) return { error: 'Tapahtumalle on annettava alkamis- ja päättymispäivä.' };
+    if (!startsAt || !endsAt) return { error: 'Anna tapahtumalle alku- ja päättymispäivä.' };
     if (endsAt < startsAt) return { error: 'Päättymispäivä ei voi olla ennen alkamispäivää.' };
   }
   const hidden = formData.get('hidden') === 'on';
@@ -94,7 +94,7 @@ export async function saveItem(
   if (!categoryId) return { error: 'Valitse kategoria.' };
 
   const priceCents = parseEurosInput((formData.get('price') as string) ?? '');
-  if (priceCents === null) return { error: 'Anna kelvollinen hinta (esim. 16,00).' };
+  if (priceCents === null) return { error: 'Anna hinta, esimerkiksi 16,00.' };
 
   const slug = slugify(((formData.get('slug') as string) ?? '').trim() || name);
   const existing = await prisma.item.findUnique({ where: { slug } });
@@ -102,7 +102,7 @@ export async function saveItem(
     return { error: `Slug "${slug}" on jo toisen tuotteen käytössä.` };
   }
   // The new slug must not be another item's old URL either (that redirect would
-  // then clash). A past slug of this same item is fine — it becomes live again.
+  // then clash). A past slug of this same item is fine. It becomes live again.
   const aliasOwner = await prisma.itemSlug.findUnique({ where: { slug } });
   if (aliasOwner && aliasOwner.itemId !== id) {
     return { error: `Slug "${slug}" on toisen tuotteen vanha osoite.` };
@@ -111,12 +111,13 @@ export async function saveItem(
   const stockRaw = ((formData.get('stock') as string) ?? '').trim();
   const stock = stockRaw === '' ? null : Number(stockRaw);
   if (stock !== null && (!Number.isInteger(stock) || stock < 0)) {
-    return { error: 'Varastomäärä on virheellinen (tyhjä = rajoittamaton).' };
+    return { error: 'Anna varastomäärä kokonaislukuna tai jätä kenttä tyhjäksi, jos määrää ei rajoiteta.' };
   }
 
   const imageUrl = ((formData.get('imageUrl') as string) ?? '').trim() || null;
   const sortOrder = Number((formData.get('sortOrder') as string) ?? '0') || 0;
   const active = formData.get('active') === 'on';
+  const featured = formData.get('featured') === 'on';
   const description = ((formData.get('description') as string) ?? '').trim();
 
   // Checkout questions come as a JSON string; an empty array clears them.
@@ -138,7 +139,7 @@ export async function saveItem(
     if (!current) return { error: 'Tuotetta ei löytynyt.' };
     // Event admins may edit events only, never a regular product.
     if (!isSuperAdmin(role) && !current.isEvent) {
-      return { error: 'Ei käyttöoikeutta tähän tuotteeseen.' };
+      return { error: 'Sinulla ei ole oikeutta muokata tätä tuotetta.' };
     }
     oldSlug = current.slug;
   }
@@ -152,6 +153,7 @@ export async function saveItem(
     imageUrl,
     sortOrder,
     active,
+    featured,
     description,
     isEvent,
     startsAt,
@@ -244,11 +246,11 @@ export async function saveCategory(
   prev: ActionResult | undefined,
   formData: FormData,
 ): Promise<ActionResult> {
-  if (!isSuperAdmin(await currentRole())) return { error: 'Ei käyttöoikeutta. Kirjaudu sisään.' };
+  if (!isSuperAdmin(await currentRole())) return { error: 'Sinulla ei ole tähän käyttöoikeutta. Kirjaudu sisään.' };
 
   const id = ((formData.get('id') as string) ?? '').trim() || undefined;
   const name = ((formData.get('name') as string) ?? '').trim();
-  if (!name) return { error: 'Nimi puuttuu.' };
+  if (!name) return { error: 'Anna kategorialle nimi.' };
 
   const slug = slugify(((formData.get('slug') as string) ?? '').trim() || name);
   const existing = await prisma.category.findUnique({ where: { slug } });

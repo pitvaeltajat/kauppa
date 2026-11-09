@@ -42,7 +42,7 @@ export default async function AdminKammiPage() {
                 <div className="min-w-0 text-sm">
                   <p className="font-semibold">
                     {fi(b.startDate)} – {fi(b.endDate)}
-                    <span className="ml-2 font-normal text-muted-foreground">{b.nights} yötä · {b.tier === 'SCOUT' ? 'Partiolainen' : 'Muu'}</span>
+                      <span className="ml-2 font-normal text-muted-foreground">{b.nights} yötä · {b.tier === 'SCOUT' ? 'Partiolainen' : 'Muu varaaja'}</span>
                   </p>
                   <p className="mt-0.5 text-muted-foreground">
                     {b.name ?? 'Ei nimeä'}
@@ -53,7 +53,7 @@ export default async function AdminKammiPage() {
                   {b.eventInfo && <p className="mt-1 text-muted-foreground">{b.eventInfo}</p>}
                   {b.hostQuestions && (
                     <p className="mt-1 text-muted-foreground">
-                      <span className="font-medium text-foreground">Kysymys kämppäisännälle:</span> {b.hostQuestions}
+                      <span className="font-medium text-foreground">Viesti kämppäisännälle:</span> {b.hostQuestions}
                     </p>
                   )}
                   {b.billingEmail && (
@@ -64,7 +64,7 @@ export default async function AdminKammiPage() {
                   {b.status === 'CONFIRMED' ? (
                     <Badge variant="success">Vahvistettu</Badge>
                   ) : (
-                    <Badge variant="warning">Odottaa maksua</Badge>
+                    <Badge variant="warning">Maksu odottaa</Badge>
                   )}
                   <span className="font-bold">{formatCents(b.totalCents)}</span>
                   <form action={cancelKammiBookingAction}>

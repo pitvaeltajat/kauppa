@@ -1,10 +1,10 @@
-// Render the shop's emails to HTML files without sending — the quick way to
+// Render the shop's emails to HTML files without sending. This is the quick way to
 // eyeball a template. Mirrors klapi's scripts/preview-emails.ts.
 //
 //   pnpm tsx scripts/preview-emails.ts [outDir]
 //
 // Writes receipt.html + new-order.html to outDir (default: ./email-previews).
-// If TEST_EMAIL is set, also writes receipt.ses.json — a ready
+// If TEST_EMAIL is set, also writes receipt.ses.json, a ready
 // `aws sesv2 send-email --cli-input-json file://…` payload for a live test.
 
 import { mkdirSync, writeFileSync } from 'node:fs';

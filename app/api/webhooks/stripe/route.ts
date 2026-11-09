@@ -44,7 +44,7 @@ export async function POST(req: Request) {
       if (orderId) {
         const newlyPaid = await markOrderPaid(orderId, session);
         // Only mail on the real transition, so a duplicate webhook delivery
-        // doesn't send the receipt twice. Failures are logged, not thrown —
+        // doesn't send the receipt twice. Failures are logged, not thrown.
         // a broken mailer must not make Stripe retry the whole payment.
         if (newlyPaid) {
           await trySendEmail(`order receipt ${orderId}`, () => sendOrderReceiptEmail(orderId));

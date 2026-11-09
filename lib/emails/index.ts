@@ -23,7 +23,7 @@ export { SUBJECT_PREFIX } from './ses-client';
 export type { EmailContent } from './layout';
 
 /**
- * Run one email send, logging and swallowing failures — the webhook that marks
+ * Run one email send, logging and swallowing failures. The webhook that marks
  * an order paid must still return 200 even if SES is down, or Stripe will retry
  * the whole payment handler. Same shape as klapi's trySendEmail.
  */

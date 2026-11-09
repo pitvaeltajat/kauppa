@@ -67,7 +67,7 @@ export default async function AdminUsersPage() {
                         <span className="ml-2 text-xs font-normal text-muted-foreground">(tämä tili)</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-muted-foreground">{user.name ?? '—'}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{user.name ?? 'ei nimeä'}</td>
                     <td className="px-4 py-3">
                       {isSuper ? (
                         <Badge className="gap-1">

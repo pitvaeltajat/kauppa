@@ -15,14 +15,14 @@ export function SiteHeader({ categories, role }: { categories: Category[]; role?
             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded bg-cta text-sm font-black text-header">
               P
             </span>
-            <span className="truncate text-sm md:text-base">Pitkäjärven Vaeltajat · kauppa</span>
+            <span className="truncate text-sm md:text-base">Pitkäjärven Vaeltajat · Kontti</span>
           </Link>
           <nav className="hidden items-center gap-4 md:flex">
             <Link href="/" className="text-sm text-header-foreground/80 hover:text-header-foreground hover:underline">
               Etusivu
             </Link>
             <Link href="/kammi" className="text-sm text-header-foreground/80 hover:text-header-foreground hover:underline">
-              Varaa Kammi
+              Kammin varaus
             </Link>
             {categories.map((category) => (
               <Link
@@ -59,7 +59,7 @@ export function SiteHeader({ categories, role }: { categories: Category[]; role?
           Etusivu
         </Link>
         <Link href="/kammi" className="shrink-0 text-xs text-header-foreground/80 hover:underline">
-          Varaa Kammi
+          Kammin varaus
         </Link>
         {categories.map((category) => (
           <Link

@@ -3,10 +3,10 @@
 // USER. SUPERADMIN is the one manual grant (set under /admin/users, or
 // bootstrapped with `pnpm db:seed` / `pnpm db:admin <email>`).
 //
-//   SUPERADMIN  — full access: orders, all items, categories, users, reports,
+//   SUPERADMIN  : full access: orders, all items, categories, users, reports,
 //                 payouts, plus everything an event admin can do.
-//   EVENT_ADMIN — events only: create / edit / hide events.
-//   USER        — no admin access (parents never need to log in at all).
+//   EVENT_ADMIN : events only: create / edit / hide events.
+//   USER        : no admin access (parents never need to log in at all).
 
 import { prisma } from '@/lib/prisma';
 

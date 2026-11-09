@@ -52,7 +52,7 @@ export default async function AdminOrdersPage({
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold">Tilaukset</h1>
         <div className="text-sm text-muted-foreground">
-          Näytetään {orders.length} · yhteensä {formatCents(total)}
+          Näytetään {orders.length} tilausta · yhteensä {formatCents(total)}
         </div>
       </div>
 
@@ -113,7 +113,7 @@ export default async function AdminOrdersPage({
 
               <details className="mt-3">
                 <summary className="cursor-pointer text-sm text-muted-foreground hover:text-foreground">
-                  Tuotteet ({order.lines.reduce((sum, l) => sum + l.quantity, 0)} kpl)
+                  Tilauksen tuotteet ({order.lines.reduce((sum, l) => sum + l.quantity, 0)} kpl)
                 </summary>
                 <ul className="mt-2 space-y-1 rounded-md bg-background p-3 text-sm">
                   {order.lines.map((line) => {

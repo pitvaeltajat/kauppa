@@ -8,8 +8,8 @@ import { getKammiSettings, getBusyRanges, bookingWindow } from '@/lib/kammiBooki
 import { KammiBooking } from '@/components/kammi-booking';
 
 export const metadata: Metadata = {
-  title: 'Varaa Kammi',
-  description: 'Varaa Pitkäjärven Vaeltajien Kammi: valitse vapaat päivät, maksa ja saat ovikoodin sähköpostiin.',
+  title: 'Kammin varaus',
+  description: 'Tarkista Kammin vapaat päivät, varaa vuoro ja maksa verkossa. Saat ovikoodin sähköpostitse.',
 };
 
 export const dynamic = 'force-dynamic';
@@ -31,7 +31,7 @@ export default async function KammiPage() {
       <div className="container py-12">
         <h1 className="text-2xl font-bold">Kammin varaus</h1>
         <p className="mt-3 max-w-xl text-sm text-muted-foreground">
-          Kammin verkkovaraus ei ole juuri nyt käytössä. Ole yhteydessä kämppäisäntään.
+          Kammin verkkovaraus ei ole tällä hetkellä käytössä. Ota yhteyttä kämppäisäntään.
         </p>
       </div>
     );
@@ -49,14 +49,14 @@ export default async function KammiPage() {
     <div className="container py-8">
       {!settings.active && superAdmin && (
         <p className="mb-4 rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-sm text-warning">
-          Esikatselu: Kammin verkkovaraus ei ole vielä käytössä (näkyy vain pääylläpitäjille).
-          Ota käyttöön kohdassa Hallinta → Kammi.
+          Esikatselu: verkkovaraus ei ole vielä käytössä. Tämä näkymä näkyy vain
+          pääylläpitäjille. Voit ottaa varauksen käyttöön kohdassa Hallinta → Kammi.
         </p>
       )}
-      <h1 className="text-2xl font-bold">Varaa Kammi</h1>
+      <h1 className="text-2xl font-bold">Kammin varaus</h1>
       <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-        Tarkista vapaat vuorot kalenterista ja varaa Kammi. Vuoro on varattu, kun maksu on
-        suoritettu — ovikoodi ja ohjeet tulevat sähköpostiisi heti maksun jälkeen.
+        Tarkista kalenterista vapaat päivät ja valitse itsellesi sopiva vuoro. Varaus vahvistuu,
+        kun maksu on suoritettu. Saat ovikoodin ja ohjeet sähköpostitse maksun jälkeen.
       </p>
 
       {/* Price list */}
@@ -64,16 +64,16 @@ export default async function KammiPage() {
         <div className="rounded-lg border bg-card p-4 text-sm shadow-sm">
           <p className="font-semibold">Viikonloppu (pe–su)</p>
           <p className="mt-1 text-muted-foreground">
-            Partiolaiset {formatCents(settings.weekendScoutCents)} · Muut {formatCents(settings.weekendOtherCents)}
+            Partiolainen {formatCents(settings.weekendScoutCents)} · Muu varaaja {formatCents(settings.weekendOtherCents)}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Sama hinta vaikka varaat vain pe–la tai la–su; toisen puolikkaan voi varata joku toinen.
+            Viikonloppuhinta on sama, vaikka varaisit vain pe–la tai la–su. Toisen yön voi varata toinen seurue.
           </p>
         </div>
         <div className="rounded-lg border bg-card p-4 text-sm shadow-sm">
           <p className="font-semibold">Arkivuorokausi</p>
           <p className="mt-1 text-muted-foreground">
-            Partiolaiset {formatCents(settings.weekdayScoutCents)}/yö · Muut {formatCents(settings.weekdayOtherCents)}/yö
+            Partiolainen {formatCents(settings.weekdayScoutCents)}/yö · Muu varaaja {formatCents(settings.weekdayOtherCents)}/yö
           </p>
           <p className="mt-1 text-xs text-muted-foreground">Pidemmät varaukset sovitaan erikseen kämppäisännän kanssa.</p>
         </div>
@@ -98,10 +98,10 @@ export default async function KammiPage() {
       </div>
 
       <div className="mt-10 rounded-lg border bg-card p-5 text-sm shadow-sm">
-        <p className="font-medium">Varauksen ehdot ja yhteystiedot</p>
+        <p className="font-medium">Ehdot ja yhteystiedot</p>
         <p className="mt-2 text-muted-foreground">
-          Mikäli loppusiivous jää tekemättä, siivouksesta veloitetaan erikseen. Varaukseen
-          liittyvissä kysymyksissä auttaa kämppäisäntä.
+          Varaaja huolehtii loppusiivouksesta. Jos siivous jää tekemättä, siitä veloitetaan
+          erikseen. Varausasioissa auttaa kämppäisäntä.
         </p>
         <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-muted-foreground">
           <span className="flex items-center gap-1.5">

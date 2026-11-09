@@ -45,7 +45,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
 
       {category.items.length === 0 ? (
         <p className="mt-8 rounded-lg border border-dashed bg-card px-4 py-8 text-sm text-muted-foreground">
-          Tästä kategoriasta ei ole vielä tuotteita. Katso muita osastoja!
+          Tässä kategoriassa ei ole vielä tuotteita. Tutustu sillä välin muihin kategorioihin.
         </p>
       ) : (
         <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">

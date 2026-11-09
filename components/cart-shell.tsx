@@ -68,7 +68,7 @@ export function CartShell() {
         setCatalogLoaded(true);
       })
       .catch(() => {
-        if (!cancelled) setError('Tuotteita ei voitu ladata. Päivitä sivu.');
+        if (!cancelled) setError('Tuotteiden tietoja ei voitu ladata. Päivitä sivu ja yritä uudelleen.');
       });
     return () => {
       cancelled = true;
@@ -164,7 +164,7 @@ export function CartShell() {
   async function goToCheckout() {
     setError(null);
     if (lines.length === 0 || lines.some(({ item }) => !item)) {
-      setError('Osa tuotteista ei ole enää myynnissä. Poista ne korista.');
+          setError('Jokin korin tuotteista ei ole enää myynnissä. Poista se korista.');
       return;
     }
     for (const { cartItem, item } of lines) {
@@ -191,17 +191,17 @@ export function CartShell() {
       });
       const data = (await res.json()) as { url?: string; error?: string };
       if (!res.ok) {
-        setError(data.error ?? 'Maksun alustus epäonnistui.');
+        setError(data.error ?? 'Maksua ei voitu aloittaa. Yritä uudelleen.');
         return;
       }
       if (!data.url) {
-        setError('Maksun alustus epäonnistui. Yritä uudelleen.');
+        setError('Maksua ei voitu aloittaa. Yritä uudelleen.');
         return;
       }
       cartStore.clear();
       window.location.assign(data.url);
     } catch {
-      setError('Maksun alustus epäonnistui. Tarkista yhteys ja yritä uudelleen.');
+      setError('Maksua ei voitu aloittaa. Tarkista yhteys ja yritä uudelleen.');
     } finally {
       setLoading(false);
     }
@@ -214,11 +214,11 @@ export function CartShell() {
         <div>
           <h2 className="text-lg font-bold">Ostoskori on tyhjä</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Täältä löydät PitVa-tuotteet, huivit ja tapahtumailmoittautumiset.
+            Korissa näkyvät valitsemasi tuotteet ja tapahtumailmoittautumiset.
           </p>
         </div>
         <ButtonLink href="/" variant="cta">
-          Siirry kauppaan
+          Tutustu tuotteisiin
         </ButtonLink>
       </div>
     );
@@ -249,7 +249,7 @@ export function CartShell() {
               ) : catalogLoaded ? (
                 <>
                   <p className="font-medium">Tuote ei ole enää myynnissä</p>
-                  <p className="text-sm text-muted-foreground">Poista tuote korista jatkaaksesi.</p>
+                  <p className="text-sm text-muted-foreground">Poista tuote korista, jotta voit jatkaa.</p>
                 </>
               ) : (
                 <>
@@ -514,10 +514,10 @@ export function CartShell() {
           disabled={loading || lines.length === 0 || lines.some(({ item }) => !item)}
           onClick={goToCheckout}
         >
-          {loading ? 'Siirretään maksuun…' : 'Siirry maksamaan (Stripe)'}
+          {loading ? 'Siirrytään maksamaan…' : 'Siirry maksamaan'}
         </Button>
         <p className="text-center text-xs text-muted-foreground">
-          Maksu hoituu Stripe Checkoutissa. Tuotteet noudetaan kokouksessa, ei lähetetä postitse.
+          Maksu tapahtuu Stripen Checkoutissa. Tuotteet noudetaan kokouksessa tai sovitusti. Niitä ei postiteta.
         </p>
       </div>
     </div>

@@ -65,7 +65,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             href="/"
             className="flex shrink-0 items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-foreground/70 transition-colors hover:bg-muted hover:text-foreground"
           >
-            <Store className="size-4" /> Takaisin kauppaan
+            <Store className="size-4" /> Takaisin Konttiin
           </Link>
           <form
             action={async () => {

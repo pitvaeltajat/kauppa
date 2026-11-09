@@ -7,8 +7,8 @@ const EVENT_GRACE_MS = 7 * 24 * 60 * 60 * 1000;
 
 /**
  * Where-filter for items the public shop lists (front page, category pages,
- * header). An item shows when it is active, not manually hidden, and — if it is
- * an event — ended less than a week ago. Items excluded here are still reachable
+ * header). An item shows when it is active, not manually hidden, and, if it is
+ * an event, ended less than a week ago. Items excluded here are still reachable
  * and buyable at their direct /item/<slug> link; only the listings drop them.
  */
 export function listedItemWhere(now: Date = new Date()): Prisma.ItemWhereInput {

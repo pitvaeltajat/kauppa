@@ -36,6 +36,7 @@ export default async function AdminItemsPage() {
               <th className="px-4 py-3 text-right">Hinta</th>
               <th className="px-4 py-3 text-right">Varasto</th>
               <th className="px-4 py-3">Tila</th>
+              <th className="px-4 py-3">Etusivu</th>
               <th className="px-4 py-3 text-right">Toiminnot</th>
             </tr>
           </thead>
@@ -64,6 +65,9 @@ export default async function AdminItemsPage() {
                   ) : (
                     <Badge variant="secondary">Piilotettu</Badge>
                   )}
+                </td>
+                <td className="px-4 py-3 text-sm text-muted-foreground">
+                  {item.featured ? 'Nosto' : ''}
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex justify-end gap-2">

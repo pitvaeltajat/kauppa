@@ -60,6 +60,7 @@ export function KammiBooking({
   const [hostQuestions, setHostQuestions] = useState('');
   const [billingEmail, setBillingEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [selectionError, setSelectionError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const formRef = useRef<HTMLDivElement>(null);
@@ -72,22 +73,26 @@ export function KammiBooking({
 
   function handleDay(iso: string) {
     setError(null);
-    if (iso < today) return;
+    setSelectionError(null);
+    if (iso < today || iso >= windowEnd) return;
     // Start (or restart) a selection.
     if (!start || end || iso <= start) {
-      if (!nightFree(iso)) return; // can't arrive on a night that's taken
+      if (!nightFree(iso)) {
+        setSelectionError('Tämä yö on jo varattu. Valitse toinen tulopäivä.');
+        return;
+      }
       setStart(iso);
       setEnd(null);
       return;
     }
     // Choosing the checkout day.
     if (!rangeFree(start, iso)) {
-      setError('Valitun ajanjakson välissä on varattuja öitä.');
+      setSelectionError('Valitulla ajalla on jo varattuja öitä. Valitse toinen lähtöpäivä.');
       return;
     }
     const nights = nightsBetween(start, iso);
     if (nights > maxNights) {
-      setError(`Enimmäisvaraus on ${maxNights} yötä.`);
+      setSelectionError(`Valitse enintään ${maxNights} yötä kerrallaan.`);
       return;
     }
     setEnd(iso);
@@ -96,6 +101,20 @@ export function KammiBooking({
     if (typeof window !== 'undefined' && window.matchMedia('(max-width: 1023px)').matches) {
       setConfirmOpen(true);
     }
+  }
+
+  function selectSingleNight(iso: string) {
+    setError(null);
+    setSelectionError(null);
+    if (!nightFree(iso)) {
+      setSelectionError('Tämä yö on jo varattu. Valitse toinen päivä.');
+      return;
+    }
+    if (minNights > 1) {
+      setSelectionError(`Yhden yön varausta ei voi tehdä. Vähimmäisvaraus on ${minNights} yötä.`);
+      return;
+    }
+    setEnd(addDays(iso, 1));
   }
 
   function confirmDates() {
@@ -287,7 +306,7 @@ export function KammiBooking({
       {/* Booking panel — floats alongside the calendar on desktop as you scroll. */}
       <div
         ref={formRef}
-        className="h-fit scroll-mt-4 space-y-4 rounded-lg border bg-card p-5 shadow-sm lg:sticky lg:top-4 lg:self-start"
+        className="h-fit scroll-mt-4 space-y-4 rounded-lg border bg-card p-5 shadow-sm lg:sticky lg:top-[calc(3.5rem+1rem)] lg:self-start"
       >
         <h2 className="text-lg font-bold">Varaus</h2>
 
@@ -302,7 +321,20 @@ export function KammiBooking({
               </p>
             </>
           ) : start ? (
-            <p className="text-muted-foreground">Valitse lähtöpäivä kalenterista.</p>
+            <div className="space-y-2">
+              <p className="text-muted-foreground">Valitse seuraavaksi lähtöpäivä.</p>
+              <button
+                type="button"
+                onClick={() => selectSingleNight(start)}
+                disabled={minNights > 1}
+                className="w-full rounded-md border px-3 py-2 text-left text-sm font-medium transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Varaa tämä päivä (1 yö)
+              </button>
+              {minNights > 1 && (
+                <p className="text-xs text-muted-foreground">Yhden yön varausta ei voi tehdä: vähimmäisvaraus on {minNights} yötä.</p>
+              )}
+            </div>
           ) : (
             <p className="text-muted-foreground">Valitse tulopäivä kalenterista.</p>
           )}
@@ -373,6 +405,9 @@ export function KammiBooking({
           </div>
         </div>
 
+        {selectionError && (
+          <p role="alert" className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{selectionError}</p>
+        )}
         {error && (
           <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
         )}

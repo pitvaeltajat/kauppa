@@ -6,7 +6,7 @@ import { cn } from '@/lib/cn';
 
 /**
  * A Next.js <Link> that looks like a <Button>. Use this instead of wrapping a
- * <Button> in a <Link> — that renders a <button> inside an <a>, which is
+ * <Button> in a <Link>. That renders a <button> inside an <a>, which is
  * invalid HTML and breaks keyboard focus.
  */
 export function ButtonLink({

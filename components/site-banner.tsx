@@ -1,7 +1,6 @@
 const WEBSITE_URL = 'https://www.pitkajarvenvaeltajat.fi/';
 const WEBSITE_LABEL = 'pitkajarvenvaeltajat.fi';
 const CONTACT_EMAIL = 'info@pitkajarvenvaeltajat.fi';
-const BILLING_EMAIL = 'laskutus@pitkajarvenvaeltajat.fi';
 
 /** Front-page banner: the troop identity, a short intro, and the contact
  * details (moved up from the footer). `imageUrl` is an optional background
@@ -54,9 +53,6 @@ export function SiteBanner({ imageUrl }: { imageUrl?: string | null }) {
           </ContactField>
           <ContactField label="Yhteissähköposti">
             <BannerLink href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</BannerLink>
-          </ContactField>
-          <ContactField label="Laskutus">
-            <BannerLink href={`mailto:${BILLING_EMAIL}`}>{BILLING_EMAIL}</BannerLink>
           </ContactField>
         </dl>
       </div>

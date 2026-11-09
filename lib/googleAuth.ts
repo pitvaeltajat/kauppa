@@ -4,15 +4,15 @@ import { createSign } from 'node:crypto';
  * Service-account auth for the Google Workspace Admin SDK.
  *
  * The service account mints a JWT, signs it with its private key and exchanges
- * it for an access token — the only Google auth flow that works unattended,
+ * it for an access token. This is the only Google auth flow that works unattended,
  * which is what the nightly `cron/syncWorkspaceUsers` needs (there is no
  * signed-in person in a cron run).
  *
  * Every token is **impersonating**: `subject` names a person in the domain and
  * the SA acts as them (domain-wide delegation), which requires the scopes to be
- * authorised for the SA's client id in the Admin console. kauppa reuses the
+ * authorised for the SA's client id in the Admin console. kontti reuses the
  * same `klapi-workspace-sync` service account klapi already set up, so the
- * directory scopes are already granted — see README § "Google Workspace user
+ * directory scopes are already granted. See README § "Google Workspace user
  * sync".
  *
  * Hand-rolled rather than via `google-auth-library`: the whole flow is one
@@ -43,7 +43,7 @@ export function requireEnv(name: string): string {
 
 /**
  * The SA key from `GOOGLE_WORKSPACE_SA_KEY`. Accepts the raw JSON Google hands
- * you or a base64 blob of it — base64 is what actually survives a paste into
+ * you or a base64 blob of it. Base64 is what actually survives a paste into
  * the Vercel env editor without the newlines in `private_key` being mangled.
  */
 function loadServiceAccountKey(): ServiceAccountKey {
@@ -67,7 +67,7 @@ function loadServiceAccountKey(): ServiceAccountKey {
  * Signed JWT → OAuth access token.
  *
  * @param scopes  the scopes to request
- * @param subject the person to impersonate — required, since acting as the SA
+ * @param subject the person to impersonate. It is required, since acting as the SA
  *   itself cannot read the directory.
  */
 export async function getGoogleAccessToken(scopes: string[], subject: string): Promise<string> {
@@ -102,7 +102,7 @@ export async function getGoogleAccessToken(scopes: string[], subject: string): P
   const body = (await response.json()) as { access_token?: string; error_description?: string };
   if (!response.ok || !body.access_token) {
     // `unauthorized_client` almost always means the scopes are not authorised
-    // for this SA's client id in the Admin console — every call here impersonates.
+    // for this SA's client id in the Admin console. Every call here impersonates.
     throw new Error(
       `Google token exchange failed (${response.status}): ${body.error_description ?? 'unknown error'}`,
     );

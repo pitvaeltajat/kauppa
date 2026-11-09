@@ -107,7 +107,7 @@ export default async function AdminPayoutsPage() {
         </p>
       ) : result.rows.length === 0 ? (
         <p className="rounded-lg border border-dashed bg-card px-4 py-10 text-center text-sm text-muted-foreground">
-          Ei tilityksiä. Testitilassä Stripe ei maksa tilityksiä pankkitilille.
+          Ei tilityksiä. Testitilassa Stripe ei maksa tilityksiä pankkitilille.
         </p>
       ) : (
         <div className="space-y-3">

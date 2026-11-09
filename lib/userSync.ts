@@ -2,21 +2,22 @@ import { deriveRole, type Role } from '@/lib/admin';
 import type { WorkspaceMember } from '@/lib/googleWorkspace';
 
 /**
- * Reconciles kauppa's `User` table against the Google Workspace roster.
+ * Reconciles kontti's `User` table against the Google Workspace roster.
  *
  * Pure planner: takes an already-fetched roster plus the existing rows and
- * returns what to change, so the decision logic — the part that can lock people
- * out — is testable without a network, a service-account key or a database.
+ * returns what to change, so the decision logic, the part that can lock people
+ * out. It is testable without a network, a service-account key or a database.
  * `cron/syncWorkspaceUsers` pairs it with `fetchWorkspaceRoster` and applies it.
  *
  * ## What it does (mirrors klapi)
  *
- * - **creates** a row for an active member who has none — so the troop shows in
+ * - **creates** a row for an active member who has none, so the troop shows in
  *   `/admin/users` (with names) before first login. Role is `deriveRole(email)`
  *   (EVENT_ADMIN for a pitva-domain address, the same a sign-in grants).
  * - **renames** a row whose name drifted from the directory.
  * - **restores** a member the sync itself had deactivated (they came back).
- * - **deactivates** — soft-delete, `deletedAt` stamped — a member who is gone
+ * - **deactivates** a member who is gone from Workspace. This is a soft-delete;
+ *   `deletedAt` is stamped,
  *   from Workspace, suspended, archived, or out of the member group. Their row
  *   survives; `lib/auth.ts` refuses the sign-in while deactivated.
  *
@@ -32,7 +33,7 @@ import type { WorkspaceMember } from '@/lib/googleWorkspace';
  * - the last live SUPERADMIN is never deactivated, so a bad roster read can't
  *   lock the troop out of its own admin panel.
  *
- * A row a human soft-deleted (`deletedBySync: false`) is left exactly as is —
+ * A row a human soft-deleted (`deletedBySync: false`) is left exactly as is:
  * never renamed, never auto-restored.
  */
 
@@ -64,7 +65,7 @@ export type UserSyncPlan = {
 
 export type UserSyncOptions = {
   /**
-   * Domain addresses to ignore entirely — robot accounts that are Workspace
+   * Domain addresses to ignore entirely. These are robot accounts that are Workspace
    * users but not people (`admin@`, `pitvadev@`). They would otherwise be
    * provisioned, because the member group can carry a whole-organisation member
    * (see `fetchWorkspaceRoster`) that sweeps every domain user into it.

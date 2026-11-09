@@ -34,13 +34,13 @@ export default async function AdminEventsPage() {
         </ButtonLink>
       </div>
       <p className="mb-6 text-sm text-muted-foreground">
-        Tapahtuman ostaminen on ilmoittautuminen. Tapahtuma poistuu etusivulta automaattisesti
-        viikko päättymispäivän jälkeen, mutta pysyy avoinna suoralla linkillä.
+        Tapahtuman ostaminen toimii ilmoittautumisena. Tapahtuma poistuu etusivulta automaattisesti
+        viikon kuluttua päättymisestä, mutta siihen pääsee edelleen suoralla linkillä.
       </p>
 
       {events.length === 0 ? (
         <p className="rounded-lg border border-dashed bg-card px-4 py-10 text-center text-sm text-muted-foreground">
-          Ei tapahtumia vielä. Luo ensimmäinen “Uusi tapahtuma” -painikkeella.
+          Tapahtumia ei ole vielä. Luo ensimmäinen tapahtuma Uusi tapahtuma -painikkeella.
         </p>
       ) : (
         <div className="overflow-x-auto rounded-lg border bg-card shadow-sm">
@@ -71,7 +71,7 @@ export default async function AdminEventsPage() {
                       </Link>
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">
-                      {formatEventDates(event.startsAt, event.endsAt) || '—'}
+                      {formatEventDates(event.startsAt, event.endsAt) || 'ei päivää'}
                     </td>
                     <td className="px-4 py-3 text-right">{formatCents(event.priceCents)}</td>
                     <td className="px-4 py-3">

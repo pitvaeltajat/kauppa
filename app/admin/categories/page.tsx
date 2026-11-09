@@ -27,7 +27,7 @@ export default async function AdminCategoriesPage() {
       <div className="space-y-3">
         {categories.length === 0 && (
           <p className="rounded-lg border border-dashed bg-card px-4 py-10 text-center text-sm text-muted-foreground">
-            Ei kategorioita. Luo ensimmäinen!
+            Kategorioita ei ole vielä. Luo ensimmäinen kategoria.
           </p>
         )}
         {categories.map((category) => (
@@ -62,7 +62,7 @@ export default async function AdminCategoriesPage() {
                   confirm={`Poista kategoria "${category.name}"? Tätä ei voi perua.`}
                   title={
                     category._count.items > 0
-                      ? 'Kategoriassa on tuotteita — siirrä tai piilota ne ensin'
+                      ? 'Kategoriassa on tuotteita. Siirrä tai piilota ne ensin.'
                       : 'Poista kategoria'
                   }
                 >

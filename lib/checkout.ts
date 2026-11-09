@@ -1,4 +1,4 @@
-// Checkout payload validation. Pure — takes the cart sent from the browser
+// Checkout payload validation. Pure: takes the cart sent from the browser
 // and the items looked up from the database, and either returns the line-item
 // snapshot to charge or a Finnish error message the storefront can show.
 
@@ -53,7 +53,7 @@ export function buildCheckout(
     const quantity = Math.trunc(r.quantity);
     if (!Number.isFinite(quantity) || quantity < 1) continue;
     if (quantity > MAX_QUANTITY) {
-      return { ok: false, error: 'Yhden tuotteen määrä saa olla enintään 99.' };
+      return { ok: false, error: 'Yhtä tuotetta voi olla korissa enintään 99 kappaletta.' };
     }
     wanted.set(r.id, (wanted.get(r.id) ?? 0) + quantity);
   }
@@ -68,7 +68,7 @@ export function buildCheckout(
   for (const [id, quantity] of wanted) {
     const item = byId.get(id);
     if (!item) {
-      return { ok: false, error: 'Osa tuotteista ei ole enää myynnissä.' };
+      return { ok: false, error: 'Jokin tuotteista ei ole enää myynnissä.' };
     }
     if (!item.active) {
       return { ok: false, error: `"${item.name}" ei ole enää myynnissä.` };
@@ -76,7 +76,7 @@ export function buildCheckout(
     if (item.stock !== null && item.stock < quantity) {
       return {
         ok: false,
-        error: `"${item.name}" on loppunut varastosta (jäljellä ${item.stock} kpl).`,
+        error: `Tuote "${item.name}" on loppunut varastosta tässä määrässä (jäljellä ${item.stock} kpl).`,
       };
     }
 

@@ -36,5 +36,5 @@ await prisma.user.upsert({
   create: { email, role: 'SUPERADMIN' },
 });
 
-console.log(`${email} on nyt pääylläpitäjä. He voivat kirjautua Hallintaan heti — uusi istunto riittää.`);
+console.log(`${email} on nyt pääylläpitäjä. He voivat kirjautua Hallintaan heti. Uusi istunto riittää.`);
 await prisma.$disconnect();

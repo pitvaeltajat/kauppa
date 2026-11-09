@@ -43,7 +43,7 @@ function bookingRange(b: Pick<KammiBooking, 'startDate' | 'endDate' | 'name' | '
 }
 
 /**
- * Every range that is NOT available in [fromISO, toISO): kauppa's own live
+ * Every range that is NOT available in [fromISO, toISO): kontti's own live
  * bookings (CONFIRMED + unexpired PENDING) plus whatever the Google calendar
  * marks busy. Stale holds are lapsed first so they don't linger.
  */
@@ -94,7 +94,7 @@ export async function createKammiHold(
   { free = false }: { free?: boolean } = {},
 ): Promise<CreateHoldResult> {
   const settings = await getKammiSettings();
-  if (!settings.active) return { ok: false, error: 'Kammin varaus ei ole juuri nyt käytössä.' };
+  if (!settings.active) return { ok: false, error: 'Kammin verkkovaraus ei ole tällä hetkellä käytössä.' };
 
   const validation = validateBookingDates({
     startISO: input.startISO,
@@ -107,7 +107,7 @@ export async function createKammiHold(
 
   const busy = await getBusyRanges(input.startISO, input.endISO);
   if (!rangeIsFree(input.startISO, input.endISO, busy)) {
-    return { ok: false, error: 'Valitut päivät ovat jo varattuja. Valitse toiset.' };
+    return { ok: false, error: 'Valitut päivät ovat jo varattuja. Valitse toiset päivät.' };
   }
 
   const price = computeKammiPrice(input.startISO, input.endISO, input.tier, settings);
@@ -152,10 +152,10 @@ export async function createKammiHold(
     }
     return { ok: true, booking };
   } catch (error) {
-    // The exclusion constraint fired — someone else took these dates in the gap
+    // The exclusion constraint fired. Someone else took these dates in the gap
     // between the pre-check and the insert.
     if (error instanceof Error && error.message.includes('KammiBooking_no_overlap')) {
-      return { ok: false, error: 'Valitut päivät ehdittiin juuri varata. Valitse toiset.' };
+      return { ok: false, error: 'Joku ehti varata valitut päivät. Valitse toiset päivät.' };
     }
     throw error;
   }
@@ -184,8 +184,8 @@ export async function confirmKammiBooking(
   });
 
   const eventId = await createKammiEvent({
-    summary: `Kammi varattu — ${booking.name ?? booking.email ?? 'varaus'}`,
-    description: `Varaus kauppa.pitva.fi:n kautta.${booking.email ? ` ${booking.email}` : ''}`,
+    summary: `Kammi varattu: ${booking.name ?? booking.email ?? 'varaus'}`,
+    description: `Varaus kontti.pitva.fi:n kautta.${booking.email ? ` ${booking.email}` : ''}`,
     startISO: toISODate(booking.startDate),
     endISO: toISODate(booking.endDate),
   });

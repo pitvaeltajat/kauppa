@@ -14,17 +14,17 @@ export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: {
-    default: 'Pitkäjärven Vaeltajien verkkokauppa',
-    template: '%s · PitVa-kauppa',
+    default: 'Kontti · Pitkäjärven Vaeltajat',
+    template: '%s · Kontti',
   },
   description:
-    'Partiolippukunta Pitkäjärven Vaeltajien nettikauppa ja ilmoittautumisportaali. Täältä voit ostaa huiveja, merkkejä ja PitVa-tuotteita.',
+    'Pitkäjärven Vaeltajien tuotteet ja tapahtumailmoittautumiset samassa paikassa. Tilaa huiveja, merkkejä ja muita PitVa-tuotteita tai ilmoittaudu tapahtumiin.',
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
   const email = session?.user?.email ?? null;
-  // Read the role from kauppa's own database, not the session token — a shared
+  // Read the role from kontti's own database, not the session token. A shared
   // .pitva.fi cookie from another pitva app carries that app's role claim.
   const role = email ? await getUserRole(email) : null;
   const superAdmin = isSuperAdmin(role);
@@ -32,7 +32,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const pathname = (await headers()).get('x-pathname') ?? '';
 
   // "Kesken": only superadmins reach the app. Everyone else goes to /login,
-  // which renders bare — nothing but the Google button, no shop chrome.
+  // which renders bare: nothing but the Google button, no shop chrome.
   if (!superAdmin && pathname !== '/login') {
     redirect('/login');
   }

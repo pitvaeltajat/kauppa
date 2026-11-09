@@ -14,7 +14,7 @@ export const metadata: Metadata = { title: 'Ilmoittautuneet' };
 
 // A registration is a paid (or handed-over) order that contains a line for this
 // event. The buyer is the contact; a line quantity > 1 means several spots on
-// one order. Unpaid (RECEIVED) orders are not registrations — for an event,
+// one order. Unpaid (RECEIVED) orders are not registrations. For an event,
 // paying is registering.
 type AnswerSnapshot = { prompt?: string; answer?: string | string[] };
 
@@ -100,12 +100,12 @@ export default async function EventRegistrationsPage({
               <tbody>
                 {rows.map((row) => (
                   <tr key={row.id} className="border-b align-top transition-colors last:border-0 hover:bg-muted/40">
-                    <td className="px-4 py-3 font-medium">{row.name ?? '—'}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{row.email ?? '—'}</td>
+                    <td className="px-4 py-3 font-medium">{row.name ?? 'ei nimeä'}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{row.email ?? 'ei sähköpostia'}</td>
                     <td className="px-4 py-3 text-right">{row.quantity}</td>
                     <td className="px-4 py-3 text-muted-foreground">
                       {row.answers.length === 0
-                        ? '—'
+                        ? 'ei vastauksia'
                         : row.answers.map((a, i) => (
                             <div key={i}>
                               {a.prompt ? <span className="font-medium">{a.prompt}: </span> : null}

@@ -1,4 +1,4 @@
-// HTML email shell, adapted from klapi's utils/emailHelpers.ts so kauppa's mail
+// HTML email shell, adapted from klapi's utils/emailHelpers.ts so kontti's mail
 // reads as the same product. Inline styles alongside the <style> block because
 // Gmail/Outlook drop <head> styles. Brand colours match styles/globals.css.
 
@@ -49,8 +49,8 @@ export function renderEmail(innerHtml: string): string {
   <div class="email-container">
     ${innerHtml}
     <div class="footer">
-      <p><i>Tämä on automaattinen viesti. Älä vastaa tähän viestiin.</i></p>
-      <p>Pitkäjärven Vaeltajat · verkkokauppa</p>
+      <p><i>Tämä on automaattinen viesti. Älä vastaa tähän sähköpostiin.</i></p>
+      <p>Pitkäjärven Vaeltajat · Kontti</p>
     </div>
   </div>
 </body>

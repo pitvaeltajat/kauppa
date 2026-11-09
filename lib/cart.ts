@@ -6,7 +6,7 @@ import { useSyncExternalStore } from 'react';
 // read with useSyncExternalStore so any component (header badge, item buttons,
 // the cart page) sees changes without a React context provider at the root.
 //
-// Only ids and quantities that change are kept — name, price and image come
+// Only ids and quantities that change are kept. Name, price and image come
 // from the server at render time. The checkout route re-reads prices from the
 // database, so a stale client copy can never charge the wrong amount.
 
@@ -15,7 +15,7 @@ export type CartItem = {
   quantity: number;
 };
 
-const STORAGE_KEY = 'kauppa-cart';
+const STORAGE_KEY = 'kontti-cart';
 
 function load(): CartItem[] {
   if (typeof window === 'undefined') return [];
@@ -38,7 +38,7 @@ function load(): CartItem[] {
 let items: CartItem[] = load();
 const listeners = new Set<() => void>();
 
-// Stable snapshot for server rendering — React requires getServerSnapshot to
+// Stable snapshot for server rendering. React requires getServerSnapshot to
 // return a cached value, so this is a module constant, never a fresh array.
 const EMPTY_CART: CartItem[] = [];
 

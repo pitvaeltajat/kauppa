@@ -46,22 +46,22 @@ export function KammiSettingsForm({ settings }: { settings: KammiSettingsValues 
           defaultChecked={settings.active}
           className="size-4 accent-[hsl(244,51%,24%)]"
         />
-        Kammin verkkovaraus käytössä (näkyy /kammi-sivulla)
+        Kammin verkkovaraus käytössä (näkyy Kammin sivulla)
       </label>
 
       <fieldset className="space-y-4 rounded-md border bg-background p-4">
-        <legend className="px-1 text-sm font-semibold">Viikonloppu (pe–su, kiinteä)</legend>
+        <legend className="px-1 text-sm font-semibold">Viikonloppu (pe–su, kiinteä hinta)</legend>
         <div className="grid gap-4 sm:grid-cols-2">
-          <PriceField id="weekendScout" label="Partiolaiset" cents={settings.weekendScoutCents} />
-          <PriceField id="weekendOther" label="Muut" cents={settings.weekendOtherCents} />
+          <PriceField id="weekendScout" label="Partiolainen" cents={settings.weekendScoutCents} />
+          <PriceField id="weekendOther" label="Muu varaaja" cents={settings.weekendOtherCents} />
         </div>
       </fieldset>
 
       <fieldset className="space-y-4 rounded-md border bg-background p-4">
-        <legend className="px-1 text-sm font-semibold">Arkivuorokausi (/yö)</legend>
+        <legend className="px-1 text-sm font-semibold">Arkivuorokausi (€/yö)</legend>
         <div className="grid gap-4 sm:grid-cols-2">
-          <PriceField id="weekdayScout" label="Partiolaiset" cents={settings.weekdayScoutCents} />
-          <PriceField id="weekdayOther" label="Muut" cents={settings.weekdayOtherCents} />
+          <PriceField id="weekdayScout" label="Partiolainen" cents={settings.weekdayScoutCents} />
+          <PriceField id="weekdayOther" label="Muu varaaja" cents={settings.weekdayOtherCents} />
         </div>
       </fieldset>
 
@@ -79,11 +79,11 @@ export function KammiSettingsForm({ settings }: { settings: KammiSettingsValues 
       <div className="space-y-1.5">
         <Label htmlFor="keycode">Ovikoodi</Label>
         <Input id="keycode" name="keycode" defaultValue={settings.keycode} placeholder="esim. 1234" />
-        <p className="text-xs text-muted-foreground">Lähetetään vain maksaneelle vahvistusviestissä — ei näy julkisilla sivuilla.</p>
+        <p className="text-xs text-muted-foreground">Lähetetään vain maksaneelle vahvistusviestissä. Ei näy julkisilla sivuilla.</p>
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="instructions">Ohjeet (vahvistusviestiin)</Label>
+        <Label htmlFor="instructions">Ohjeet vahvistusviestiin</Label>
         <Textarea id="instructions" name="instructions" rows={6} defaultValue={settings.instructions} placeholder="Ajo-ohjeet, avaimet, siivous, palautus…" />
       </div>
 

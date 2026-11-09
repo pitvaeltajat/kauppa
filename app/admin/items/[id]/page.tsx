@@ -29,6 +29,7 @@ export default async function EditItemPage({ params }: { params: Promise<{ id: s
     description: item.description,
     sortOrder: item.sortOrder,
     active: item.active,
+    featured: item.featured,
     isEvent: item.isEvent,
     startsAt: item.startsAt ? item.startsAt.toISOString().slice(0, 10) : null,
     endsAt: item.endsAt ? item.endsAt.toISOString().slice(0, 10) : null,

@@ -24,7 +24,7 @@ export default async function LoginPage({
     redirect(safeCallback);
   }
 
-  // Signed in but not a superadmin — including a shared .pitva.fi cookie from
+  // Signed in but not a superadmin, including a shared .pitva.fi cookie from
   // another pitva app. The shop isn't open to them yet.
   if (email) {
     return (
@@ -32,12 +32,12 @@ export default async function LoginPage({
         <Card className="w-full max-w-md">
           <CardHeader className="items-center text-center">
             <ShieldAlert className="size-10 text-warning" />
-            <CardTitle>Kauppa on vielä kesken</CardTitle>
+            <CardTitle>Kontti on vielä työn alla</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 text-center text-sm text-muted-foreground">
             <p>
-              Tilillä {email} ei ole vielä pääsyä kauppaan. Kauppa on toistaiseksi vain
-              pääylläpitäjien käytössä — pyydä lippukunnan ATK-vastaavaa lisäämään sinut.
+              Tilillä {email} ei ole vielä pääsyä Konttiin. Palvelu on toistaiseksi vain
+              pääylläpitäjien käytössä. Pyydä lippukunnan ATK-vastaavaa lisäämään käyttöoikeus.
             </p>
           </CardContent>
         </Card>

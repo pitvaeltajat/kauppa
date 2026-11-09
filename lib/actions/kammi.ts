@@ -17,7 +17,7 @@ export async function saveKammiSettings(
   _prev: ActionResult | undefined,
   formData: FormData,
 ): Promise<ActionResult> {
-  if (!(await requireSuper())) return { error: 'Ei käyttöoikeutta.' };
+  if (!(await requireSuper())) return { error: 'Sinulla ei ole tähän käyttöoikeutta.' };
 
   const euros = (name: string) => parseEurosInput((formData.get(name) as string) ?? '');
   const weekendScoutCents = euros('weekendScout');
@@ -30,7 +30,7 @@ export async function saveKammiSettings(
     weekdayScoutCents === null ||
     weekdayOtherCents === null
   ) {
-    return { error: 'Tarkista hinnat (esim. 200 tai 200,00).' };
+    return { error: 'Tarkista hinnat. Käytä esimerkiksi muotoa 200 tai 200,00.' };
   }
 
   const minNights = Math.max(1, Number((formData.get('minNights') as string) ?? '1') || 1);

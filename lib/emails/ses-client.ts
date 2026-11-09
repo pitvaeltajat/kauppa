@@ -2,7 +2,7 @@ import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
 
 // Mirrors klapi's utils/emails/ses-client.ts. In local dev (USE_LOCAL_SES=true)
 // it points at aws-ses-v2-local so no real mail is sent; in production it uses
-// the KAUPPA_AWS_* credentials. kauppa sends from its own verified identity but
+// the KAUPPA_AWS_* credentials. kontti sends from its own verified identity but
 // via the same AWS account/region klapi uses.
 const isLocal = process.env.USE_LOCAL_SES === 'true';
 
@@ -21,8 +21,8 @@ const ses = new SESClient({
       }),
 });
 
-/** Every kauppa mail subject carries this tag, applied in one place. */
-export const SUBJECT_PREFIX = '[PitVa-kauppa] ';
+/** Every kontti mail subject carries this tag, applied in one place. */
+export const SUBJECT_PREFIX = '[PitVa-kontti] ';
 
 export async function sendEmail(to: string | string[], subject: string, html: string) {
   const toAddresses = (Array.isArray(to) ? to : [to]).filter(Boolean);

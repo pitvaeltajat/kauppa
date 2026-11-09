@@ -6,7 +6,7 @@ import { Button, type ButtonProps } from '@/components/ui/button';
 
 /**
  * Submit button for a server-action <form>. Shows a spinner while the action is
- * in flight (so a click gives immediate feedback), and — with `confirm` — asks
+ * in flight (so a click gives immediate feedback). With `confirm`, it asks
  * before firing, so a destructive action isn't one stray tap away.
  */
 export function FormButton({

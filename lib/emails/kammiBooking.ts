@@ -37,14 +37,14 @@ export function renderKammiConfirmationEmail(data: KammiEmailData): EmailContent
   const html = renderEmail(`
     <h1>Kammi-varaus vahvistettu</h1>
     <p>${greeting}</p>
-    <p>Varauksesi on vahvistettu ja maksettu. Kammi on varattu sinulle:</p>
+    <p>Varauksesi on vahvistettu ja maksu on vastaanotettu. Kammi on varattu sinulle:</p>
     <div class="info-box">
       <strong>${fi(data.startISO)} – ${fi(data.endISO)}</strong> (${data.nights} yötä)<br>
-      Maksettu: ${formatCents(data.totalCents)}
+      Hinta: ${formatCents(data.totalCents)}
     </div>
     ${keycodeBlock}
     ${instructionsBlock}
-    <p>Muistathan loppusiivouksen — tekemättä jätetystä siivouksesta veloitetaan erikseen.</p>
+    <p>Muistathan loppusiivouksen. Jos siivous jää tekemättä, siitä veloitetaan erikseen.</p>
     ${renderButton(publicUrl(), 'Pitkäjärven Vaeltajat')}
   `);
   return { subject: `Kammi-varaus vahvistettu ${fi(data.startISO)}–${fi(data.endISO)}`, html };
@@ -70,21 +70,21 @@ export async function sendKammiConfirmationEmail(bookingId: string): Promise<voi
 }
 
 /**
- * Post-stay feedback request — migrated from the old `palaute()` Apps Script.
+ * Post-stay feedback request, migrated from the old `palaute()` Apps Script.
  * Sent the day a stay ends, asking the booker to fill the feedback form.
  */
 export function renderKammiFeedbackEmail(name: string | null): EmailContent {
   const greeting = name ? `Moi ${escapeHtml(name)}!` : 'Moi!';
   const html = renderEmail(`
-    <h1>Kiitos vierailustanne Kammilla</h1>
+    <h1>Kiitos vierailustasi Kammilla</h1>
     <p>${greeting}</p>
     <p>
-      Kiitos vierailustanne Kammilla, toivottavasti retki sujui hyvin! Jotta voimme kehittää
-      kämppää entisestään, pyydämme täyttämään Kammin palautelomakkeen. Vastaaminen ei kestä
-      kauaa ja lomake toimii myös kännykällä.
+      Kiitos vierailustasi Kammilla. Toivottavasti retki sujui hyvin! Kerro kokemuksestasi
+      täyttämällä Kammin palautelomake. Vastaamiseen menee vain hetki, ja lomake toimii myös
+      puhelimella.
     </p>
     ${renderButton(FEEDBACK_URL(), 'Täytä palautelomake')}
-    <p>Kiitos jo etukäteen palautteesta!</p>
+    <p>Kiitos palautteestasi jo etukäteen!</p>
     <p>${HOST_SIGNATURE}</p>
   `);
   return { subject: 'Kammin palautelomake', html };
@@ -105,11 +105,11 @@ export async function sendKammiHostNotificationEmail(bookingId: string): Promise
   if (!booking) return;
   const rows: [string, string | null][] = [
     ['Varaaja', booking.name],
-    ['Taho', booking.organization],
+    ['Yhteisö tai seura', booking.organization],
     ['Sähköposti', booking.email],
     ['Puhelin', booking.phone],
     ['Laskutus', booking.billingEmail],
-    ['Hinnoittelu', booking.tier === 'SCOUT' ? 'Partiolainen' : 'Muu'],
+    ['Hinnan peruste', booking.tier === 'SCOUT' ? 'Partiolainen' : 'Muu varaaja'],
     ['Tapahtuman tiedot', booking.eventInfo],
     ['Kysymykset', booking.hostQuestions],
   ];
@@ -120,7 +120,7 @@ export async function sendKammiHostNotificationEmail(bookingId: string): Promise
   const { subject, html } = {
     subject: `Uusi Kammi-varaus ${fi(toISODate(booking.startDate))}–${fi(toISODate(booking.endDate))}`,
     html: renderEmail(`
-      <h1>Uusi Kammi-varaus</h1>
+      <h1>Uusi Kammin varaus</h1>
       <div class="info-box"><strong>${fi(toISODate(booking.startDate))} – ${fi(toISODate(booking.endDate))}</strong> (${booking.nights} yötä) · ${formatCents(booking.totalCents)}</div>
       <table>${rowsHtml}</table>
       ${renderButton(`${publicUrl()}/admin/kammi`, 'Avaa hallinta')}

@@ -13,7 +13,7 @@ export type OrderEmailData = {
   lines: { name: string; quantity: number; priceCents: number; answers: Answer[] }[];
 };
 
-/** "#A1B2C3D4" — the same short id the admin order list shows. */
+/** "#A1B2C3D4" is the same short id the admin order list shows. */
 function orderNumber(id: string): string {
   return `#${id.slice(-8).toUpperCase()}`;
 }
@@ -55,20 +55,20 @@ export function renderOrderReceiptEmail(data: OrderEmailData): EmailContent {
   const html = renderEmail(`
     <h1>Kiitos tilauksestasi</h1>
     <p>${greeting}</p>
-    <p>Maksusi on vastaanotettu. Tässä kuitti tilauksestasi <strong>${orderNumber(data.id)}</strong>.</p>
+    <p>Maksusi on vastaanotettu. Tässä on kuitti tilauksestasi <strong>${orderNumber(data.id)}</strong>.</p>
     ${renderLinesTable(data)}
     <div class="info-box">
-      Tuotteet noudetaan kokouksessa ryhmänjohtajaltasi (tai tapahtumaan ilmoittautuessa
-      osallistumismaksuna). Niitä ei lähetetä postitse.
+      Tuotteet noudetaan kokouksessa ryhmänjohtajalta tai erikseen sovittuna aikana kololta.
+      Emme postita tuotteita. Tapahtumatuotteen ostaminen toimii samalla ilmoittautumisena.
     </div>
-    ${renderButton(publicUrl(), 'Takaisin kauppaan')}
+    ${renderButton(publicUrl(), 'Takaisin Konttiin')}
   `);
   return { subject: `Kuitti tilauksestasi ${orderNumber(data.id)}`, html };
 }
 
 /** Heads-up to the troop when a new order is paid. */
 export function renderNewOrderAdminEmail(data: OrderEmailData): EmailContent {
-  const buyer = [data.name, data.email].filter(Boolean).join(' · ') || 'Ei yhteystietoja';
+  const buyer = [data.name, data.email].filter(Boolean).join(' · ') || 'Yhteystietoja ei annettu';
   const html = renderEmail(`
     <h1>Uusi tilaus ${orderNumber(data.id)}</h1>
     <p>${escapeHtml(buyer)}</p>

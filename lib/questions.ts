@@ -118,13 +118,13 @@ export function validateAndBuildAnswers(
         }
         const values = Array.isArray(value) ? value : [value];
         if (values.length === 0 || values.some((v) => v === '')) {
-          return { ok: false, error: `Valitse vaihtoehto kysymykseen "${question.prompt}".` };
+          return { ok: false, error: `Valitse vastaus kysymykseen "${question.prompt}".` };
         }
         for (const v of values) {
           if (!question.options.includes(v)) {
             return {
               ok: false,
-              error: `"${v}" ei ole kelvollinen vaihtoehto kysymykseen "${question.prompt}".`,
+              error: `"${v}" ei ole kelvollinen vastaus kysymykseen "${question.prompt}".`,
             };
           }
         }
@@ -149,7 +149,7 @@ export function validateAndBuildAnswers(
         if (!Number.isFinite(number)) {
           return {
             ok: false,
-            error: `"${value}" ei ole kelvollinen vastaus kysymykseen "${question.prompt}" — anna numero.`,
+            error: `Anna kysymykseen "${question.prompt}" numero.`,
           };
         }
       }

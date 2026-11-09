@@ -15,15 +15,15 @@ export default function CancelPage() {
         </CardHeader>
         <CardContent className="flex flex-col items-center gap-4">
           <p className="text-sm text-muted-foreground">
-            Maksua ei suoritettu, eikä mitään veloitettu. Ostoskorisi on tallessa — voit
-            palata kauppaan harkitsemaan.
+            Maksua ei suoritettu, eikä kortiltasi veloitettu mitään. Ostoskorisi on tallessa,
+            joten voit palata jatkamaan myöhemmin.
           </p>
           <div className="flex justify-center gap-3">
             <ButtonLink href="/cart" variant="outline">
               Takaisin ostoskoriin
             </ButtonLink>
             <ButtonLink href="/" variant="cta">
-              Jatka ostoksia
+              Takaisin tuotteisiin
             </ButtonLink>
           </div>
         </CardContent>

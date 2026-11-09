@@ -10,12 +10,14 @@ export const metadata: Metadata = { title: 'Kiitos tilauksesta' };
 export default async function SuccessPage({
   searchParams,
 }: {
-  searchParams: Promise<{ session_id?: string }>;
+  searchParams: Promise<{ session_id?: string; payment_intent?: string }>;
 }) {
-  const { session_id } = await searchParams;
-  const order = session_id
-    ? await prisma.order.findUnique({
-        where: { stripeSessionId: session_id },
+  const { session_id, payment_intent } = await searchParams;
+  const order = session_id || payment_intent
+    ? await prisma.order.findFirst({
+        where: session_id
+          ? { stripeSessionId: session_id }
+          : { stripePaymentIntent: payment_intent },
         include: { lines: { include: { item: true } } },
       })
     : null;
@@ -33,7 +35,7 @@ export default async function SuccessPage({
               <p className="text-sm text-muted-foreground">
                 Tilaus{' '}
                 <span className="font-medium text-foreground">#{order.id.slice(-8).toUpperCase()}</span>{' '}
-                on vahvistettu ja maksu on vastaanotettu. Kuitti on lähetetty sähköpostiisi.
+                on vastaanotettu. Maksu vahvistetaan hetken kuluttua ja kuitti lähetetään sähköpostiisi.
               </p>
               <div className="divide-y rounded-md border">
                 {order.lines.map((line) => {

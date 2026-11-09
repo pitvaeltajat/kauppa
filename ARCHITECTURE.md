@@ -26,20 +26,20 @@ Category 1──n Item 1──n OrderLine n──1 Order
 2. `POST /api/checkout` re-fetches the items from Postgres and validates every
    line with `buildCheckout` (`lib/checkout.ts`): active item, stock, quantity
    cap, and a total recomputed from DB prices. It creates the `Order`
-   (RECEIVED) with its lines, then a Stripe Checkout Session using
-   `price_data` (no Stripe Product/Price sync; the DB is the catalog).
-   `metadata.orderId` links the two. If creating the session fails, the order
-   row is rolled back.
-3. Stripe hosts the checkout. The browser is redirected to `session.url`; the
-   cart is cleared.
+   (RECEIVED) with its lines, then a Stripe PaymentIntent for the validated
+   total. `metadata.orderId` links the two. If creating the intent fails, the
+   order row is rolled back.
+3. The browser mounts Stripe's localized Payment Element in the cart and
+   confirms the PaymentIntent inline. The cart is cleared after confirmation.
 4. `POST /api/webhooks/stripe` (signature-verified):
-   - `checkout.session.completed` → `markOrderPaid`: RECEIVED → PAID, sets
-     `paidAt`, `stripePaymentIntent` and backfills email/name from the session,
+   - `payment_intent.succeeded` (or legacy `checkout.session.completed`) →
+     `markOrderPaid`: RECEIVED → PAID, sets
+     `paidAt`, `stripePaymentIntent` and backfills available email/name,
      then decrements stock per line (`lib/orders.ts`, floors at 0, leaves
      `null` stock alone). Idempotent (`PAID`/`COMPLETED` orders are skipped).
    - `checkout.session.expired` → cancels a still-RECEIVED order.
-5. `session_id` on `/success` resolves the order for the thank-you page. Stripe
-   emails the receipt; the admin sees the same data under `/admin`.
+5. `payment_intent` on `/success` resolves the order for the thank-you page.
+   Stripe emails the receipt; the admin sees the same data under `/admin`.
 
 ## Admin
 

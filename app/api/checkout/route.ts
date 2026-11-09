@@ -13,7 +13,7 @@ import { loadValidDiscount } from '@/lib/discountCodes';
 import { normalizeCode } from '@/lib/discount';
 
 /**
- * Creates an Order row and a Stripe Checkout Session for the cart. Prices,
+ * Creates an Order row and a Stripe PaymentIntent for the cart. Prices,
  * stock and any item question answers are re-validated against the database.
  * nothing the browser sent is trusted. In test mode this needs
  * STRIPE_SECRET_KEY (sk_test_) set.
@@ -128,34 +128,25 @@ export async function POST(req: Request) {
     },
   });
 
-  let url: string | null = null;
+  let clientSecret: string | null = null;
+  let paymentIntentId: string | null = null;
   try {
     const stripe = getStripe();
-    const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? req.headers.get('origin') ?? '').replace(/\/$/, '');
-    if (!appUrl) throw new Error('NEXT_PUBLIC_APP_URL puuttuu.');
-
-    const session = await stripe.checkout.sessions.create({
-      mode: 'payment',
-      line_items: result.lines.map((line) => ({
-        quantity: line.quantity,
-        price_data: {
-          currency: 'eur',
-          unit_amount: line.priceCents,
-          product_data: { name: line.name },
-        },
-      })),
-      customer_email: email ?? undefined,
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: result.totalCents,
+      currency: 'eur',
+      automatic_payment_methods: { enabled: true },
+      receipt_email: email ?? undefined,
+      description: `Pitkäjärven Vaeltajat -tilaus ${order.id.slice(-8).toUpperCase()}`,
       metadata: { orderId: order.id },
-      success_url: `${appUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${appUrl}/cart`,
-      locale: 'fi',
     });
 
     await prisma.order.update({
       where: { id: order.id },
-      data: { stripeSessionId: session.id },
+      data: { stripePaymentIntent: paymentIntent.id },
     });
-    url = session.url;
+    clientSecret = paymentIntent.client_secret;
+    paymentIntentId = paymentIntent.id;
   } catch (err) {
     // Roll the order back so an unconfigured/errored Stripe does not litter
     // the admin with abandoned orders.
@@ -167,5 +158,5 @@ export async function POST(req: Request) {
     );
   }
 
-  return NextResponse.json({ url });
+  return NextResponse.json({ clientSecret, paymentIntentId });
 }

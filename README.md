@@ -13,7 +13,7 @@ UI: **suomi**. Code, commits and comments: **englanti**.
 - Prisma + PostgreSQL (catalog + orders)
 - Auth.js (next-auth v5 beta) with Google OAuth, optional shared `.pitva.fi`
   session cookie (same pattern as Klapi/Budu/landeri)
-- Stripe (Checkout Sessions + webhook), currently in **test/sandbox mode**
+- Stripe Payment Element + webhook, currently in **test/sandbox mode**
 - Tailwind CSS v4 with the PitVa brand palette copied from Klapi's
   `styles/globals.css` (navy `#221E5D`, light blue `#BBD1FB`, wash `#ECF2FE`)
 - Vitest for the pure logic (money, slugs, checkout validation, stock)
@@ -104,11 +104,13 @@ project:
 - `GOOGLE_WORKSPACE_DOMAIN="pitkajarvenvaeltajat.fi"`
 - `STRIPE_SECRET_KEY`: `sk_test_…` now, `sk_live_…` when the account leaves
   sandbox
+- `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`: the Stripe publishable key used by the
+  embedded Payment Element
 - `STRIPE_WEBHOOK_SECRET`: from Dashboard → Developers → Webhooks (register
   `https://kontti.pitva.fi/api/webhooks/stripe`, events
-  `checkout.session.completed` and `checkout.session.expired`)
-- `NEXT_PUBLIC_APP_URL="https://kontti.pitva.fi"`: used for the success/cancel
-  URLs
+  `checkout.session.completed`, `checkout.session.expired`, and
+  `payment_intent.succeeded`)
+- `NEXT_PUBLIC_APP_URL="https://kontti.pitva.fi"`: the app's public URL
 
 DNS: `kontti.pitva.fi` CNAME to the Vercel deployment, in the same Route 53
 hosted zone that points `kompassi.pitva.fi` and `klapi.pitva.fi`.

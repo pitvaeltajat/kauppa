@@ -21,6 +21,7 @@ export default async function SuccessPage({
         include: { lines: { include: { item: true } } },
       })
     : null;
+  const isEventOrder = order?.lines.some((line) => line.item.isEvent) ?? false;
 
   return (
     <div className="container flex justify-center py-12">
@@ -84,8 +85,9 @@ export default async function SuccessPage({
           )}
 
           <div className="rounded-md bg-accent/60 px-4 py-3 text-xs text-muted-foreground">
-            Tuotteet noudetaan kokouksessa ryhmänjohtajalta tai erikseen sovittuna aikana kololta.
-            Emme postita tuotteita. Tapahtumatuotteen ostaminen vahvistaa ilmoittautumisen.
+            {isEventOrder
+              ? 'Tapahtumatuotteen ostaminen vahvisti ilmoittautumisen. Saat tapahtuman tarkemmat ohjeet erikseen.'
+              : 'Tuotteet noudetaan kokouksessa ryhmänjohtajalta tai erikseen sovittuna aikana kololta. Emme postita tuotteita.'}
           </div>
 
           <div className="flex justify-center gap-3 pt-2">

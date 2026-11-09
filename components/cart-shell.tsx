@@ -606,7 +606,9 @@ export function CartShell() {
         <p className="text-center text-xs text-muted-foreground">
           {invoiceCheckout
             ? 'Lasku lähetetään vanhemman sähköpostiin. Ilmoittautuminen vahvistuu maksun jälkeen.'
-            : 'Maksu tapahtuu turvallisesti tässä näkymässä. Tuotteet noudetaan kokouksessa tai sovitusti. Niitä ei postiteta.'}
+            : eventOnly
+              ? 'Maksat tapahtuman verkossa. Tapahtumatuotteen ostaminen toimii samalla ilmoittautumisena. Saat kuitin sähköpostiisi.'
+              : 'Maksat tuotteen verkossa ja noudat sen kokouksessa ryhmänjohtajalta tai erikseen sovittuna aikana kololta. Saat kuitin sähköpostiisi.'}
         </p>
       </div>
     </div>

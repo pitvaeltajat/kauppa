@@ -96,11 +96,11 @@ export default async function ItemPage({ params }: { params: Promise<{ slug: str
           </div>
 
           <Card className="mt-8 p-5 text-xs text-muted-foreground">
-            <p className="font-medium text-foreground">Nouto</p>
+            <p className="font-medium text-foreground">{item.isEvent ? 'Ilmoittautuminen' : 'Nouto'}</p>
             <p className="mt-2">
-              Maksat tuotteen verkossa ja noudat sen kokouksessa ryhmänjohtajalta tai erikseen
-              sovittuna aikana kololta. Tapahtumatuotteen ostaminen toimii samalla
-              ilmoittautumisena. Saat kuitin sähköpostiisi.
+              {item.isEvent
+                ? 'Maksat tapahtuman verkossa. Tapahtumatuotteen ostaminen toimii samalla ilmoittautumisena. Saat kuitin sähköpostiisi.'
+                : 'Maksat tuotteen verkossa ja noudat sen kokouksessa ryhmänjohtajalta tai erikseen sovittuna aikana kololta. Saat kuitin sähköpostiisi.'}
             </p>
           </Card>
         </div>

@@ -316,9 +316,9 @@ export function CartShell() {
 
               {/* Checkout questions for this item */}
               {item && item.questions.length > 0 && (
-                <div className="mt-4 space-y-4 rounded-md bg-background p-4">
+                <div className="mt-4 space-y-3 rounded-md bg-background p-3">
                   {Array.from({ length: cartItem.quantity }).map((_, participantIndex) => (
-                    <div key={participantIndex} className="space-y-4">
+                    <div key={participantIndex} className="space-y-4 rounded-md border bg-card p-4">
                       {cartItem.quantity > 1 && (
                         <p className="text-sm font-semibold">Osallistuja {participantIndex + 1}</p>
                       )}

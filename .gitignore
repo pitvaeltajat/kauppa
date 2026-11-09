@@ -23,6 +23,7 @@ dist/
 next-env.d.ts
 .eslintcache
 .vercel
+.claude/worktrees/
 
 # logs
 logs/

@@ -36,6 +36,7 @@ type FetchedItem = {
   priceCents: number;
   imageUrl: string | null;
   stock: number | null;
+  isEvent: boolean;
   leaderDiscount: boolean;
   questions: CheckoutQuestion[];
 };
@@ -48,6 +49,7 @@ const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
   : null;
 
 export function CartShell() {
+  const router = useRouter();
   const { items } = useCart();
   const [catalog, setCatalog] = useState<Map<string, FetchedItem>>(new Map());
   const [catalogLoaded, setCatalogLoaded] = useState(false);
@@ -62,6 +64,7 @@ export function CartShell() {
   const [codeChecking, setCodeChecking] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'invoice'>('invoice');
 
   const ids = useMemo(() => items.map((i) => i.id).sort(), [items]);
 
@@ -90,6 +93,8 @@ export function CartShell() {
     const item = catalog.get(cartItem.id);
     return [{ cartItem, item }];
   });
+  const eventOnly = lines.length > 0 && lines.every(({ item }) => item?.isEvent === true);
+  const invoiceCheckout = eventOnly && paymentMethod === 'invoice';
 
   const totalCents = lines.reduce(
     (sum, { cartItem, item }) => sum + (item?.priceCents ?? 0) * cartItem.quantity,
@@ -175,7 +180,7 @@ export function CartShell() {
 
   async function goToCheckout() {
     setError(null);
-    if (!stripePromise) {
+    if (!invoiceCheckout && !stripePromise) {
       setError('Maksupalvelua ei ole vielä konfiguroitu. Ota yhteyttä ylläpitoon.');
       return;
     }
@@ -203,15 +208,25 @@ export function CartShell() {
           email: email.trim() || undefined,
           name: name.trim() || undefined,
           discountCode: discount?.code,
+          paymentMethod: invoiceCheckout ? 'invoice' : 'card',
         }),
       });
       const data = (await res.json()) as {
+        paymentMethod?: 'card' | 'invoice';
+        orderId?: string;
+        invoiceUrl?: string | null;
+        invoicePdfUrl?: string | null;
         clientSecret?: string | null;
         paymentIntentId?: string | null;
         error?: string;
       };
       if (!res.ok) {
         setError(data.error ?? 'Maksua ei voitu aloittaa. Yritä uudelleen.');
+        return;
+      }
+      if (data.paymentMethod === 'invoice' && data.orderId) {
+        cartStore.clear();
+        router.push(`/invoice/success?order_id=${encodeURIComponent(data.orderId)}`);
         return;
       }
       if (!data.clientSecret || !data.paymentIntentId) {
@@ -496,17 +511,19 @@ export function CartShell() {
 
         <div className="space-y-3 border-t pt-4">
           <div className="space-y-1.5">
-            <Label htmlFor="email">Sähköposti (kuitti lähetetään tähän)</Label>
+            <Label htmlFor="email">
+              {invoiceCheckout ? 'Vanhemman sähköposti (lasku lähetetään tähän)' : 'Sähköposti (kuitti lähetetään tähän)'}
+            </Label>
             <Input
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="etunimi@example.com"
+              placeholder="vanhempi@example.com"
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="name">Nimi</Label>
+            <Label htmlFor="name">{eventOnly ? 'Ilmoittautujan nimi' : 'Nimi'}</Label>
             <Input
               id="name"
               value={name}
@@ -516,11 +533,53 @@ export function CartShell() {
           </div>
         </div>
 
+        {eventOnly && catalogLoaded && (
+          <fieldset className="space-y-2 border-t pt-4">
+            <legend className="text-sm font-medium">Maksutapa</legend>
+            <label className="flex cursor-pointer items-start gap-2 text-sm">
+              <input
+                type="radio"
+                name="payment-method"
+                className="mt-0.5 size-4 accent-[hsl(244,51%,24%)]"
+                checked={paymentMethod === 'invoice'}
+                onChange={() => {
+                  setPaymentMethod('invoice');
+                  setError(null);
+                }}
+              />
+              <span>
+                <span className="font-medium">Lasku vanhemmalle</span>
+                <span className="block text-xs text-muted-foreground">
+                  Lasku lähetetään vanhemman sähköpostiin. Eräpäivä on 14 päivän kuluttua.
+                </span>
+              </span>
+            </label>
+            <label className="flex cursor-pointer items-start gap-2 text-sm">
+              <input
+                type="radio"
+                name="payment-method"
+                className="mt-0.5 size-4 accent-[hsl(244,51%,24%)]"
+                checked={paymentMethod === 'card'}
+                onChange={() => {
+                  setPaymentMethod('card');
+                  setError(null);
+                }}
+              />
+              <span>
+                <span className="font-medium">Maksa heti</span>
+                <span className="block text-xs text-muted-foreground">
+                  Maksu tapahtuu heti Stripen maksulomakkeella.
+                </span>
+              </span>
+            </label>
+          </fieldset>
+        )}
+
         {error && (
           <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
         )}
 
-        {clientSecret && stripePromise ? (
+        {clientSecret && stripePromise && !invoiceCheckout ? (
           <Elements
             stripe={stripePromise}
             options={{
@@ -546,12 +605,19 @@ export function CartShell() {
             disabled={loading || lines.length === 0 || lines.some(({ item }) => !item)}
             onClick={goToCheckout}
           >
-            {loading ? 'Valmistellaan maksua…' : 'Jatka maksamiseen'}
+            {loading
+              ? invoiceCheckout
+                ? 'Luodaan laskua…'
+                : 'Valmistellaan maksua…'
+              : invoiceCheckout
+                ? 'Lähetä ilmoittautuminen ja lasku'
+                : 'Jatka maksamiseen'}
           </Button>
         )}
         <p className="text-center text-xs text-muted-foreground">
-          Maksu tapahtuu turvallisesti tässä näkymässä Stripen avulla. Tuotteet noudetaan
-          kokouksessa tai sovitusti. Niitä ei postiteta.
+          {invoiceCheckout
+            ? 'Lasku lähetetään vanhemman sähköpostiin Stripen kautta. Ilmoittautuminen vahvistuu maksun jälkeen.'
+            : 'Maksu tapahtuu turvallisesti tässä näkymässä Stripen avulla. Tuotteet noudetaan kokouksessa tai sovitusti. Niitä ei postiteta.'}
         </p>
       </div>
     </div>

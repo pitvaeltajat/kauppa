@@ -158,6 +158,11 @@ model Order {
   totalCents          Int
   stripeSessionId     String?     @unique
   stripePaymentIntent String?
+  stripeCustomerId    String?
+  stripeInvoiceId     String?     @unique
+  invoiceUrl          String?
+  invoicePdfUrl       String?
+  invoiceDueAt        DateTime?
   paidAt              DateTime?
   lines               OrderLine[]
 

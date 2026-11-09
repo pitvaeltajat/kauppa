@@ -18,9 +18,20 @@ export default async function AdminEventsPage() {
     where: { isEvent: true },
     orderBy: [{ startsAt: 'desc' }, { name: 'asc' }],
     include: {
-      // Paid/handed-over order lines ≈ registrations (one line per order per event).
+      // Paid/handed-over orders plus issued-but-unpaid invoices are registrations.
       _count: {
-        select: { orderLines: { where: { order: { status: { in: ['PAID', 'COMPLETED'] } } } } },
+        select: {
+          orderLines: {
+            where: {
+              order: {
+                OR: [
+                  { status: { in: ['PAID', 'COMPLETED'] } },
+                  { status: 'RECEIVED', stripeInvoiceId: { not: null } },
+                ],
+              },
+            },
+          },
+        },
       },
     },
   });

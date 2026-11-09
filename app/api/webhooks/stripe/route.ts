@@ -94,6 +94,20 @@ export async function POST(req: Request) {
       }
       break;
     }
+    case 'invoice.paid': {
+      const invoice = event.data.object;
+      const orderId = invoice.metadata?.orderId;
+      if (orderId) {
+        const newlyPaid = await markOrderPaid(orderId, invoice);
+        if (newlyPaid) {
+          await trySendEmail(`order receipt ${orderId}`, () => sendOrderReceiptEmail(orderId));
+          await trySendEmail(`new-order notice ${orderId}`, () => sendNewOrderAdminEmail(orderId));
+        }
+      } else {
+        console.warn('invoice.paid ilman orderId:ta', invoice.id);
+      }
+      break;
+    }
     default:
       break;
   }
@@ -104,7 +118,7 @@ export async function POST(req: Request) {
 /** Returns true only when this call performed the RECEIVED→PAID transition. */
 async function markOrderPaid(
   orderId: string,
-  payment: Stripe.Checkout.Session | Stripe.PaymentIntent,
+  payment: Stripe.Checkout.Session | Stripe.PaymentIntent | Stripe.Invoice,
 ): Promise<boolean> {
   return prisma.$transaction(async (tx) => {
     const order = await tx.order.findUnique({
@@ -144,16 +158,25 @@ async function markOrderPaid(
         stripePaymentIntent:
           payment.object === 'payment_intent'
             ? payment.id
-            : typeof payment.payment_intent === 'string'
+            : payment.object === 'checkout.session' && typeof payment.payment_intent === 'string'
               ? payment.payment_intent
               : order.stripePaymentIntent,
+        stripeInvoiceId: payment.object === 'invoice' ? payment.id : order.stripeInvoiceId,
         email:
           order.email ??
-          (payment.object === 'checkout.session' ? payment.customer_details?.email : null) ??
+          (payment.object === 'checkout.session'
+            ? payment.customer_details?.email
+            : payment.object === 'invoice'
+              ? payment.customer_email
+              : null) ??
           null,
         name:
           order.name ??
-          (payment.object === 'checkout.session' ? payment.customer_details?.name : null) ??
+          (payment.object === 'checkout.session'
+            ? payment.customer_details?.name
+            : payment.object === 'invoice'
+              ? payment.customer_name
+              : null) ??
           null,
       },
     });

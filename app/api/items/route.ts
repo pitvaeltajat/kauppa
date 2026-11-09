@@ -44,6 +44,7 @@ export async function GET(req: Request) {
       priceCents: item.priceCents,
       imageUrl: item.imageUrl,
       stock: item.stock,
+      isEvent: item.isEvent,
       leaderDiscount: item.leaderDiscount,
       questions: withEventQuestions(
         item.isEvent,

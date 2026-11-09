@@ -25,6 +25,7 @@ export async function POST(req: Request) {
     name?: unknown;
     answers?: unknown;
     discountCode?: unknown;
+    paymentMethod?: unknown;
   };
   try {
     payload = await req.json();
@@ -74,6 +75,14 @@ export async function POST(req: Request) {
     orderBy: { sortOrder: 'asc' },
   });
   const eventItemIds = new Set(items.filter((i) => i.isEvent).map((i) => i.id));
+  const invoiceRequested = payload.paymentMethod === 'invoice';
+  const eventOnly = result.lines.every((line) => eventItemIds.has(line.itemId));
+  if (invoiceRequested && !eventOnly) {
+    return NextResponse.json(
+      { error: 'Laskulla voi ilmoittautua vain tapahtumiin. Poista muut tuotteet korista.' },
+      { status: 400 },
+    );
+  }
   const questionsByItem: Record<string, ItemQuestionLike[]> = {};
   for (const itemId of itemIds) questionsByItem[itemId] = [];
   for (const q of questionRows) {
@@ -118,6 +127,18 @@ export async function POST(req: Request) {
     typeof payload.name === 'string' && payload.name.trim()
       ? payload.name.trim().slice(0, 200)
       : null;
+  if (invoiceRequested && !email) {
+    return NextResponse.json(
+      { error: 'Anna vanhemman sähköpostiosoite, johon lasku lähetetään.' },
+      { status: 400 },
+    );
+  }
+  if (invoiceRequested && result.totalCents <= 0) {
+    return NextResponse.json(
+      { error: 'Maksuttomaan ilmoittautumiseen ei tarvita laskua.' },
+      { status: 400 },
+    );
+  }
 
   const order = await prisma.order.create({
     data: {
@@ -137,10 +158,52 @@ export async function POST(req: Request) {
     },
   });
 
-  let clientSecret: string | null = null;
-  let paymentIntentId: string | null = null;
   try {
     const stripe = getStripe();
+    if (invoiceRequested) {
+      const customer = await stripe.customers.create({
+        email: email ?? undefined,
+        name: name ?? undefined,
+        metadata: { orderId: order.id },
+      });
+      for (const line of result.lines) {
+        await stripe.invoiceItems.create({
+          customer: customer.id,
+          amount: line.priceCents * line.quantity,
+          currency: 'eur',
+          description: `${line.name} × ${line.quantity}`,
+          metadata: { orderId: order.id, itemId: line.itemId },
+        });
+      }
+      const invoice = await stripe.invoices.create({
+        customer: customer.id,
+        collection_method: 'send_invoice',
+        pending_invoice_items_behavior: 'include',
+        days_until_due: 14,
+        description: `Pitkäjärven Vaeltajat -tapahtumailmoittautuminen ${order.id.slice(-8).toUpperCase()}`,
+        footer: 'Ilmoittautuminen vahvistuu, kun lasku on maksettu.',
+        metadata: { orderId: order.id },
+      });
+      const finalized = await stripe.invoices.finalizeInvoice(invoice.id);
+      const sent = await stripe.invoices.sendInvoice(finalized.id);
+      await prisma.order.update({
+        where: { id: order.id },
+        data: {
+          stripeCustomerId: customer.id,
+          stripeInvoiceId: sent.id,
+          invoiceUrl: sent.hosted_invoice_url,
+          invoicePdfUrl: sent.invoice_pdf,
+          invoiceDueAt: sent.due_date ? new Date(sent.due_date * 1000) : null,
+        },
+      });
+      return NextResponse.json({
+        paymentMethod: 'invoice',
+        orderId: order.id,
+        invoiceUrl: sent.hosted_invoice_url,
+        invoicePdfUrl: sent.invoice_pdf,
+      });
+    }
+
     const paymentIntent = await stripe.paymentIntents.create({
       amount: result.totalCents,
       currency: 'eur',
@@ -154,8 +217,11 @@ export async function POST(req: Request) {
       where: { id: order.id },
       data: { stripePaymentIntent: paymentIntent.id },
     });
-    clientSecret = paymentIntent.client_secret;
-    paymentIntentId = paymentIntent.id;
+    return NextResponse.json({
+      paymentMethod: 'card',
+      clientSecret: paymentIntent.client_secret,
+      paymentIntentId: paymentIntent.id,
+    });
   } catch (err) {
     // Roll the order back so an unconfigured/errored Stripe does not litter
     // the admin with abandoned orders.
@@ -167,5 +233,4 @@ export async function POST(req: Request) {
     );
   }
 
-  return NextResponse.json({ clientSecret, paymentIntentId });
 }

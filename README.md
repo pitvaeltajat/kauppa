@@ -108,8 +108,8 @@ project:
   embedded Payment Element
 - `STRIPE_WEBHOOK_SECRET`: from Dashboard → Developers → Webhooks (register
   `https://kontti.pitva.fi/api/webhooks/stripe`, events
-  `checkout.session.completed`, `checkout.session.expired`, and
-  `payment_intent.succeeded`)
+  `checkout.session.completed`, `checkout.session.expired`,
+  `payment_intent.succeeded`, and `invoice.paid`)
 - `NEXT_PUBLIC_APP_URL="https://kontti.pitva.fi"`: the app's public URL
 
 DNS: `kontti.pitva.fi` CNAME to the Vercel deployment, in the same Route 53

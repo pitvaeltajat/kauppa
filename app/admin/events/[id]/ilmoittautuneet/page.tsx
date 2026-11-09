@@ -12,10 +12,9 @@ import { RegistrantEmails } from '@/components/admin/registrant-emails';
 
 export const metadata: Metadata = { title: 'Ilmoittautuneet' };
 
-// A registration is a paid (or handed-over) order that contains a line for this
-// event. The buyer is the contact; a line quantity > 1 means several spots on
-// one order. Unpaid (RECEIVED) orders are not registrations. For an event,
-// paying is registering.
+// A registration is a paid/handed-over order or an issued invoice that contains
+// a line for this event. The buyer is the contact; a line quantity > 1 means
+// several spots on one order.
 type AnswerSnapshot = { prompt?: string; answer?: string | string[] };
 
 function formatAnswer(answer: string | string[] | undefined): string {
@@ -35,7 +34,13 @@ export default async function EventRegistrationsPage({
   if (!event || !event.isEvent) notFound();
 
   const orders = await prisma.order.findMany({
-    where: { status: { in: ['PAID', 'COMPLETED'] }, lines: { some: { itemId: id } } },
+    where: {
+      lines: { some: { itemId: id } },
+      OR: [
+        { status: { in: ['PAID', 'COMPLETED'] } },
+        { status: 'RECEIVED', stripeInvoiceId: { not: null } },
+      ],
+    },
     select: {
       id: true,
       name: true,
@@ -77,7 +82,7 @@ export default async function EventRegistrationsPage({
 
       {rows.length === 0 ? (
         <p className="mt-8 rounded-lg border border-dashed bg-card px-4 py-10 text-center text-sm text-muted-foreground">
-          Ei vielä maksettuja ilmoittautumisia.
+          Ei vielä maksettuja tai laskutettuja ilmoittautumisia.
         </p>
       ) : (
         <>
@@ -117,7 +122,9 @@ export default async function EventRegistrationsPage({
                       {format(row.createdAt, 'd.M.yyyy', { locale: fi })}
                     </td>
                     <td className="px-4 py-3">
-                      {row.status === 'COMPLETED' ? (
+                      {row.status === 'RECEIVED' ? (
+                        <Badge variant="warning">Lasku avoinna</Badge>
+                      ) : row.status === 'COMPLETED' ? (
                         <Badge variant="success">Luovutettu</Badge>
                       ) : (
                         <Badge variant="success">Maksettu</Badge>

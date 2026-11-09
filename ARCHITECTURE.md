@@ -30,7 +30,10 @@ Category 1──n Item 1──n OrderLine n──1 Order
    total. `metadata.orderId` links the two. If creating the intent fails, the
    order row is rolled back.
 3. The browser mounts Stripe's localized Payment Element in the cart and
-   confirms the PaymentIntent inline. The cart is cleared after confirmation.
+   confirms the PaymentIntent inline. Event registrations can instead choose a
+   parent invoice: the server creates Stripe invoice items and a `send_invoice`
+   invoice with a 14-day due date, then shows hosted-invoice and PDF links on
+   the confirmation page. The cart is cleared after either flow is accepted.
 4. `POST /api/webhooks/stripe` (signature-verified):
    - `payment_intent.succeeded` (or legacy `checkout.session.completed`) →
      `markOrderPaid`: RECEIVED → PAID, sets
@@ -38,6 +41,8 @@ Category 1──n Item 1──n OrderLine n──1 Order
      then decrements stock per line (`lib/orders.ts`, floors at 0, leaves
      `null` stock alone). Idempotent (`PAID`/`COMPLETED` orders are skipped).
    - `checkout.session.expired` → cancels a still-RECEIVED order.
+   - `invoice.paid` → marks an invoiced event registration PAID and decrements
+     stock.
 5. `payment_intent` on `/success` resolves the order for the thank-you page.
    Stripe emails the receipt; the admin sees the same data under `/admin`.
 

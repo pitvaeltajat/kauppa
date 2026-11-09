@@ -49,7 +49,7 @@ export default async function AdminOrdersPage({
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">Tilaukset</h1>
         <div className="text-sm text-muted-foreground">
           Näytetään {orders.length} tilausta · yhteensä {formatCents(total)}
@@ -139,7 +139,9 @@ export default async function AdminOrdersPage({
                             {answers.map((answer) => (
                               <li key={answer.questionId}>
                                 {answer.prompt}:{' '}
-                                {Array.isArray(answer.answer) ? answer.answer.join(', ') : answer.answer}
+                                {Array.isArray(answer.answer)
+                                  ? answer.answer.join(', ')
+                                  : answer.answer}
                               </li>
                             ))}
                           </ul>

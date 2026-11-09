@@ -77,14 +77,16 @@ export default async function HomePage() {
         {/* Featured items */}
         {items.some((item) => item.featured) && (
           <section className="border-t py-8">
-            <div className="mb-4 flex items-center justify-between">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-xl font-bold">Nostot</h2>
               <span className="text-sm text-muted-foreground">Poimintoja tuotteista</span>
             </div>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-              {items.filter((item) => item.featured).map((item) => (
-                <ItemCard key={item.id} item={item} />
-              ))}
+              {items
+                .filter((item) => item.featured)
+                .map((item) => (
+                  <ItemCard key={item.id} item={item} />
+                ))}
             </div>
           </section>
         )}
@@ -93,7 +95,7 @@ export default async function HomePage() {
         <section className="space-y-10 pb-8">
           {grouped.map((category) => (
             <div key={category.id}>
-              <div className="mb-4 flex items-center justify-between">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                 <h2 className="text-xl font-bold">{category.name}</h2>
                 <Link
                   href={`/category/${category.slug}`}

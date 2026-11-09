@@ -34,7 +34,13 @@ type PayoutRow = {
   feeCents: number;
   refundCents: number;
   netCents: number;
-  lines: { id: string; description: string; grossCents: number; feeCents: number; netCents: number }[];
+  lines: {
+    id: string;
+    description: string;
+    grossCents: number;
+    feeCents: number;
+    netCents: number;
+  }[];
 };
 
 async function loadPayouts(): Promise<
@@ -118,12 +124,16 @@ export default async function AdminPayoutsPage() {
                   <p className="font-semibold">
                     {format(payout.arrivalDate, 'd.M.yyyy', { locale: fi })}
                     {payout.descriptor && (
-                      <span className="ml-2 font-normal text-muted-foreground">{payout.descriptor}</span>
+                      <span className="ml-2 font-normal text-muted-foreground">
+                        {payout.descriptor}
+                      </span>
                     )}
                   </p>
                   <p className="mt-0.5 text-muted-foreground">
                     Brutto {formatCents(payout.grossCents)} · kulut {formatCents(payout.feeCents)}
-                    {payout.refundCents > 0 && <> · palautukset {formatCents(payout.refundCents)}</>}
+                    {payout.refundCents > 0 && (
+                      <> · palautukset {formatCents(payout.refundCents)}</>
+                    )}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -139,30 +149,34 @@ export default async function AdminPayoutsPage() {
                   <summary className="cursor-pointer text-sm text-muted-foreground hover:text-foreground">
                     Tapahtumat ({payout.lines.length})
                   </summary>
-                  <table className="mt-2 w-full text-sm">
-                    <thead>
-                      <tr className="border-b text-left text-xs text-muted-foreground">
-                        <th className="py-1 pr-3 font-medium">Tapahtuma</th>
-                        <th className="py-1 px-3 text-right font-medium">Brutto</th>
-                        <th className="py-1 px-3 text-right font-medium">Kulu</th>
-                        <th className="py-1 pl-3 text-right font-medium">Netto</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {payout.lines.map((line) => (
-                        <tr key={line.id} className="border-b last:border-0">
-                          <td className="py-1 pr-3">{line.description}</td>
-                          <td className="py-1 px-3 text-right text-muted-foreground">
-                            {formatCents(line.grossCents)}
-                          </td>
-                          <td className="py-1 px-3 text-right text-muted-foreground">
-                            {formatCents(line.feeCents)}
-                          </td>
-                          <td className="py-1 pl-3 text-right font-medium">{formatCents(line.netCents)}</td>
+                  <div className="mt-2 overflow-x-auto">
+                    <table className="w-full min-w-[520px] text-sm">
+                      <thead>
+                        <tr className="border-b text-left text-xs text-muted-foreground">
+                          <th className="py-1 pr-3 font-medium">Tapahtuma</th>
+                          <th className="py-1 px-3 text-right font-medium">Brutto</th>
+                          <th className="py-1 px-3 text-right font-medium">Kulu</th>
+                          <th className="py-1 pl-3 text-right font-medium">Netto</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {payout.lines.map((line) => (
+                          <tr key={line.id} className="border-b last:border-0">
+                            <td className="py-1 pr-3">{line.description}</td>
+                            <td className="py-1 px-3 text-right text-muted-foreground">
+                              {formatCents(line.grossCents)}
+                            </td>
+                            <td className="py-1 px-3 text-right text-muted-foreground">
+                              {formatCents(line.feeCents)}
+                            </td>
+                            <td className="py-1 pl-3 text-right font-medium">
+                              {formatCents(line.netCents)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </details>
               )}
             </div>

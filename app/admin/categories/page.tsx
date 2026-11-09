@@ -17,7 +17,7 @@ export default async function AdminCategoriesPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">Kategoriat ({categories.length})</h1>
         <ButtonLink href="/admin/categories/new" variant="cta">
           <Plus /> Uusi kategoria
@@ -45,9 +45,7 @@ export default async function AdminCategoriesPage() {
               {category.description && (
                 <p className="mt-0.5 text-sm text-muted-foreground">{category.description}</p>
               )}
-              <p className="mt-1 text-xs text-muted-foreground">
-                {category._count.items} tuotetta
-              </p>
+              <p className="mt-1 text-xs text-muted-foreground">{category._count.items} tuotetta</p>
             </div>
             <div className="flex gap-2">
               <ButtonLink href={`/admin/categories/${category.id}`} size="sm" variant="outline">

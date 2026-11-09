@@ -38,7 +38,7 @@ export default async function AdminEventsPage() {
 
   return (
     <div>
-      <div className="mb-2 flex items-center justify-between">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">Tapahtumat ({events.length})</h1>
         <ButtonLink href="/admin/events/new" variant="cta">
           <Plus /> Uusi tapahtuma
@@ -69,7 +69,10 @@ export default async function AdminEventsPage() {
               {events.map((event) => {
                 const over = isEventOver(event.endsAt);
                 return (
-                  <tr key={event.id} className="border-b transition-colors last:border-0 hover:bg-muted/40">
+                  <tr
+                    key={event.id}
+                    className="border-b transition-colors last:border-0 hover:bg-muted/40"
+                  >
                     <td className="px-4 py-3 font-medium">
                       <Link
                         href={`/item/${event.slug}`}
@@ -110,7 +113,11 @@ export default async function AdminEventsPage() {
                         </ButtonLink>
                         <form action={setEventHidden}>
                           <input type="hidden" name="id" value={event.id} />
-                          <input type="hidden" name="hidden" value={event.hidden ? 'false' : 'true'} />
+                          <input
+                            type="hidden"
+                            name="hidden"
+                            value={event.hidden ? 'false' : 'true'}
+                          />
                           <FormButton size="sm" variant="ghost">
                             {event.hidden ? 'Näytä' : 'Piilota'}
                           </FormButton>

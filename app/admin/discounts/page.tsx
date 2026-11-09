@@ -14,12 +14,14 @@ export const metadata: Metadata = { title: 'Alennuskoodit' };
 
 export default async function AdminDiscountsPage() {
   await requireSuperAdmin();
-  const codes = await prisma.discountCode.findMany({ orderBy: [{ active: 'desc' }, { code: 'asc' }] });
+  const codes = await prisma.discountCode.findMany({
+    orderBy: [{ active: 'desc' }, { code: 'asc' }],
+  });
   const now = new Date();
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">Alennuskoodit ({codes.length})</h1>
         <ButtonLink href="/admin/discounts/new" variant="cta">
           <Plus /> Uusi koodi
@@ -60,7 +62,9 @@ export default async function AdminDiscountsPage() {
               <div>
                 <p className="flex flex-wrap items-center gap-2 font-semibold">
                   <span className="font-mono">{code.code}</span>
-                  <span className="text-sm font-normal text-muted-foreground">−{code.percentOff} %</span>
+                  <span className="text-sm font-normal text-muted-foreground">
+                    −{code.percentOff} %
+                  </span>
                   {code.leaderOnly && <Badge variant="secondary">Johtajien alennus</Badge>}
                   {immutable && <Badge variant="secondary">Lukittu järjestelmäkoodi</Badge>}
                   {!code.active && <Badge variant="secondary">Pois käytöstä</Badge>}

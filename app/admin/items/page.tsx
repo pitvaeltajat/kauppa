@@ -20,7 +20,7 @@ export default async function AdminItemsPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold">Tuotteet ({items.length})</h1>
         <ButtonLink href="/admin/items/new" variant="cta">
           <Plus /> Uusi tuote
@@ -42,7 +42,10 @@ export default async function AdminItemsPage() {
           </thead>
           <tbody>
             {items.map((item) => (
-              <tr key={item.id} className="border-b transition-colors last:border-0 hover:bg-muted/40">
+              <tr
+                key={item.id}
+                className="border-b transition-colors last:border-0 hover:bg-muted/40"
+              >
                 <td className="px-4 py-3 font-medium">
                   <Link
                     href={`/item/${item.slug}`}
@@ -56,9 +59,7 @@ export default async function AdminItemsPage() {
                 </td>
                 <td className="px-4 py-3 text-muted-foreground">{item.category.name}</td>
                 <td className="px-4 py-3 text-right">{formatCents(item.priceCents)}</td>
-                <td className="px-4 py-3 text-right">
-                  {item.stock === null ? '−' : item.stock}
-                </td>
+                <td className="px-4 py-3 text-right">{item.stock === null ? '−' : item.stock}</td>
                 <td className="px-4 py-3">
                   {item.active ? (
                     <Badge variant="success">Näkyvissä</Badge>

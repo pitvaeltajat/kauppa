@@ -31,7 +31,7 @@ export const PARTICIPANT_NAME_QUESTION: ItemQuestionLike = {
 };
 
 /** Prepends the mandatory participant-name question for events, else unchanged.
- * The cart renders this one specially: one name field per unit of quantity. */
+ * The cart renders every question once per unit of quantity. */
 export function withEventQuestions<T extends ItemQuestionLike>(
   isEvent: boolean,
   questions: T[],
@@ -40,7 +40,10 @@ export function withEventQuestions<T extends ItemQuestionLike>(
 }
 
 export type AnswerValue = string | string[];
-export type AnswersByItem = Record<string, Record<string, AnswerValue>>;
+/** Browser input can be a scalar for the original one-answer format, or an
+ * array with one answer per unit in the cart. CHECKBOX uses string[] per unit. */
+export type AnswerInput = string | string[] | Array<string | string[]>;
+export type AnswersByItem = Record<string, Record<string, AnswerInput>>;
 
 export type AnswerSnapshot = {
   questionId: string;
@@ -50,16 +53,14 @@ export type AnswerSnapshot = {
 };
 
 export type BuildSnapshotsResult =
-  | { ok: true; snapshotsByItem: Record<string, AnswerSnapshot[]> }
-  | { ok: false; error: string };
+  { ok: true; snapshotsByItem: Record<string, AnswerSnapshot[]> } | { ok: false; error: string };
 
 function isChoiceType(type: string): type is 'RADIO' | 'CHECKBOX' {
   return type === 'RADIO' || type === 'CHECKBOX';
 }
 
 export type ParticipantResult =
-  | { ok: true; snapshot: AnswerSnapshot | null }
-  | { ok: false; error: string };
+  { ok: true; snapshot: AnswerSnapshot | null } | { ok: false; error: string };
 
 /**
  * One participant name per unit bought (quantity) for an event line, all
@@ -98,6 +99,7 @@ export function buildParticipantNames(
 export function validateAndBuildAnswers(
   questionsByItem: Record<string, ItemQuestionLike[]>,
   providedAnswers: AnswersByItem | undefined,
+  quantityByItem: Record<string, number> = {},
 ): BuildSnapshotsResult {
   const snapshotsByItem: Record<string, AnswerSnapshot[]> = {};
   const answers = providedAnswers ?? {};
@@ -105,66 +107,103 @@ export function validateAndBuildAnswers(
   for (const [itemId, questions] of Object.entries(questionsByItem)) {
     const itemAnswers = answers[itemId] ?? {};
     const snapshots: AnswerSnapshot[] = [];
+    const quantity = Math.max(1, quantityByItem[itemId] ?? 1);
 
-    for (const question of questions) {
-      const raw = itemAnswers[question.id];
+    for (let participantIndex = 0; participantIndex < quantity; participantIndex++) {
+      for (const question of questions) {
+        const raw = answerForParticipant(
+          question.type,
+          itemAnswers[question.id],
+          participantIndex,
+          quantity,
+        );
+        const participantLabel = quantity > 1 ? ` ${participantIndex + 1}` : '';
 
-      if (isChoiceType(question.type)) {
-        let value: AnswerValue;
-        if (question.type === 'RADIO') {
-          value = Array.isArray(raw) ? (raw[0] ?? '') : (raw ?? '');
-        } else {
-          value = Array.isArray(raw) ? raw.map(String) : raw === undefined || raw === '' ? [] : [String(raw)];
-        }
-        const values = Array.isArray(value) ? value : [value];
-        if (values.length === 0 || values.some((v) => v === '')) {
-          return { ok: false, error: `Valitse vastaus kysymykseen "${question.prompt}".` };
-        }
-        for (const v of values) {
-          if (!question.options.includes(v)) {
+        if (isChoiceType(question.type)) {
+          let value: AnswerValue;
+          if (question.type === 'RADIO') {
+            value = Array.isArray(raw) ? (raw[0] ?? '') : (raw ?? '');
+          } else {
+            value = Array.isArray(raw)
+              ? raw.map(String)
+              : raw === undefined || raw === ''
+                ? []
+                : [String(raw)];
+          }
+          const values = Array.isArray(value) ? value : [value];
+          if (values.length === 0 || values.some((v) => v === '')) {
             return {
               ok: false,
-              error: `"${v}" ei ole kelvollinen vastaus kysymykseen "${question.prompt}".`,
+              error: `Valitse vastaus kysymykseen "${question.prompt}"${participantLabel}.`,
+            };
+          }
+          for (const v of values) {
+            if (!question.options.includes(v)) {
+              return {
+                ok: false,
+                error: `"${v}" ei ole kelvollinen vastaus kysymykseen "${question.prompt}"${participantLabel}.`,
+              };
+            }
+          }
+          snapshots.push({
+            questionId: question.id,
+            prompt: `${question.prompt}${participantLabel}`,
+            type: question.type,
+            answer: question.type === 'RADIO' ? values[0] : values,
+          });
+          continue;
+        }
+
+        const value = typeof raw === 'string' ? raw.trim() : '';
+        if (value === '') {
+          if (question.required) {
+            return {
+              ok: false,
+              error: `Vastaa kysymykseen "${question.prompt}"${participantLabel}.`,
+            };
+          }
+          continue;
+        }
+        if (question.type === 'NUMBER') {
+          const number = Number(value.replace(',', '.'));
+          if (!Number.isFinite(number)) {
+            return {
+              ok: false,
+              error: `Anna kysymykseen "${question.prompt}"${participantLabel} numero.`,
             };
           }
         }
         snapshots.push({
           questionId: question.id,
-          prompt: question.prompt,
+          prompt: `${question.prompt}${participantLabel}`,
           type: question.type,
-          answer: question.type === 'RADIO' ? values[0] : values,
+          answer: value,
         });
-        continue;
       }
-
-      const value = typeof raw === 'string' ? raw.trim() : '';
-      if (value === '') {
-        if (question.required) {
-          return { ok: false, error: `Vastaa kysymykseen "${question.prompt}".` };
-        }
-        continue;
-      }
-      if (question.type === 'NUMBER') {
-        const number = Number(value.replace(',', '.'));
-        if (!Number.isFinite(number)) {
-          return {
-            ok: false,
-            error: `Anna kysymykseen "${question.prompt}" numero.`,
-          };
-        }
-      }
-      snapshots.push({
-        questionId: question.id,
-        prompt: question.prompt,
-        type: question.type,
-        answer: value,
-      });
     }
 
     snapshotsByItem[itemId] = snapshots;
   }
 
   return { ok: true, snapshotsByItem };
+}
+
+function answerForParticipant(
+  type: string,
+  raw: AnswerInput | undefined,
+  participantIndex: number,
+  quantity: number,
+): AnswerValue {
+  if (quantity === 1) {
+    if (raw === undefined) return '';
+    return Array.isArray(raw) && raw.some(Array.isArray) ? (raw[0] ?? []) : (raw as AnswerValue);
+  }
+
+  if (!Array.isArray(raw)) return '';
+  if (type === 'CHECKBOX') {
+    return Array.isArray(raw[participantIndex]) ? raw[participantIndex] : [];
+  }
+  return typeof raw[participantIndex] === 'string' ? raw[participantIndex] : '';
 }
 
 export type ParsedQuestion = {
@@ -175,8 +214,7 @@ export type ParsedQuestion = {
 };
 
 export type ParseDraftsResult =
-  | { ok: true; questions: ParsedQuestion[] }
-  | { ok: false; error: string };
+  { ok: true; questions: ParsedQuestion[] } | { ok: false; error: string };
 
 /**
  * Parses the `questions` JSON field the admin item form posts:
@@ -202,7 +240,8 @@ export function parseQuestionDrafts(rawJson: string): ParseDraftsResult {
       required?: unknown;
       optionsText?: unknown;
     };
-    const prompt = typeof candidate.prompt === 'string' ? candidate.prompt.trim().slice(0, 200) : '';
+    const prompt =
+      typeof candidate.prompt === 'string' ? candidate.prompt.trim().slice(0, 200) : '';
     if (!prompt) return { ok: false, error: 'Kysymyksellä on oltava kysymysteksti.' };
 
     const type = typeof candidate.type === 'string' ? candidate.type : '';
@@ -218,7 +257,10 @@ export function parseQuestionDrafts(rawJson: string): ParseDraftsResult {
         .map((o) => o.trim())
         .filter(Boolean);
       if (options.length === 0) {
-        return { ok: false, error: `Valintakysymykselle "${prompt}" tarvitaan vähintään yksi vaihtoehto.` };
+        return {
+          ok: false,
+          error: `Valintakysymykselle "${prompt}" tarvitaan vähintään yksi vaihtoehto.`,
+        };
       }
     }
 

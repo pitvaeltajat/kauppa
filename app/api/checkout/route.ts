@@ -49,11 +49,14 @@ export async function POST(req: Request) {
   }
 
   const items = await prisma.item.findMany({
-    where: { id: { in: requested.map((r) => r.id).filter((id): id is string => typeof id === 'string') } },
+    where: {
+      id: { in: requested.map((r) => r.id).filter((id): id is string => typeof id === 'string') },
+    },
   });
   // Resolve the optional discount code. A typed-but-invalid code is rejected so
   // the buyer isn't silently charged full price; an empty field is fine.
-  const typedCode = typeof payload.discountCode === 'string' ? normalizeCode(payload.discountCode) : '';
+  const typedCode =
+    typeof payload.discountCode === 'string' ? normalizeCode(payload.discountCode) : '';
   const discount = typedCode ? await loadValidDiscount(typedCode) : null;
   if (typedCode && !discount) {
     return NextResponse.json({ error: 'Alennuskoodi ei kelpaa.' }, { status: 400 });
@@ -82,10 +85,14 @@ export async function POST(req: Request) {
       options: q.options as string[],
     });
   }
-  const answers = (typeof payload.answers === 'object' && payload.answers !== null
-    ? (payload.answers as AnswersByItem)
-    : undefined);
-  const answerResult = validateAndBuildAnswers(questionsByItem, answers);
+  const answers =
+    typeof payload.answers === 'object' && payload.answers !== null
+      ? (payload.answers as AnswersByItem)
+      : undefined;
+  const quantityByItem = Object.fromEntries(
+    result.lines.map((line) => [line.itemId, line.quantity]),
+  );
+  const answerResult = validateAndBuildAnswers(questionsByItem, answers, quantityByItem);
   if (!answerResult.ok) {
     return NextResponse.json({ error: answerResult.error }, { status: 400 });
   }
@@ -108,7 +115,9 @@ export async function POST(req: Request) {
       ? payload.email.trim().slice(0, 254)
       : null;
   const name =
-    typeof payload.name === 'string' && payload.name.trim() ? payload.name.trim().slice(0, 200) : null;
+    typeof payload.name === 'string' && payload.name.trim()
+      ? payload.name.trim().slice(0, 200)
+      : null;
 
   const order = await prisma.order.create({
     data: {

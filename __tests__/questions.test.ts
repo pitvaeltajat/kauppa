@@ -86,9 +86,7 @@ describe('validateAndBuildAnswers', () => {
     });
     expect(optionalSkipped.ok).toBe(true);
     if (optionalSkipped.ok) {
-      expect(
-        optionalSkipped.snapshotsByItem.itemA.some((s) => s.questionId === 'q3'),
-      ).toBe(false);
+      expect(optionalSkipped.snapshotsByItem.itemA.some((s) => s.questionId === 'q3')).toBe(false);
     }
   });
 
@@ -105,6 +103,23 @@ describe('validateAndBuildAnswers', () => {
     const result = validateAndBuildAnswers({ empty: [] }, undefined);
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.snapshotsByItem.empty).toEqual([]);
+  });
+
+  it('validates every question once per purchased unit', () => {
+    const result = validateAndBuildAnswers(
+      { itemA: [nameQuestion, sizeQuestion] },
+      { itemA: { q2: ['Aatu', 'Bea'], q1: ['S', 'M'] } },
+      { itemA: 2 },
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.snapshotsByItem.itemA).toEqual([
+        { questionId: 'q2', prompt: 'Nimikyltin teksti 1', type: 'TEXT', answer: 'Aatu' },
+        { questionId: 'q1', prompt: 'Hupparin koko 1', type: 'RADIO', answer: 'S' },
+        { questionId: 'q2', prompt: 'Nimikyltin teksti 2', type: 'TEXT', answer: 'Bea' },
+        { questionId: 'q1', prompt: 'Hupparin koko 2', type: 'RADIO', answer: 'M' },
+      ]);
+    }
   });
 });
 
@@ -174,8 +189,16 @@ describe('parseQuestionDrafts', () => {
   });
 
   it('rejects unknown types and empty prompts', () => {
-    expect(parseQuestionDrafts(JSON.stringify([{ prompt: 'X', type: 'DATE', required: false, optionsText: '' }])).ok).toBe(false);
-    expect(parseQuestionDrafts(JSON.stringify([{ prompt: '  ', type: 'TEXT', required: false, optionsText: '' }])).ok).toBe(false);
+    expect(
+      parseQuestionDrafts(
+        JSON.stringify([{ prompt: 'X', type: 'DATE', required: false, optionsText: '' }]),
+      ).ok,
+    ).toBe(false);
+    expect(
+      parseQuestionDrafts(
+        JSON.stringify([{ prompt: '  ', type: 'TEXT', required: false, optionsText: '' }]),
+      ).ok,
+    ).toBe(false);
   });
 
   it('rejects malformed JSON', () => {

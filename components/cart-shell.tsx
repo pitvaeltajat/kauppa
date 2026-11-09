@@ -40,7 +40,8 @@ type FetchedItem = {
   questions: CheckoutQuestion[];
 };
 
-type Answers = Record<string, Record<string, string | string[]>>;
+type AnswerValue = string | string[];
+type Answers = Record<string, Record<string, AnswerValue[]>>;
 
 const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
   ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
@@ -77,7 +78,8 @@ export function CartShell() {
         setCatalogLoaded(true);
       })
       .catch(() => {
-        if (!cancelled) setError('Tuotteiden tietoja ei voitu ladata. Päivitä sivu ja yritä uudelleen.');
+        if (!cancelled)
+          setError('Tuotteiden tietoja ei voitu ladata. Päivitä sivu ja yritä uudelleen.');
       });
     return () => {
       cancelled = true;
@@ -131,40 +133,41 @@ export function CartShell() {
     setCodeError(null);
   }
 
-  function setAnswer(itemId: string, questionId: string, value: string | string[]) {
-    setAnswers((prev) => ({
-      ...prev,
-      [itemId]: { ...prev[itemId], [questionId]: value },
-    }));
-  }
-
-  // One participant name per unit: edit the name at `index` in the array.
-  function setParticipantName(itemId: string, index: number, value: string) {
+  function setAnswer(
+    itemId: string,
+    questionId: string,
+    participantIndex: number,
+    value: AnswerValue,
+  ) {
     setAnswers((prev) => {
-      const current = prev[itemId]?.[PARTICIPANT_NAME_QUESTION.id];
-      const names = Array.isArray(current) ? [...current] : [];
-      names[index] = value;
-      return { ...prev, [itemId]: { ...prev[itemId], [PARTICIPANT_NAME_QUESTION.id]: names } };
+      const values = [...(prev[itemId]?.[questionId] ?? [])];
+      values[participantIndex] = value;
+      return {
+        ...prev,
+        [itemId]: { ...prev[itemId], [questionId]: values },
+      };
     });
   }
 
   function missingAnswerMessage(item: FetchedItem, quantity: number): string | null {
     const itemAnswers = answers[item.id] ?? {};
-    for (const question of item.questions) {
-      const value = itemAnswers[question.id];
-      if (question.id === PARTICIPANT_NAME_QUESTION.id) {
-        const names = Array.isArray(value) ? value : [];
-        for (let i = 0; i < quantity; i++) {
-          if (!names[i] || names[i].trim() === '') {
-            return `Anna jokaisen osallistujan nimi (${item.name}).`;
-          }
+    for (let participantIndex = 0; participantIndex < quantity; participantIndex++) {
+      for (const question of item.questions) {
+        const value = itemAnswers[question.id]?.[participantIndex];
+        if (
+          question.id === PARTICIPANT_NAME_QUESTION.id &&
+          (!value || typeof value !== 'string' || value.trim() === '')
+        ) {
+          return `Anna jokaisen osallistujan nimi (${item.name}).`;
         }
-        continue;
-      }
-      const empty =
-        value === undefined || value === '' || (Array.isArray(value) && value.length === 0);
-      if (empty) {
-        return `Vastaa kysymykseen "${question.prompt}" (${item.name}).`;
+        const empty =
+          value === undefined || value === '' || (Array.isArray(value) && value.length === 0);
+        if (
+          empty &&
+          (question.required || question.type === 'RADIO' || question.type === 'CHECKBOX')
+        ) {
+          return `Vastaa kysymykseen "${question.prompt}" (${item.name}).`;
+        }
       }
     }
     return null;
@@ -177,7 +180,7 @@ export function CartShell() {
       return;
     }
     if (lines.length === 0 || lines.some(({ item }) => !item)) {
-          setError('Jokin korin tuotteista ei ole enää myynnissä. Poista se korista.');
+      setError('Jokin korin tuotteista ei ole enää myynnissä. Poista se korista.');
       return;
     }
     for (const { cartItem, item } of lines) {
@@ -266,7 +269,9 @@ export function CartShell() {
               ) : catalogLoaded ? (
                 <>
                   <p className="font-medium">Tuote ei ole enää myynnissä</p>
-                  <p className="text-sm text-muted-foreground">Poista tuote korista, jotta voit jatkaa.</p>
+                  <p className="text-sm text-muted-foreground">
+                    Poista tuote korista, jotta voit jatkaa.
+                  </p>
                 </>
               ) : (
                 <>
@@ -312,105 +317,96 @@ export function CartShell() {
               {/* Checkout questions for this item */}
               {item && item.questions.length > 0 && (
                 <div className="mt-4 space-y-4 rounded-md bg-background p-4">
-                  {item.questions.map((question) => {
-                    const current = answers[item.id]?.[question.id];
+                  {Array.from({ length: cartItem.quantity }).map((_, participantIndex) => (
+                    <div key={participantIndex} className="space-y-4">
+                      {cartItem.quantity > 1 && (
+                        <p className="text-sm font-semibold">Osallistuja {participantIndex + 1}</p>
+                      )}
+                      {item.questions.map((question) => {
+                        const current = answers[item.id]?.[question.id]?.[participantIndex];
 
-                    // Participant name: one field per unit in the cart.
-                    if (question.id === PARTICIPANT_NAME_QUESTION.id) {
-                      const names = Array.isArray(current) ? current : [];
-                      return (
-                        <div key={question.id} className="space-y-2">
-                          {Array.from({ length: cartItem.quantity }).map((_, i) => (
-                            <div key={i} className="space-y-1">
-                              <Label className="text-xs font-medium">
-                                {question.prompt}
-                                {cartItem.quantity > 1 && ` ${i + 1}`}
-                              </Label>
+                        return (
+                          <div key={question.id} className="space-y-2">
+                            <Label className="text-xs font-medium">
+                              {question.prompt}
+                              {!question.required && (
+                                <span className="ml-1 font-normal text-muted-foreground">
+                                  (valinnainen)
+                                </span>
+                              )}
+                            </Label>
+                            {question.type === 'TEXT' && (
                               <Input
-                                value={names[i] ?? ''}
-                                onChange={(e) => setParticipantName(item.id, i, e.target.value)}
+                                value={typeof current === 'string' ? current : ''}
+                                onChange={(e) =>
+                                  setAnswer(item.id, question.id, participantIndex, e.target.value)
+                                }
                                 placeholder={question.prompt}
                               />
-                            </div>
-                          ))}
-                        </div>
-                      );
-                    }
-
-                    return (
-                      <div key={question.id} className="space-y-2">
-                        <Label className="text-xs font-medium">
-                          {question.prompt}
-                          {!question.required && (
-                            <span className="ml-1 font-normal text-muted-foreground">
-                              (valinnainen)
-                            </span>
-                          )}
-                        </Label>
-                        {question.type === 'TEXT' && (
-                          <Input
-                            value={typeof current === 'string' ? current : ''}
-                            onChange={(e) => setAnswer(item.id, question.id, e.target.value)}
-                            placeholder={question.prompt}
-                          />
-                        )}
-                        {question.type === 'NUMBER' && (
-                          <Input
-                            type="number"
-                            inputMode="decimal"
-                            value={typeof current === 'string' ? current : ''}
-                            onChange={(e) => setAnswer(item.id, question.id, e.target.value)}
-                            placeholder="luku"
-                          />
-                        )}
-                        {question.type === 'RADIO' && (
-                          <div className="flex flex-wrap gap-x-4 gap-y-2">
-                            {question.options.map((option) => (
-                              <label
-                                key={option}
-                                className="flex cursor-pointer items-center gap-2 text-sm"
-                              >
-                                <input
-                                  type="radio"
-                                  name={`q-${item.id}-${question.id}`}
-                                  className="size-4 accent-[hsl(244,51%,24%)]"
-                                  checked={current === option}
-                                  onChange={() => setAnswer(item.id, question.id, option)}
-                                />
-                                {option}
-                              </label>
-                            ))}
+                            )}
+                            {question.type === 'NUMBER' && (
+                              <Input
+                                type="number"
+                                inputMode="decimal"
+                                value={typeof current === 'string' ? current : ''}
+                                onChange={(e) =>
+                                  setAnswer(item.id, question.id, participantIndex, e.target.value)
+                                }
+                                placeholder="luku"
+                              />
+                            )}
+                            {question.type === 'RADIO' && (
+                              <div className="flex flex-wrap gap-x-4 gap-y-2">
+                                {question.options.map((option) => (
+                                  <label
+                                    key={option}
+                                    className="flex cursor-pointer items-center gap-2 text-sm"
+                                  >
+                                    <input
+                                      type="radio"
+                                      name={`q-${item.id}-${question.id}-${participantIndex}`}
+                                      className="size-4 accent-[hsl(244,51%,24%)]"
+                                      checked={current === option}
+                                      onChange={() =>
+                                        setAnswer(item.id, question.id, participantIndex, option)
+                                      }
+                                    />
+                                    {option}
+                                  </label>
+                                ))}
+                              </div>
+                            )}
+                            {question.type === 'CHECKBOX' && (
+                              <div className="flex flex-wrap gap-x-4 gap-y-2">
+                                {question.options.map((option) => {
+                                  const selected = Array.isArray(current) ? current : [];
+                                  return (
+                                    <label
+                                      key={option}
+                                      className="flex cursor-pointer items-center gap-2 text-sm"
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        className="size-4 accent-[hsl(244,51%,24%)]"
+                                        checked={selected.includes(option)}
+                                        onChange={(e) => {
+                                          const next = e.target.checked
+                                            ? [...selected, option]
+                                            : selected.filter((o) => o !== option);
+                                          setAnswer(item.id, question.id, participantIndex, next);
+                                        }}
+                                      />
+                                      {option}
+                                    </label>
+                                  );
+                                })}
+                              </div>
+                            )}
                           </div>
-                        )}
-                        {question.type === 'CHECKBOX' && (
-                          <div className="flex flex-wrap gap-x-4 gap-y-2">
-                            {question.options.map((option) => {
-                              const selected = Array.isArray(current) ? current : [];
-                              return (
-                                <label
-                                  key={option}
-                                  className="flex cursor-pointer items-center gap-2 text-sm"
-                                >
-                                  <input
-                                    type="checkbox"
-                                    className="size-4 accent-[hsl(244,51%,24%)]"
-                                    checked={selected.includes(option)}
-                                    onChange={(e) => {
-                                      const next = e.target.checked
-                                        ? [...selected, option]
-                                        : selected.filter((o) => o !== option);
-                                      setAnswer(item.id, question.id, next);
-                                    }}
-                                  />
-                                  {option}
-                                </label>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                        );
+                      })}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -554,7 +550,8 @@ export function CartShell() {
           </Button>
         )}
         <p className="text-center text-xs text-muted-foreground">
-          Maksu tapahtuu turvallisesti tässä näkymässä Stripen avulla. Tuotteet noudetaan kokouksessa tai sovitusti. Niitä ei postiteta.
+          Maksu tapahtuu turvallisesti tässä näkymässä Stripen avulla. Tuotteet noudetaan
+          kokouksessa tai sovitusti. Niitä ei postiteta.
         </p>
       </div>
     </div>
@@ -608,4 +605,3 @@ function PaymentForm({
     </div>
   );
 }
-

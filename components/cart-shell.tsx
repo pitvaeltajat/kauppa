@@ -568,7 +568,7 @@ export function CartShell() {
               <span>
                 <span className="font-medium">Maksa heti</span>
                 <span className="block text-xs text-muted-foreground">
-                  Maksu tapahtuu heti Stripen maksulomakkeella.
+                  Maksu tapahtuu heti turvallisella maksulomakkeella.
                 </span>
               </span>
             </label>
@@ -616,8 +616,8 @@ export function CartShell() {
         )}
         <p className="text-center text-xs text-muted-foreground">
           {invoiceCheckout
-            ? 'Lasku lähetetään vanhemman sähköpostiin Stripen kautta. Ilmoittautuminen vahvistuu maksun jälkeen.'
-            : 'Maksu tapahtuu turvallisesti tässä näkymässä Stripen avulla. Tuotteet noudetaan kokouksessa tai sovitusti. Niitä ei postiteta.'}
+            ? 'Lasku lähetetään vanhemman sähköpostiin. Ilmoittautuminen vahvistuu maksun jälkeen.'
+            : 'Maksu tapahtuu turvallisesti tässä näkymässä. Tuotteet noudetaan kokouksessa tai sovitusti. Niitä ei postiteta.'}
         </p>
       </div>
     </div>

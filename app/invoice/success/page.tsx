@@ -39,7 +39,7 @@ export default async function InvoiceSuccessPage({
             <>
               <p className="text-sm text-muted-foreground">
                 Ilmoittautuminen <span className="font-medium text-foreground">#{order.id.slice(-8).toUpperCase()}</span>{' '}
-                on vastaanotettu. Stripe lähetti laskun osoitteeseen{' '}
+                on vastaanotettu. Lasku lähetettiin osoitteeseen{' '}
                 <span className="font-medium text-foreground">{order.email}</span>. Ilmoittautuminen vahvistuu,
                 kun lasku on maksettu.
               </p>
@@ -72,7 +72,7 @@ export default async function InvoiceSuccessPage({
             </>
           ) : (
             <p className="text-sm text-muted-foreground">
-              Lasku on luotu. Tarkista vanhemman sähköposti tai avaa lasku Stripe-viestistä.
+              Lasku on luotu. Tarkista vanhemman sähköposti.
             </p>
           )}
           <div className="rounded-md bg-accent/60 px-4 py-3 text-xs text-muted-foreground">

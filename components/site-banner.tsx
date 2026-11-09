@@ -27,23 +27,15 @@ export function SiteBanner({ imageUrl }: { imageUrl?: string | null }) {
 
       <div className="container grid gap-8 py-10 md:grid-cols-[1fr_auto] md:items-start md:py-14">
         {/* Identity + intro */}
-        <div className="flex items-start gap-5">
-          <span
-            aria-hidden
-            className="flex size-16 shrink-0 items-center justify-center rounded-full border-2 border-header bg-background text-xl font-black tracking-tight text-header shadow-sm md:size-20 md:text-2xl"
-          >
-            PV
-          </span>
-          <div className="min-w-0">
-            <h1 className="text-2xl font-bold text-foreground md:text-3xl">
-              Pitkäjärven Vaeltajat ry
-            </h1>
-            <p className="mt-2 max-w-xl text-sm text-foreground/75 md:text-base">
-              Partiolippukunta Pitkäjärven Vaeltajien nettikauppa ja ilmoittautumisportaali. Täältä
-              voit ostaa huiveja, merkkejä ja PitVa-tuotteita sekä ilmoittautua tapahtumiin.
-              Tuotteet saat kokouksessa ryhmänjohtajaltasi tai noutamalla ne sovitusti kololta.
-            </p>
-          </div>
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold text-foreground md:text-3xl">
+            Pitkäjärven Vaeltajat ry
+          </h1>
+          <p className="mt-2 max-w-xl text-sm text-foreground/75 md:text-base">
+            Partiolippukunta Pitkäjärven Vaeltajien nettikauppa ja ilmoittautumisportaali. Täältä
+            voit ostaa huiveja, merkkejä ja PitVa-tuotteita sekä ilmoittautua tapahtumiin.
+            Tuotteet saat kokouksessa ryhmänjohtajaltasi tai noutamalla ne sovitusti kololta.
+          </p>
         </div>
 
         {/* Contact columns */}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { formatCents } from '@/lib/money';
 import { addDays, nightsBetween, computeKammiPrice, type KammiPrices, type KammiTier } from '@/lib/kammi';
@@ -61,6 +61,8 @@ export function KammiBooking({
   const [billingEmail, setBillingEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const formRef = useRef<HTMLDivElement>(null);
 
   const nightFree = (iso: string) => !statuses[iso]?.n;
   const rangeFree = (s: string, e: string) => {
@@ -89,6 +91,16 @@ export function KammiBooking({
       return;
     }
     setEnd(iso);
+    // On stacked (mobile) layout the form is far below the calendar, so confirm
+    // the dates and scroll down to it. Desktop keeps the form visible alongside.
+    if (typeof window !== 'undefined' && window.matchMedia('(max-width: 1023px)').matches) {
+      setConfirmOpen(true);
+    }
+  }
+
+  function confirmDates() {
+    setConfirmOpen(false);
+    formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   const price = useMemo(
@@ -272,8 +284,11 @@ export function KammiBooking({
         </div>
       </div>
 
-      {/* Booking panel */}
-      <div className="h-fit space-y-4 rounded-lg border bg-card p-5 shadow-sm">
+      {/* Booking panel — floats alongside the calendar on desktop as you scroll. */}
+      <div
+        ref={formRef}
+        className="h-fit scroll-mt-4 space-y-4 rounded-lg border bg-card p-5 shadow-sm lg:sticky lg:top-4 lg:self-start"
+      >
         <h2 className="text-lg font-bold">Varaus</h2>
 
         <div className="rounded-md bg-background p-3 text-sm">
@@ -371,6 +386,35 @@ export function KammiBooking({
             : 'Vuoro varmistuu maksamalla. Ovikoodi ja ohjeet tulevat sähköpostiin maksun jälkeen.'}
         </p>
       </div>
+
+      {/* Mobile: confirm the picked dates, then scroll to the form. */}
+      {confirmOpen && start && end && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center"
+          onClick={() => setConfirmOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Vahvista päivämäärät"
+        >
+          <div
+            className="w-full max-w-sm rounded-xl border bg-card p-5 shadow-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-base font-bold">Vahvista päivämäärät</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Tulo {fiDate(start)} – lähtö {fiDate(end)} ({nights} yötä). Täytä vielä varauslomake.
+            </p>
+            <div className="mt-4 flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => setConfirmOpen(false)}>
+                Muuta
+              </Button>
+              <Button variant="cta" className="flex-1" onClick={confirmDates}>
+                Jatka lomakkeeseen
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

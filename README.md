@@ -111,7 +111,7 @@ project:
   URLs
 
 DNS: `kontti.pitva.fi` CNAME to the Vercel deployment, in the same Route 53
-hosted zone that points `atk.pitva.fi` and `klapi.pitva.fi`.
+hosted zone that points `kompassi.pitva.fi` and `klapi.pitva.fi`.
 
 ### Google Workspace user sync (optional)
 

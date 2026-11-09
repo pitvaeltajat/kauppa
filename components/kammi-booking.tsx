@@ -3,7 +3,13 @@
 import { useMemo, useRef, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { formatCents } from '@/lib/money';
-import { addDays, nightsBetween, computeKammiPrice, type KammiPrices, type KammiTier } from '@/lib/kammi';
+import {
+  addDays,
+  nightsBetween,
+  computeKammiPrice,
+  type KammiPrices,
+  type KammiTier,
+} from '@/lib/kammi';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,7 +18,20 @@ import { Textarea } from '@/components/ui/textarea';
 type DayStatus = { m: boolean; n: boolean }; // morningBusy, nightBusy
 
 const WEEKDAYS = ['Ma', 'Ti', 'Ke', 'To', 'Pe', 'La', 'Su'];
-const MONTHS = ['tammikuu', 'helmikuu', 'maaliskuu', 'huhtikuu', 'toukokuu', 'kesäkuu', 'heinäkuu', 'elokuu', 'syyskuu', 'lokakuu', 'marraskuu', 'joulukuu'];
+const MONTHS = [
+  'tammikuu',
+  'helmikuu',
+  'maaliskuu',
+  'huhtikuu',
+  'toukokuu',
+  'kesäkuu',
+  'heinäkuu',
+  'elokuu',
+  'syyskuu',
+  'lokakuu',
+  'marraskuu',
+  'joulukuu',
+];
 
 /** Monday-first weekday index (Mon=0 … Sun=6) for a UTC date. */
 function mondayIndex(iso: string): number {
@@ -173,7 +192,10 @@ export function KammiBooking({
     const to = addDays(windowEnd, 6 * 31);
     try {
       const res = await fetch(`/api/kammi/availability?from=${windowEnd}&to=${to}`);
-      const data = (await res.json()) as { statuses?: Record<string, DayStatus>; labels?: Record<string, string> };
+      const data = (await res.json()) as {
+        statuses?: Record<string, DayStatus>;
+        labels?: Record<string, string>;
+      };
       if (res.ok && data.statuses) {
         setStatuses((prev) => ({ ...prev, ...data.statuses }));
         setLabels((prev) => ({ ...prev, ...data.labels }));
@@ -224,18 +246,28 @@ export function KammiBooking({
             <span className="inline-block size-3.5 rounded-sm border" /> Vapaa
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="inline-block size-3.5 rounded-sm" style={{ background: 'hsl(var(--destructive) / 0.28)' }} />
+            <span
+              className="inline-block size-3.5 rounded-sm"
+              style={{ background: 'hsl(var(--destructive) / 0.28)' }}
+            />
             Varattu
           </span>
           <span className="flex items-center gap-1.5">
             <span
               className="inline-block size-3.5 rounded-sm border"
-              style={{ background: 'linear-gradient(135deg, hsl(var(--destructive) / 0.28) 0 50%, transparent 50% 100%)' }}
+              style={{
+                background:
+                  'linear-gradient(135deg, hsl(var(--destructive) / 0.28) 0 50%, transparent 50% 100%)',
+              }}
             />
             Vaihtopäivä (osittain vapaa)
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="inline-block size-3.5 rounded-sm" style={{ background: 'hsl(var(--cta))' }} /> Valittu
+            <span
+              className="inline-block size-3.5 rounded-sm"
+              style={{ background: 'hsl(var(--cta))' }}
+            />{' '}
+            Valittu
           </span>
         </div>
 
@@ -270,7 +302,9 @@ export function KammiBooking({
                         onClick={() => handleDay(iso)}
                         style={dayCellStyle(iso)}
                         className={`flex aspect-square flex-col items-center justify-center overflow-hidden rounded-md border text-sm leading-none transition-colors ${
-                          past ? 'cursor-not-allowed text-muted-foreground/40' : 'hover:border-primary'
+                          past
+                            ? 'cursor-not-allowed text-muted-foreground/40'
+                            : 'hover:border-primary'
                         } ${selected ? 'font-bold text-cta-foreground ring-2 ring-primary' : ''}`}
                         title={labels[iso] ? `${fiDate(iso)}: ${labels[iso]}` : undefined}
                         aria-label={`${fiDate(iso)}${labels[iso] ? ` – varattu: ${labels[iso]}` : statuses[iso]?.n ? ' (varattu)' : ''}`}
@@ -332,7 +366,9 @@ export function KammiBooking({
                 Varaa tämä päivä (1 yö)
               </button>
               {minNights > 1 && (
-                <p className="text-xs text-muted-foreground">Yhden yön varausta ei voi tehdä: vähimmäisvaraus on {minNights} yötä.</p>
+                <p className="text-xs text-muted-foreground">
+                  Yhden yön varausta ei voi tehdä: vähimmäisvaraus on {minNights} yötä.
+                </p>
               )}
             </div>
           ) : (
@@ -349,7 +385,9 @@ export function KammiBooking({
                 type="button"
                 onClick={() => setTier(t)}
                 className={`flex-1 rounded-md border px-3 py-2 text-sm font-medium transition-colors ${
-                  tier === t ? 'border-primary bg-primary text-primary-foreground' : 'hover:bg-accent'
+                  tier === t
+                    ? 'border-primary bg-primary text-primary-foreground'
+                    : 'hover:bg-accent'
                 }`}
               >
                 {t === 'SCOUT' ? 'Partiolainen' : 'Muu'}
@@ -377,43 +415,98 @@ export function KammiBooking({
         <div className="space-y-3 border-t pt-3">
           <div className="space-y-1.5">
             <Label htmlFor="k-name">Nimi</Label>
-            <Input id="k-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Etunimi Sukunimi" />
+            <Input
+              id="k-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Etunimi Sukunimi"
+            />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="k-email">Sähköposti (ohjeet ja ovikoodi tähän)</Label>
-            <Input id="k-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="etunimi@example.com" />
+            <Input
+              id="k-email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="etunimi@example.com"
+            />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="k-phone">Puhelinnumero</Label>
-            <Input id="k-phone" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="040 1234567" />
+            <Input
+              id="k-phone"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="040 1234567"
+            />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="k-org">Edustamasi taho</Label>
-            <Input id="k-org" value={organization} onChange={(e) => setOrganization(e.target.value)} placeholder="esim. lippukunta tai yksityinen" />
+            <Input
+              id="k-org"
+              value={organization}
+              onChange={(e) => setOrganization(e.target.value)}
+              placeholder="esim. lippukunta tai yksityinen"
+            />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="k-info">Tapahtuman tiedot</Label>
-            <Textarea id="k-info" rows={3} value={eventInfo} onChange={(e) => setEventInfo(e.target.value)} placeholder="Millainen tapahtuma, osallistujamäärä…" />
+            <Textarea
+              id="k-info"
+              rows={3}
+              value={eventInfo}
+              onChange={(e) => setEventInfo(e.target.value)}
+              placeholder="Millainen tapahtuma, osallistujamäärä…"
+            />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="k-q">Kysymykset kämppäisännälle (valinnainen)</Label>
-            <Textarea id="k-q" rows={2} value={hostQuestions} onChange={(e) => setHostQuestions(e.target.value)} />
+            <Textarea
+              id="k-q"
+              rows={2}
+              value={hostQuestions}
+              onChange={(e) => setHostQuestions(e.target.value)}
+            />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="k-bill">Laskutusosoite / sähköposti (valinnainen)</Label>
-            <Input id="k-bill" type="email" value={billingEmail} onChange={(e) => setBillingEmail(e.target.value)} placeholder="jos eri kuin yllä" />
+            <Input
+              id="k-bill"
+              type="email"
+              value={billingEmail}
+              onChange={(e) => setBillingEmail(e.target.value)}
+              placeholder="jos eri kuin yllä"
+            />
           </div>
         </div>
 
         {selectionError && (
-          <p role="alert" className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{selectionError}</p>
+          <p
+            role="alert"
+            className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          >
+            {selectionError}
+          </p>
         )}
         {error && (
           <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
         )}
 
-        <Button variant="cta" size="lg" className="w-full" disabled={loading || !start || !end} onClick={book}>
-          {loading ? (isFree ? 'Varataan…' : 'Siirretään maksuun…') : isFree ? 'Varaa (maksuton)' : 'Varaa ja maksa'}
+        <Button
+          variant="cta"
+          size="lg"
+          className="w-full"
+          disabled={loading || !start || !end}
+          onClick={book}
+        >
+          {loading
+            ? isFree
+              ? 'Varataan…'
+              : 'Siirretään maksuun…'
+            : isFree
+              ? 'Varaa (maksuton)'
+              : 'Varaa ja maksa'}
         </Button>
         <p className="text-center text-xs text-muted-foreground">
           {isFree

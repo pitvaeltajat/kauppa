@@ -1,9 +1,9 @@
 # kontti: Pitkäjärven Vaeltajien verkkokauppa
 
 Own web store for partiolippukunta Pitkäjärven Vaeltajat, replacing
-holvi.pitva.fi. Product catalog and orders live in Postgres, payments run
-through Stripe Checkout, and the same Google Workspace sign-in used by Klapi,
-Budu and landeri protects the admin side.
+holvi.pitva.fi. Product catalog, events and Kammi bookings live in Postgres,
+payments run through Stripe Checkout, and the same Google Workspace sign-in
+used by Klapi, Budu and landeri protects the admin side.
 
 UI: **suomi**. Code, commits and comments: **englanti**.
 
@@ -45,9 +45,10 @@ Two options:
    `@example.com` address. It is ignored whenever `NODE_ENV` is `production`.
 
 **Admin roles live in the database.** Signing in creates a `User` row with
-role `USER` automatically; a person only sees `/admin` once an existing admin
-has set their role to `ADMIN` under **Hallinta → Käyttäjät**. Bootstrap the
-first admin with either
+role `USER` automatically. PitVa-domain members receive `EVENT_ADMIN` access
+for event management; `SUPERADMIN` is the full admin role for products, orders,
+settings and users. Roles are managed under **Hallinta → Käyttäjät**. Bootstrap
+the first superadmin with either
 
 ```bash
 KAUPPA_BOOTSTRAP_ADMIN_EMAILS="nimi@pitkajarvenvaeltajat.fi" pnpm db:seed
@@ -55,7 +56,7 @@ KAUPPA_BOOTSTRAP_ADMIN_EMAILS="nimi@pitkajarvenvaeltajat.fi" pnpm db:seed
 pnpm db:admin nimi@pitkajarvenvaeltajat.fi
 ```
 
-Optional: `GOOGLE_WORKSPACE_DOMAIN` still restricts *who may sign in* at all,
+Optional: `GOOGLE_WORKSPACE_DOMAIN` still restricts _who may sign in_ at all,
 but it grants no admin rights by itself.
 
 ### Stripe (test mode)
@@ -76,19 +77,19 @@ mark it paid manually.
 
 ## Scripts
 
-| Command            | What it does                                    |
-| ------------------ | ----------------------------------------------- |
-| `pnpm dev`         | Start the dev server                            |
-| `pnpm build`       | `prisma generate` + production build            |
-| `pnpm start`       | Serve the production build                     |
-| `pnpm type-check`  | `tsc --noEmit`                                  |
-| `pnpm lint`        | ESLint (flat config)                            |
-| `pnpm test`        | Vitest unit tests                               |
-| `pnpm format` / `format:check` | Prettier             |
-| `pnpm db:migrate`  | `prisma migrate dev`                            |
-| `pnpm db:deploy`   | `prisma migrate deploy` (used on Vercel)        |
-| `pnpm db:seed`     | Upsert the seed catalog + questions (`prisma/seed.ts`) |
-| `pnpm db:admin <email>` | Make a user an ADMIN (or `KAUPPA_BOOTSTRAP_ADMIN_EMAILS` + seed) |
+| Command                        | What it does                                                         |
+| ------------------------------ | -------------------------------------------------------------------- |
+| `pnpm dev`                     | Start the dev server                                                 |
+| `pnpm build`                   | `prisma generate` + `prisma migrate deploy` + production build       |
+| `pnpm start`                   | Serve the production build                                           |
+| `pnpm type-check`              | `tsc --noEmit`                                                       |
+| `pnpm lint`                    | ESLint (flat config)                                                 |
+| `pnpm test`                    | Vitest unit tests                                                    |
+| `pnpm format` / `format:check` | Prettier                                                             |
+| `pnpm db:migrate`              | `prisma migrate dev`                                                 |
+| `pnpm db:deploy`               | `prisma migrate deploy` (used on Vercel)                             |
+| `pnpm db:seed`                 | Upsert the seed catalog + questions (`prisma/seed.ts`)               |
+| `pnpm db:admin <email>`        | Make a user a SUPERADMIN (or `KAUPPA_BOOTSTRAP_ADMIN_EMAILS` + seed) |
 
 ## Deploying (Vercel)
 

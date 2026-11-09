@@ -121,7 +121,9 @@ export function ItemForm({
       if (!uploaded.ok) throw new Error('upload failed');
       setImageUrl(publicUrl);
     } catch {
-      setUploadError('Kuvan lataus epäonnistui. Tarkista tiedostomuoto (JPG/PNG/WebP) ja koko (enintään 10 MB).');
+      setUploadError(
+        'Kuvan lataus epäonnistui. Tarkista tiedostomuoto (JPG/PNG/WebP) ja koko (enintään 10 MB).',
+      );
     } finally {
       setUploading(false);
     }
@@ -130,7 +132,10 @@ export function ItemForm({
   return (
     <form action={action} className="max-w-3xl space-y-6">
       {state?.error && (
-        <p role="alert" className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        <p
+          role="alert"
+          className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+        >
           {state.error}
         </p>
       )}
@@ -157,7 +162,7 @@ export function ItemForm({
           <Input id="name" name="name" required defaultValue={item?.name ?? ''} />
         </div>
         <div className="space-y-1.5">
-            <Label htmlFor="slug">Tunnus URL-osoitteessa</Label>
+          <Label htmlFor="slug">Tunnus URL-osoitteessa</Label>
           <Input
             id="slug"
             name="slug"
@@ -169,8 +174,8 @@ export function ItemForm({
           />
           <p id="slug-help" className="text-xs text-muted-foreground">
             Tuotteen osoite: <span className="font-mono">/item/{'{slug}'}</span>. Jätä tyhjäksi,
-            niin tunnus muodostetaan nimestä. Käytä pieniä kirjaimia, numeroita ja väliviivoja
-            (ä→a, ö→o). Vanha osoite ohjautuu uuteen, jos muutat tunnusta.
+            niin tunnus muodostetaan nimestä. Käytä pieniä kirjaimia, numeroita ja väliviivoja (ä→a,
+            ö→o). Vanha osoite ohjautuu uuteen, jos muutat tunnusta.
           </p>
         </div>
       </div>
@@ -191,7 +196,8 @@ export function ItemForm({
           <span>
             <span className="font-medium">Tämä on tapahtuma</span>
             <span className="mt-1 block text-xs text-muted-foreground">
-              Tapahtumalle kysytään päivämäärät, ja se poistuu etusivulta viikon kuluttua päättymisestä.
+              Tapahtumalle kysytään päivämäärät, ja se poistuu etusivulta viikon kuluttua
+              päättymisestä.
             </span>
           </span>
         </label>
@@ -201,36 +207,38 @@ export function ItemForm({
         <div className="space-y-4 rounded-md border bg-background p-4">
           <div>
             <h2 className="text-base font-semibold">Tapahtuman ajankohta</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Päättymispäivä voi olla sama kuin alkamispäivä.</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Päättymispäivä voi olla sama kuin alkamispäivä.
+            </p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-1.5">
-            <Label htmlFor="startsAt">Alkaa *</Label>
-            <Input
-              id="startsAt"
-              name="startsAt"
-              type="date"
-              required
-              value={startsAt}
-              onChange={(e) => {
-                const next = e.target.value;
-                setStartsAt(next);
-                if (endsAt && next > endsAt) setEndsAt(next);
-              }}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="endsAt">Päättyy *</Label>
-            <Input
-              id="endsAt"
-              name="endsAt"
-              type="date"
-              required
-              min={startsAt || undefined}
-              value={endsAt}
-              onChange={(e) => setEndsAt(e.target.value)}
-            />
-          </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="startsAt">Alkaa *</Label>
+              <Input
+                id="startsAt"
+                name="startsAt"
+                type="date"
+                required
+                value={startsAt}
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setStartsAt(next);
+                  if (endsAt && next > endsAt) setEndsAt(next);
+                }}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="endsAt">Päättyy *</Label>
+              <Input
+                id="endsAt"
+                name="endsAt"
+                type="date"
+                required
+                min={startsAt || undefined}
+                value={endsAt}
+                onChange={(e) => setEndsAt(e.target.value)}
+              />
+            </div>
           </div>
           <label className="flex items-center gap-2 text-sm sm:col-span-2">
             <input
@@ -263,7 +271,11 @@ export function ItemForm({
         {!isEvent && (
           <div className="space-y-1.5">
             <Label htmlFor="categoryId">Kategoria *</Label>
-            <Select id="categoryId" name="categoryId" defaultValue={item?.categoryId ?? categories[0]?.id}>
+            <Select
+              id="categoryId"
+              name="categoryId"
+              defaultValue={item?.categoryId ?? categories[0]?.id}
+            >
               {categories.map((category) => (
                 <option key={category.id} value={category.id}>
                   {category.name}
@@ -301,7 +313,9 @@ export function ItemForm({
             placeholder="Tyhjä = rajoittamaton"
             aria-describedby="stock-help"
           />
-          <p id="stock-help" className="text-xs text-muted-foreground">Jätä tyhjäksi, jos määrä on rajaton.</p>
+          <p id="stock-help" className="text-xs text-muted-foreground">
+            Jätä tyhjäksi, jos määrä on rajaton.
+          </p>
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="sortOrder">Järjestysnumero</Label>
@@ -394,7 +408,8 @@ export function ItemForm({
           defaultChecked={item?.featured ?? false}
           className="size-4 accent-[hsl(244,51%,24%)]"
         />
-        Nosta etusivulle <span className="text-xs text-muted-foreground">(näkyy Nostot-osiossa)</span>
+        Nosta etusivulle{' '}
+        <span className="text-xs text-muted-foreground">(näkyy Nostot-osiossa)</span>
       </label>
 
       {/* Checkout questions */}
@@ -438,7 +453,13 @@ export function ItemForm({
               >
                 {QUESTION_TYPES.map((type) => (
                   <option key={type} value={type}>
-                    {type === 'TEXT' ? 'Teksti' : type === 'NUMBER' ? 'Numero' : type === 'RADIO' ? 'Valinta (yksi)' : 'Valinta (useita)'}
+                    {type === 'TEXT'
+                      ? 'Teksti'
+                      : type === 'NUMBER'
+                        ? 'Numero'
+                        : type === 'RADIO'
+                          ? 'Valinta (yksi)'
+                          : 'Valinta (useita)'}
                   </option>
                 ))}
               </Select>
@@ -462,7 +483,9 @@ export function ItemForm({
                 Pakollinen
               </label>
               {(q.type === 'RADIO' || q.type === 'CHECKBOX') && (
-                <span className="text-xs text-muted-foreground">Valintakysymys on aina pakollinen.</span>
+                <span className="text-xs text-muted-foreground">
+                  Valintakysymys on aina pakollinen.
+                </span>
               )}
             </div>
             {(q.type === 'RADIO' || q.type === 'CHECKBOX') && (

@@ -15,13 +15,19 @@ export function SiteHeader({ categories, role }: { categories: Category[]; role?
             <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded bg-cta text-sm font-black text-header">
               P
             </span>
-            <span className="truncate text-sm md:text-base">Pitkäjärven Vaeltajat · Kontti</span>
+            <span className="truncate text-sm md:text-base">Kontti</span>
           </Link>
           <nav className="hidden items-center gap-4 md:flex">
-            <Link href="/" className="text-sm text-header-foreground/80 hover:text-header-foreground hover:underline">
+            <Link
+              href="/"
+              className="text-sm text-header-foreground/80 hover:text-header-foreground hover:underline"
+            >
               Etusivu
             </Link>
-            <Link href="/kammi" className="text-sm text-header-foreground/80 hover:text-header-foreground hover:underline">
+            <Link
+              href="/kammi"
+              className="text-sm text-header-foreground/80 hover:text-header-foreground hover:underline"
+            >
               Kammin varaus
             </Link>
             {categories.map((category) => (
@@ -34,10 +40,7 @@ export function SiteHeader({ categories, role }: { categories: Category[]; role?
               </Link>
             ))}
             {showAdmin && (
-              <Link
-                href="/admin"
-                className="text-sm font-semibold text-cta hover:underline"
-              >
+              <Link href="/admin" className="text-sm font-semibold text-cta hover:underline">
                 Hallinta
               </Link>
             )}
@@ -76,7 +79,10 @@ export function SiteHeader({ categories, role }: { categories: Category[]; role?
           </Link>
         )}
         {showUsers && (
-          <Link href="/admin/users" className="shrink-0 text-xs text-header-foreground/80 hover:underline">
+          <Link
+            href="/admin/users"
+            className="shrink-0 text-xs text-header-foreground/80 hover:underline"
+          >
             Käyttäjät
           </Link>
         )}

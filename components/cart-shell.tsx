@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
@@ -48,13 +48,17 @@ const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
   ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
   : null;
 
-export function CartShell() {
+export function CartShell({
+  initialUser,
+}: {
+  initialUser: { name: string; email: string };
+}) {
   const router = useRouter();
   const { items } = useCart();
   const [catalog, setCatalog] = useState<Map<string, FetchedItem>>(new Map());
   const [catalogLoaded, setCatalogLoaded] = useState(false);
   const [answers, setAnswers] = useState<Answers>({});
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(initialUser.email);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [codeInput, setCodeInput] = useState('');
@@ -63,7 +67,8 @@ export function CartShell() {
   const [codeChecking, setCodeChecking] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<'card' | 'invoice'>('invoice');
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'invoice'>('card');
+  const participantNamesPrefilled = useRef(false);
 
   const ids = useMemo(() => items.map((i) => i.id).sort(), [items]);
 
@@ -94,6 +99,31 @@ export function CartShell() {
   });
   const eventOnly = lines.length > 0 && lines.every(({ item }) => item?.isEvent === true);
   const invoiceCheckout = eventOnly && paymentMethod === 'invoice';
+
+  // A signed-in user's details are the convenient default, but only fill empty
+  // fields once so changing the cart or editing a field never overwrites input.
+  useEffect(() => {
+    if (!catalogLoaded || !initialUser.name.trim() || participantNamesPrefilled.current) return;
+    setAnswers((prev) => {
+      const next = { ...prev };
+      for (const { cartItem } of lines) {
+        const item = catalog.get(cartItem.id);
+        const participantQuestion = item?.questions.find(
+          (question) => question.id === PARTICIPANT_NAME_QUESTION.id,
+        );
+        if (!item || !participantQuestion) continue;
+        const itemAnswers = { ...(next[item.id] ?? {}) };
+        const values = [...(itemAnswers[participantQuestion.id] ?? [])];
+        for (let participantIndex = 0; participantIndex < cartItem.quantity; participantIndex++) {
+          if (!values[participantIndex]) values[participantIndex] = initialUser.name;
+        }
+        itemAnswers[participantQuestion.id] = values;
+        next[item.id] = itemAnswers;
+      }
+      return next;
+    });
+    participantNamesPrefilled.current = true;
+  }, [catalog, catalogLoaded, initialUser.name, lines]);
 
   const totalCents = lines.reduce(
     (sum, { cartItem, item }) => sum + (item?.priceCents ?? 0) * cartItem.quantity,
@@ -204,6 +234,7 @@ export function CartShell() {
         body: JSON.stringify({
           items: items.map((i) => ({ id: i.id, quantity: i.quantity })),
           answers,
+          name: initialUser.name.trim() || undefined,
           email: email.trim() || undefined,
           discountCode: discount?.code,
           paymentMethod: invoiceCheckout ? 'invoice' : 'card',
@@ -517,7 +548,7 @@ export function CartShell() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="vanhempi@example.com"
+              placeholder={invoiceCheckout ? 'vanhempi@example.com' : 'etunimi@example.com'}
             />
           </div>
         </div>
@@ -530,16 +561,16 @@ export function CartShell() {
                 type="radio"
                 name="payment-method"
                 className="mt-0.5 size-4 accent-[hsl(244,51%,24%)]"
-                checked={paymentMethod === 'invoice'}
+                checked={paymentMethod === 'card'}
                 onChange={() => {
-                  setPaymentMethod('invoice');
+                  setPaymentMethod('card');
                   setError(null);
                 }}
               />
               <span>
-                <span className="font-medium">Lasku vanhemmalle</span>
+                <span className="font-medium">Maksa itse</span>
                 <span className="block text-xs text-muted-foreground">
-                  Lasku lähetetään vanhemman sähköpostiin. Eräpäivä on 14 päivän kuluttua.
+                  Maksu tapahtuu heti turvallisella maksulomakkeella.
                 </span>
               </span>
             </label>
@@ -548,16 +579,16 @@ export function CartShell() {
                 type="radio"
                 name="payment-method"
                 className="mt-0.5 size-4 accent-[hsl(244,51%,24%)]"
-                checked={paymentMethod === 'card'}
+                checked={paymentMethod === 'invoice'}
                 onChange={() => {
-                  setPaymentMethod('card');
+                  setPaymentMethod('invoice');
                   setError(null);
                 }}
               />
               <span>
-                <span className="font-medium">Maksa heti</span>
+                <span className="font-medium">Vanhempi maksaa laskulla</span>
                 <span className="block text-xs text-muted-foreground">
-                  Maksu tapahtuu heti turvallisella maksulomakkeella.
+                  Lasku lähetetään vanhemman sähköpostiin. Eräpäivä on 14 päivän kuluttua.
                 </span>
               </span>
             </label>

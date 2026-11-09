@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react';
 import { saveDiscount } from '@/lib/actions/admin';
+import { LEADER_DISCOUNT_CODE, LEADER_DISCOUNT_PERCENT } from '@/lib/discount';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -37,7 +38,7 @@ export function DiscountForm({ discount }: { discount?: DiscountFormValues }) {
             id="code"
             name="code"
             required
-            defaultValue={discount?.code ?? ''}
+            defaultValue={discount?.code ?? LEADER_DISCOUNT_CODE}
             placeholder="JOHTAJA"
             spellCheck={false}
             autoCapitalize="characters"
@@ -58,8 +59,8 @@ export function DiscountForm({ discount }: { discount?: DiscountFormValues }) {
             step="1"
             inputMode="numeric"
             required
-            defaultValue={discount?.percentOff ?? ''}
-            placeholder="50"
+            defaultValue={discount?.percentOff ?? LEADER_DISCOUNT_PERCENT}
+            placeholder={String(LEADER_DISCOUNT_PERCENT)}
           />
         </div>
       </div>

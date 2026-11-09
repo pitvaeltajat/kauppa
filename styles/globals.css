@@ -206,10 +206,13 @@
   body {
     @apply bg-background text-foreground;
     max-width: 100%;
-    overflow-x: hidden;
+    /* `hidden` creates an overflow container and prevents sticky sidebars
+       from sticking in Safari. `clip` avoids horizontal spill without
+       changing the scroll container used by position: sticky. */
+    overflow-x: clip;
   }
   html {
-    overflow-x: hidden;
+    overflow-x: clip;
   }
   a:hover,
   button:hover {

@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { buildCheckout, type BuildableItem } from '@/lib/checkout';
-import { discountedUnitCents, discountApplies, normalizeCode } from '@/lib/discount';
+import {
+  discountedUnitCents,
+  discountApplies,
+  LEADER_DISCOUNT_CODE,
+  LEADER_DISCOUNT_PERCENT,
+  normalizeCode,
+} from '@/lib/discount';
 
 const leaderEvent: BuildableItem = {
   id: 'e1',
@@ -22,6 +28,11 @@ const plainEvent: BuildableItem = {
 const JOHTAJA = { code: 'JOHTAJA', percentOff: 50, leaderOnly: true };
 
 describe('discount helpers', () => {
+  it('keeps the leaders discount defaults fixed', () => {
+    expect(LEADER_DISCOUNT_CODE).toBe('JOHTAJA');
+    expect(LEADER_DISCOUNT_PERCENT).toBe(50);
+  });
+
   it('rounds the discounted unit price and clamps the percent', () => {
     expect(discountedUnitCents(2500, 50)).toBe(1250);
     expect(discountedUnitCents(999, 50)).toBe(500); // 499.5 → 500

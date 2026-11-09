@@ -271,6 +271,16 @@ export function KammiBooking({
           </span>
         </div>
 
+        {selectionError && (
+          <p
+            role="alert"
+            aria-live="polite"
+            className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          >
+            {selectionError}
+          </p>
+        )}
+
         <div className="grid gap-6 sm:grid-cols-2">
           {months.map(({ year, month, firstISO }) => {
             const lead = mondayIndex(firstISO);
@@ -481,14 +491,6 @@ export function KammiBooking({
           </div>
         </div>
 
-        {selectionError && (
-          <p
-            role="alert"
-            className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-          >
-            {selectionError}
-          </p>
-        )}
         {error && (
           <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
         )}

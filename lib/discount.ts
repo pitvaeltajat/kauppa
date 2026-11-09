@@ -8,6 +8,10 @@ export type DiscountCodeLike = {
   leaderOnly: boolean;
 };
 
+/** The built-in leaders' discount configured by the seed data. */
+export const LEADER_DISCOUNT_CODE = 'JOHTAJA';
+export const LEADER_DISCOUNT_PERCENT = 50;
+
 /** Normalise a typed code for lookup/compare: trimmed, uppercased. */
 export function normalizeCode(raw: string): string {
   return raw.trim().toUpperCase();

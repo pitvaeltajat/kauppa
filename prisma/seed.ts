@@ -6,6 +6,7 @@
 
 import 'dotenv/config';
 import { PrismaClient } from '@prisma/client';
+import { LEADER_DISCOUNT_CODE, LEADER_DISCOUNT_PERCENT } from '../lib/discount';
 
 const prisma = new PrismaClient();
 
@@ -289,16 +290,16 @@ async function main() {
   // The leaders' discount code. A leaderOnly code: only discounts events whose
   // "johtajien alennus" is turned on. Created once; admin edits it afterwards.
   await prisma.discountCode.upsert({
-    where: { code: 'JOHTAJA' },
+    where: { code: LEADER_DISCOUNT_CODE },
     update: {},
     create: {
-      code: 'JOHTAJA',
+      code: LEADER_DISCOUNT_CODE,
       description: 'Johtajien alennus tapahtumiin (50 %). Toimii vain johtajien alennus -tapahtumissa.',
-      percentOff: 50,
+      percentOff: LEADER_DISCOUNT_PERCENT,
       leaderOnly: true,
     },
   });
-  console.log('Alennuskoodi: JOHTAJA');
+  console.log(`Alennuskoodi: ${LEADER_DISCOUNT_CODE}`);
 
   // Bootstrap admins: KAUPPA_BOOTSTRAP_ADMIN_EMAILS="a@domain, b@domain". Roles
   // otherwise live in the database and are managed under /admin/users.

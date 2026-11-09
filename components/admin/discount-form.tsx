@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { LoadingPill } from '@/components/ui/loading-pill';
 
 export type DiscountFormValues = {
   id?: string;
@@ -114,7 +115,7 @@ export function DiscountForm({ discount }: { discount?: DiscountFormValues }) {
       </label>
 
       <Button type="submit" disabled={pending}>
-        {pending ? 'Tallennetaan…' : discount ? 'Tallenna koodi' : 'Luo koodi'}
+        {pending ? <LoadingPill className="bg-current/25" /> : discount ? 'Tallenna koodi' : 'Luo koodi'}
       </Button>
     </form>
   );

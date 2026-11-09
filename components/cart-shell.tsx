@@ -19,6 +19,7 @@ import { ButtonLink } from '@/components/ui/button-link';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ItemImage } from '@/components/item-image';
+import { LoadingPill } from '@/components/ui/loading-pill';
 import { PARTICIPANT_NAME_QUESTION } from '@/lib/questions';
 
 type CheckoutQuestion = {
@@ -317,8 +318,8 @@ export function CartShell({
                 </>
               ) : (
                 <>
-                  <div className="h-5 w-40 max-w-full animate-pulse rounded bg-muted" />
-                  <div className="mt-1.5 h-4 w-24 animate-pulse rounded bg-muted" />
+                  <LoadingPill className="h-5 w-40 max-w-full bg-muted" />
+                  <LoadingPill className="mt-1.5 h-4 w-24 bg-muted" />
                 </>
               )}
               <div className="mt-2 flex items-center gap-3">
@@ -500,7 +501,7 @@ export function CartShell({
                 disabled={codeChecking || !codeInput.trim()}
                 onClick={applyCode}
               >
-                {codeChecking ? '…' : 'Käytä'}
+                {codeChecking ? <LoadingPill className="bg-current/25" /> : 'Käytä'}
               </Button>
             </div>
           )}
@@ -611,6 +612,7 @@ export function CartShell({
           >
             <PaymentForm
               paymentIntentId={paymentIntentId}
+              loading={loading}
               onError={setError}
               onLoading={setLoading}
             />
@@ -623,13 +625,13 @@ export function CartShell({
             disabled={loading || lines.length === 0 || lines.some(({ item }) => !item)}
             onClick={goToCheckout}
           >
-            {loading
-              ? invoiceCheckout
-                ? 'Luodaan laskua…'
-                : 'Valmistellaan maksua…'
-              : invoiceCheckout
-                ? 'Lähetä ilmoittautuminen ja lasku'
-                : 'Jatka maksamiseen'}
+            {loading ? (
+              <LoadingPill className="bg-current/25" />
+            ) : invoiceCheckout ? (
+              'Lähetä ilmoittautuminen ja lasku'
+            ) : (
+              'Jatka maksamiseen'
+            )}
           </Button>
         )}
         <p className="text-center text-xs text-muted-foreground">
@@ -646,10 +648,12 @@ export function CartShell({
 
 function PaymentForm({
   paymentIntentId,
+  loading,
   onError,
   onLoading,
 }: {
   paymentIntentId: string | null;
+  loading: boolean;
   onError: (message: string | null) => void;
   onLoading: (loading: boolean) => void;
 }) {
@@ -683,10 +687,10 @@ function PaymentForm({
         variant="cta"
         size="lg"
         className="w-full"
-        disabled={!stripe || !elements}
+        disabled={loading || !stripe || !elements}
         onClick={submitPayment}
       >
-        Maksa turvallisesti
+        {loading ? <LoadingPill className="bg-current/25" /> : 'Maksa turvallisesti'}
       </Button>
     </div>
   );

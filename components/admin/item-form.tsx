@@ -10,6 +10,7 @@ import { QUESTION_TYPES, type QuestionType } from '@/lib/questions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { LoadingPill } from '@/components/ui/loading-pill';
 import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
 import { ItemImage } from '@/components/item-image';
@@ -363,7 +364,7 @@ export function ItemForm({
                 disabled={uploading}
                 onClick={() => fileRef.current?.click()}
               >
-                <Upload /> {uploading ? 'Ladataan…' : 'Lataa kuva'}
+                {uploading ? <LoadingPill className="bg-current/25" /> : <><Upload /> Lataa kuva</>}
               </Button>
               {imageUrl && !uploading && (
                 <Button type="button" size="sm" variant="ghost" onClick={() => setImageUrl('')}>
@@ -509,7 +510,7 @@ export function ItemForm({
           Peruuta
         </Link>
         <Button type="submit" disabled={pending}>
-          {pending ? 'Tallennetaan…' : item ? 'Tallenna tuote' : 'Luo tuote'}
+        {pending ? <LoadingPill className="bg-current/25" /> : item ? 'Tallenna tuote' : 'Luo tuote'}
         </Button>
       </div>
     </form>

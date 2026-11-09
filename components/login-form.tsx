@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { LoadingPill } from '@/components/ui/loading-pill';
 
 export function LoginForm({
   devEnabled,
@@ -47,7 +48,7 @@ export function LoginForm({
       </CardHeader>
       <CardContent className="space-y-4">
         <Button className="w-full" variant="secondary" onClick={googleSignIn} disabled={loading}>
-          Jatka Google-tilillä
+          {loading ? <LoadingPill /> : 'Jatka Google-tilillä'}
         </Button>
 
         {devEnabled && (
@@ -68,7 +69,7 @@ export function LoginForm({
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
             <Button type="submit" disabled={loading || !email.includes('@')}>
-              Kirjaudu (kehitys)
+              {loading ? <LoadingPill className="bg-current/25" /> : 'Kirjaudu (kehitys)'}
             </Button>
           </form>
         )}

@@ -1,11 +1,11 @@
 'use client';
 
 import { useFormStatus } from 'react-dom';
-import { Loader2 } from 'lucide-react';
 import { Button, type ButtonProps } from '@/components/ui/button';
+import { LoadingPill } from '@/components/ui/loading-pill';
 
 /**
- * Submit button for a server-action <form>. Shows a spinner while the action is
+ * Submit button for a server-action <form>. Shows a skeleton pill while the action is
  * in flight (so a click gives immediate feedback). With `confirm`, it asks
  * before firing, so a destructive action isn't one stray tap away.
  */
@@ -29,8 +29,7 @@ export function FormButton({
       }
       {...props}
     >
-      {pending && <Loader2 className="animate-spin" />}
-      {children}
+      {pending ? <LoadingPill className="bg-current/25" /> : children}
     </Button>
   );
 }

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { LoadingPill } from '@/components/ui/loading-pill';
 
 export type KammiSettingsValues = {
   active: boolean;
@@ -88,7 +89,7 @@ export function KammiSettingsForm({ settings }: { settings: KammiSettingsValues 
       </div>
 
       <Button type="submit" disabled={pending}>
-        {pending ? 'Tallennetaan…' : 'Tallenna asetukset'}
+        {pending ? <LoadingPill className="bg-current/25" /> : 'Tallenna asetukset'}
       </Button>
     </form>
   );

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { LoadingPill } from '@/components/ui/loading-pill';
 
 export type CategoryFormValues = {
   id?: string;
@@ -76,7 +77,7 @@ export function CategoryForm({ category }: { category?: CategoryFormValues }) {
       </div>
 
       <Button type="submit" disabled={pending}>
-        {pending ? 'Tallennetaan…' : category ? 'Tallenna kategoria' : 'Luo kategoria'}
+        {pending ? <LoadingPill className="bg-current/25" /> : category ? 'Tallenna kategoria' : 'Luo kategoria'}
       </Button>
     </form>
   );

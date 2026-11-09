@@ -1,7 +1,6 @@
 'use client';
 
 import { useMemo, useRef, useState } from 'react';
-import { Loader2 } from 'lucide-react';
 import { formatCents } from '@/lib/money';
 import {
   addDays,
@@ -14,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { LoadingPill } from '@/components/ui/loading-pill';
 
 type DayStatus = { m: boolean; n: boolean }; // morningBusy, nightBusy
 
@@ -337,9 +337,7 @@ export function KammiBooking({
         <div className="mt-6 flex justify-center">
           <Button variant="outline" onClick={loadMore} disabled={loadingMore}>
             {loadingMore ? (
-              <>
-                <Loader2 className="size-4 animate-spin" /> Ladataan…
-              </>
+              <LoadingPill />
             ) : (
               'Näytä lisää kuukausia'
             )}
@@ -502,13 +500,13 @@ export function KammiBooking({
           disabled={loading || !start || !end}
           onClick={book}
         >
-          {loading
-            ? isFree
-              ? 'Varataan…'
-              : 'Siirretään maksuun…'
-            : isFree
-              ? 'Varaa (maksuton)'
-              : 'Varaa ja maksa'}
+          {loading ? (
+            <LoadingPill className="bg-current/25" />
+          ) : isFree ? (
+            'Varaa (maksuton)'
+          ) : (
+            'Varaa ja maksa'
+          )}
         </Button>
         <p className="text-center text-xs text-muted-foreground">
           {isFree

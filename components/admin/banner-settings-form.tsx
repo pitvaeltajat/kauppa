@@ -7,6 +7,7 @@ import { SiteBanner } from '@/components/site-banner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { LoadingPill } from '@/components/ui/loading-pill';
 
 export function BannerSettingsForm({ bannerImageUrl }: { bannerImageUrl: string | null }) {
   const [state, action, pending] = useActionState(saveSiteSettings, undefined);
@@ -85,7 +86,7 @@ export function BannerSettingsForm({ bannerImageUrl }: { bannerImageUrl: string 
             disabled={uploading}
             onClick={() => fileRef.current?.click()}
           >
-            <Upload /> {uploading ? 'Ladataan…' : 'Lataa kuva'}
+            {uploading ? <LoadingPill className="bg-current/25" /> : <><Upload /> Lataa kuva</>}
           </Button>
           {imageUrl && !uploading && (
             <Button type="button" size="sm" variant="ghost" onClick={() => setImageUrl('')}>
@@ -108,7 +109,7 @@ export function BannerSettingsForm({ bannerImageUrl }: { bannerImageUrl: string 
       </div>
 
       <Button type="submit" disabled={pending || uploading}>
-        {pending ? 'Tallennetaan…' : 'Tallenna banneri'}
+        {pending ? <LoadingPill className="bg-current/25" /> : 'Tallenna banneri'}
       </Button>
     </form>
   );

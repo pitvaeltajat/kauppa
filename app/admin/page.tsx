@@ -4,7 +4,7 @@ import { format } from 'date-fns';
 import { fi } from 'date-fns/locale';
 import { prisma } from '@/lib/prisma';
 import { formatCents } from '@/lib/money';
-import { setOrderStatus } from '@/lib/actions/admin';
+import { cancelOrder } from '@/lib/actions/admin';
 import { requireSuperAdmin } from '@/lib/admin-guard';
 import { Badge } from '@/components/ui/badge';
 import { FormButton } from '@/components/admin/form-button';
@@ -156,13 +156,9 @@ export default async function AdminOrdersPage({
               </details>
 
               <div className="mt-3 flex flex-wrap gap-2">
-                {order.status === 'RECEIVED' && (
-                  <StatusButton orderId={order.id} status="PAID" label="Merkitse maksetuksi" />
-                )}
                 {(order.status === 'RECEIVED' || order.status === 'PAID') && (
                   <StatusButton
                     orderId={order.id}
-                    status="CANCELLED"
                     label="Peruuta"
                     variant="ghost"
                     confirm={`Peruutetaanko tilaus #${order.id.slice(-8).toUpperCase()}?`}
@@ -180,21 +176,18 @@ export default async function AdminOrdersPage({
 
 function StatusButton({
   orderId,
-  status,
   label,
   variant = 'outline',
   confirm,
 }: {
   orderId: string;
-  status: string;
   label: string;
   variant?: 'outline' | 'ghost';
   confirm?: string;
 }) {
   return (
-    <form action={setOrderStatus}>
+    <form action={cancelOrder}>
       <input type="hidden" name="id" value={orderId} />
-      <input type="hidden" name="status" value={status} />
       <FormButton size="sm" variant={variant} confirm={confirm}>
         {label}
       </FormButton>

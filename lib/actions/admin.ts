@@ -350,20 +350,14 @@ export async function deleteDiscount(formData: FormData): Promise<void> {
 
 // --- Orders ---------------------------------------------------------------
 
-const ORDER_STATUSES = ['RECEIVED', 'PAID', 'CANCELLED'] as const;
-
-export async function setOrderStatus(formData: FormData): Promise<void> {
+export async function cancelOrder(formData: FormData): Promise<void> {
   if (!isSuperAdmin(await currentRole())) return;
   const id = ((formData.get('id') as string) ?? '').trim();
-  const status = (formData.get('status') as string) ?? '';
-  if (!id || !ORDER_STATUSES.includes(status as (typeof ORDER_STATUSES)[number])) return;
+  if (!id) return;
 
   await prisma.order.update({
     where: { id },
-    data: {
-      status: status as (typeof ORDER_STATUSES)[number],
-      paidAt: status === 'PAID' ? new Date() : undefined,
-    },
+    data: { status: 'CANCELLED' },
   });
   revalidatePath('/admin');
 }

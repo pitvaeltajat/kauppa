@@ -1,5 +1,3 @@
-import Link from 'next/link';
-
 export function SiteFooter() {
   return (
     <footer className="mt-12 border-t bg-card">
@@ -16,18 +14,6 @@ export function SiteFooter() {
             pitkajarvenvaeltajat.fi
           </a>
         </div>
-        <Link
-          href="https://kompassi.pitva.fi"
-          className="flex items-center gap-3 rounded-lg border bg-background px-4 py-3 text-header shadow-sm transition-colors hover:border-header/40"
-        >
-          <span className="flex h-9 w-9 items-center justify-center rounded bg-header text-lg text-header-foreground">
-            🪵
-          </span>
-          <span>
-            <span className="block text-xs font-medium">PitVan palvelut</span>
-            <span className="block text-xs opacity-70">kompassi.pitva.fi</span>
-          </span>
-        </Link>
       </div>
     </footer>
   );

@@ -18,6 +18,12 @@ See `CLAUDE.md` for the full conventions. The short version:
 - Theme tokens live in `styles/globals.css`; keep them in sync with
   Klapi/Budu/landeri.
 
+## Delivery
+
+- After making changes, commit them and push to the remote `main` branch once
+  validation passes. Never force-push; if the push cannot be completed safely,
+  report the blocker instead.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 ## This is NOT the Next.js you know

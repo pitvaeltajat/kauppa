@@ -18,6 +18,23 @@ See `CLAUDE.md` for the full conventions. The short version:
 - Theme tokens live in `styles/globals.css`; keep them in sync with
   Klapi/Budu/landeri.
 
+## Production database
+
+- Production runs on the Lightsail instance `pitva-debian-13`, not AWS RDS or a
+  managed Vercel database.
+- Resolve the current host instead of hard-coding its public IP:
+  `aws lightsail get-instances --query 'instances[?name==\`pitva-debian-13\`].publicIpAddress' --output text`.
+- SSH with the existing local key `~/.ssh/lightsail-pitva` as user `admin`.
+- The Docker Compose project is `/home/admin/docker/pitva`; the Postgres
+  container is `pitva-postgres`, and Kontti's database is `kauppa`.
+- For read-only SQL, pipe SQL into the container and let the container expand
+  `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `POSTGRES_DB`; never print or copy
+  those values. Example:
+  `printf '%s\n' 'SELECT ...;' | ssh -i ~/.ssh/lightsail-pitva -o IdentitiesOnly=yes admin@<ip> "sudo docker exec -i pitva-postgres sh -c 'PGPASSWORD=\"\$POSTGRES_PASSWORD\" psql -U \"\$POSTGRES_USER\" -d kauppa -At'"`.
+- Production writes require explicit user authorization, a narrowly scoped SQL
+  statement, and a read-back verification. Remove any temporary SSH key files
+  created during access.
+
 ## Delivery
 
 - After making changes, commit them and push to the remote `main` branch once

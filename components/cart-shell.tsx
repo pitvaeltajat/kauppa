@@ -114,9 +114,7 @@ export function CartShell({
         if (!item || !participantQuestion) continue;
         const itemAnswers = { ...(next[item.id] ?? {}) };
         const values = [...(itemAnswers[participantQuestion.id] ?? [])];
-        for (let participantIndex = 0; participantIndex < cartItem.quantity; participantIndex++) {
-          if (!values[participantIndex]) values[participantIndex] = initialUser.name;
-        }
+        if (!values[0]) values[0] = initialUser.name;
         itemAnswers[participantQuestion.id] = values;
         next[item.id] = itemAnswers;
       }

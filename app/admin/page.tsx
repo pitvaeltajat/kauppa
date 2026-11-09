@@ -17,11 +17,10 @@ const STATUS_META: Record<
 > = {
   RECEIVED: { label: 'Vastaanotettu', variant: 'warning' },
   PAID: { label: 'Maksettu', variant: 'success' },
-  COMPLETED: { label: 'Luovutettu', variant: 'default' },
   CANCELLED: { label: 'Peruutettu', variant: 'secondary' },
 };
 
-const STATUSES = ['RECEIVED', 'PAID', 'COMPLETED', 'CANCELLED'] as const;
+const STATUSES = ['RECEIVED', 'PAID', 'CANCELLED'] as const;
 
 export default async function AdminOrdersPage({
   searchParams,
@@ -89,9 +88,13 @@ export default async function AdminOrdersPage({
         </p>
       ) : (
         <div className="space-y-3">
-          {orders.map((order) => (
-            <div key={order.id} className="rounded-lg border bg-card p-4 shadow-sm">
-              <div className="flex flex-wrap items-center justify-between gap-3">
+          {orders.map((order) => {
+            // COMPLETED is a legacy database value; show it as paid now that
+            // handing over is no longer a separate order status.
+            const displayStatus = order.status === 'COMPLETED' ? 'PAID' : order.status;
+            return (
+              <div key={order.id} className="rounded-lg border bg-card p-4 shadow-sm">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="text-sm">
                   <p className="font-semibold">
                     #{order.id.slice(-8).toUpperCase()}
@@ -104,12 +107,12 @@ export default async function AdminOrdersPage({
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Badge variant={STATUS_META[order.status].variant}>
-                    {STATUS_META[order.status].label}
+                  <Badge variant={STATUS_META[displayStatus].variant}>
+                    {STATUS_META[displayStatus].label}
                   </Badge>
                   <span className="font-bold">{formatCents(order.totalCents)}</span>
                 </div>
-              </div>
+                </div>
 
               <details className="mt-3">
                 <summary className="cursor-pointer text-sm text-muted-foreground hover:text-foreground">
@@ -166,8 +169,9 @@ export default async function AdminOrdersPage({
                   />
                 )}
               </div>
-            </div>
-          ))}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

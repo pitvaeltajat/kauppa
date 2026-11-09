@@ -350,7 +350,7 @@ export async function deleteDiscount(formData: FormData): Promise<void> {
 
 // --- Orders ---------------------------------------------------------------
 
-const ORDER_STATUSES = ['RECEIVED', 'PAID', 'COMPLETED', 'CANCELLED'] as const;
+const ORDER_STATUSES = ['RECEIVED', 'PAID', 'CANCELLED'] as const;
 
 export async function setOrderStatus(formData: FormData): Promise<void> {
   if (!isSuperAdmin(await currentRole())) return;

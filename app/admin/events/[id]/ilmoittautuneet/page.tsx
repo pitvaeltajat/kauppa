@@ -124,8 +124,6 @@ export default async function EventRegistrationsPage({
                     <td className="px-4 py-3">
                       {row.status === 'RECEIVED' ? (
                         <Badge variant="warning">Lasku avoinna</Badge>
-                      ) : row.status === 'COMPLETED' ? (
-                        <Badge variant="success">Luovutettu</Badge>
                       ) : (
                         <Badge variant="success">Maksettu</Badge>
                       )}

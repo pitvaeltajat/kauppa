@@ -218,6 +218,28 @@
   button:hover {
     text-decoration: none;
   }
+  a,
+  button,
+  label,
+  summary,
+  select,
+  input[type='checkbox'],
+  input[type='radio'],
+  [role='button'],
+  [role='checkbox'],
+  [role='switch'],
+  [role='tab'],
+  [role='menuitem'],
+  [role='option'] {
+    cursor: pointer;
+  }
+  button:disabled,
+  input:disabled,
+  select:disabled,
+  textarea:disabled,
+  [aria-disabled='true'] {
+    cursor: not-allowed;
+  }
   /* A tap or double-click on something clickable must not paint a text
      selection — on the kiosk touchscreen a long press did exactly that.
      `.cursor-pointer` catches the `<div onClick>` cards and rows. Fields keep

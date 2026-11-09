@@ -40,6 +40,7 @@ const items = [
     category: 'pitva-tuotteet',
     priceCents: 1600,
     stock: 33,
+    imageUrl: '/products/pitva-pipo.jpeg',
     description:
       'Laivastonsininen pipo, päärmeessä 60 mm brodeerattu valkoinen PitVa-logo. ' +
       'Osta taatusti Espoon metsäuskottavin pipo! Saat pipon kokouksessa ryhmänjohtajaltasi ' +
@@ -50,6 +51,7 @@ const items = [
     category: 'pitva-tuotteet',
     priceCents: 1000,
     stock: 27,
+    imageUrl: '/products/pitva-lippalakki.jpg',
     description:
       'Sininen lippalakki, edessä 60 mm brodeerattu valkoinen PitVa-logo. ' +
       'Osta taatusti Espoon metsäuskottavin lippalakki! Saat lippalakin kokouksessa ' +
@@ -61,6 +63,7 @@ const items = [
     category: 'pitva-tuotteet',
     priceCents: 700,
     stock: 98,
+    imageUrl: '/products/pitva-kangaskassi.jpeg',
     description:
       'Westford Millin valmistama laivastonsininen kangaskassi (38 x 42 cm), ' +
       'keskellä 20 cm kokoinen painettu valkoinen PitVa-logo. Osta PitVa-kangaskassi, ' +
@@ -73,6 +76,7 @@ const items = [
     category: 'pitva-tuotteet',
     priceCents: 2000,
     stock: null,
+    imageUrl: '/products/pitva-pipo-ja-kangaskassi.jpeg',
     description:
       'Laivastonsininen pipo, jonka päärmeessä 60 mm brodeerattu valkoinen PitVa-logo, ' +
       'sekä Westford Millin valmistama laivastonsininen kangaskassi (38 x 42 cm), jonka ' +
@@ -85,6 +89,7 @@ const items = [
     category: 'pitva-tuotteet',
     priceCents: 1200,
     stock: null,
+    imageUrl: '/products/kaksi-pitva-kangaskassia.jpeg',
     description:
       'Westford Millin valmistama laivastonsininen kangaskassi (38 x 42 cm), ' +
       'keskellä 20 cm kokoinen painettu valkoinen PitVa-logo. Osta PitVa-kangaskassi, ' +
@@ -97,6 +102,7 @@ const items = [
     category: 'pitva-tuotteet',
     priceCents: 4200,
     stock: null,
+    imageUrl: '/products/ilovepitva-huppari-aikuiset.jpeg',
     description:
       'ILovePitVa-huppari aikuisille. Uusi mallisto! Valitse hupparin koko ostoskorissa.',
     questions: [
@@ -113,6 +119,7 @@ const items = [
     category: 'pitva-tuotteet',
     priceCents: 3900,
     stock: null,
+    imageUrl: '/products/ilovepitva-huppari-lapset.jpeg',
     description:
       'ILovePitVa-huppari lapsille. Uusi mallisto! Valitse hupparin koko ostoskorissa.',
     questions: [
@@ -129,6 +136,7 @@ const items = [
     category: 'pitva-tuotteet',
     priceCents: 800,
     stock: null,
+    imageUrl: '/products/pitva-nimikyltti.jpeg',
     description: 'Ennakkotilatun PitVa-nimikyltin maksu. Kerro kyltin teksti ostoskorissa.',
     questions: [
       {

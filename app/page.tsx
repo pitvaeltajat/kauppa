@@ -2,8 +2,7 @@ import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 import { ArrowRight, Plus } from 'lucide-react';
 import { auth } from '@/lib/auth';
-import { getUserRole, isEventAdmin, isSuperAdmin } from '@/lib/admin';
-import { CategoryTile } from '@/components/category-tile';
+import { getUserRole, isEventAdmin } from '@/lib/admin';
 import { ItemCard } from '@/components/item-card';
 import { SiteBanner } from '@/components/site-banner';
 import { ButtonLink } from '@/components/ui/button-link';
@@ -13,20 +12,11 @@ import { isSystemCategorySlug } from '@/lib/categories';
 export default async function HomePage() {
   const session = await auth();
   const role = await getUserRole(session?.user?.email ?? null);
-  const superAdmin = isSuperAdmin(role);
   const eventAdmin = isEventAdmin(role);
   const listed = listedItemWhere();
   const [categories, items] = await Promise.all([
     prisma.category.findMany({
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
-      include: {
-        _count: { select: { items: { where: listed } } },
-        items: {
-          where: listed,
-          orderBy: [{ featured: 'desc' }, { sortOrder: 'asc' }, { name: 'asc' }],
-          take: 3,
-        },
-      },
     }),
     prisma.item.findMany({
       where: listed,
@@ -35,9 +25,12 @@ export default async function HomePage() {
     }),
   ]);
 
-  const grouped = categories.map((category) => ({
+  const grouped = [...categories].sort((a, b) => {
+    if (a.slug === 'tapahtumat') return -1;
+    if (b.slug === 'tapahtumat') return 1;
+    return 0;
+  }).map((category) => ({
     ...category,
-    previewItems: category.items,
     items: items.filter((item) => item.categoryId === category.id),
   }));
 
@@ -46,32 +39,6 @@ export default async function HomePage() {
       <SiteBanner />
 
       <div className="container">
-        {/* Admin shortcuts. Only superadmins see this. */}
-        {superAdmin && (
-          <div className="flex flex-wrap gap-2 pt-6">
-            <ButtonLink href="/admin/items/new" variant="cta" size="sm">
-              <Plus /> Lisää tuote
-            </ButtonLink>
-          </div>
-        )}
-
-        {/* Category tiles */}
-        <section className="grid gap-4 py-8 sm:grid-cols-2 lg:grid-cols-3">
-          {grouped.map((category) => (
-            <CategoryTile
-              key={category.id}
-              category={{
-                id: category.id,
-                name: category.name,
-                slug: category.slug,
-                description: category.description,
-                itemCount: category._count.items,
-                previewItems: category.previewItems,
-              }}
-            />
-          ))}
-        </section>
-
         {/* Featured items */}
         {items.some((item) => item.featured) && (
           <section className="border-t py-8">

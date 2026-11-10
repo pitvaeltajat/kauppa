@@ -3,6 +3,7 @@ import { CalendarDays } from 'lucide-react';
 import { formatCents } from '@/lib/money';
 import { formatEventDates } from '@/lib/catalog';
 import { ItemImage } from '@/components/item-image';
+import { cn } from '@/lib/cn';
 
 export type ItemCardData = {
   id: string;
@@ -17,16 +18,30 @@ export type ItemCardData = {
   endsAt?: Date | null;
 };
 
-export function ItemCard({ item }: { item: ItemCardData }) {
+export function ItemCard({
+  item,
+  featured = false,
+}: {
+  item: ItemCardData;
+  /** Featured cards get a larger, horizontal treatment on the front page. */
+  featured?: boolean;
+}) {
   const soldOut = item.stock === 0;
   const dates = item.isEvent ? formatEventDates(item.startsAt, item.endsAt) : '';
   return (
     <Link
       href={`/item/${item.slug}`}
-      className="group block overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm transition-shadow hover:shadow-md"
+      className={cn(
+        'group overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm transition-shadow hover:shadow-md',
+        featured ? 'flex flex-row' : 'block',
+      )}
     >
-      <ItemImage src={item.imageUrl} alt={item.name} />
-      <div className="p-4">
+      <ItemImage
+        src={item.imageUrl}
+        alt={item.name}
+        className={featured ? 'aspect-square w-1/2 shrink-0 rounded-none' : undefined}
+      />
+      <div className={featured ? 'min-w-0 flex-1 p-4 sm:p-5' : 'p-4'}>
         <div className="flex items-baseline justify-between gap-2">
           <h3 className="min-w-0 truncate text-sm font-semibold" title={item.name}>
             {item.name}

@@ -2,19 +2,20 @@ import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 import { ArrowRight, Plus } from 'lucide-react';
 import { auth } from '@/lib/auth';
-import { getUserRole, isSuperAdmin } from '@/lib/admin';
+import { getUserRole, isEventAdmin, isSuperAdmin } from '@/lib/admin';
 import { CategoryTile } from '@/components/category-tile';
 import { ItemCard } from '@/components/item-card';
 import { SiteBanner } from '@/components/site-banner';
 import { ButtonLink } from '@/components/ui/button-link';
 import { listedItemWhere } from '@/lib/catalog';
-import { getSiteSettings } from '@/lib/siteSettings';
+import { isSystemCategorySlug } from '@/lib/categories';
 
 export default async function HomePage() {
   const session = await auth();
-  const superAdmin = isSuperAdmin(await getUserRole(session?.user?.email ?? null));
+  const role = await getUserRole(session?.user?.email ?? null);
+  const superAdmin = isSuperAdmin(role);
+  const eventAdmin = isEventAdmin(role);
   const listed = listedItemWhere();
-  const settings = await getSiteSettings();
   const [categories, items] = await Promise.all([
     prisma.category.findMany({
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
@@ -42,7 +43,7 @@ export default async function HomePage() {
 
   return (
     <div>
-      <SiteBanner imageUrl={settings?.bannerImageUrl} />
+      <SiteBanner />
 
       <div className="container">
         {/* Admin shortcuts. Only superadmins see this. */}
@@ -50,9 +51,6 @@ export default async function HomePage() {
           <div className="flex flex-wrap gap-2 pt-6">
             <ButtonLink href="/admin/items/new" variant="cta" size="sm">
               <Plus /> Lisää tuote
-            </ButtonLink>
-            <ButtonLink href="/admin/categories/new" variant="outline" size="sm">
-              <Plus /> Lisää kategoria
             </ButtonLink>
           </div>
         )}
@@ -77,16 +75,10 @@ export default async function HomePage() {
         {/* Featured items */}
         {items.some((item) => item.featured) && (
           <section className="border-t py-8">
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-              <h2 className="text-xl font-bold">Nostot</h2>
-              <span className="text-sm text-muted-foreground">Poimintoja tuotteista</span>
-            </div>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {items
                 .filter((item) => item.featured)
-                .map((item) => (
-                  <ItemCard key={item.id} item={item} />
-                ))}
+                .map((item) => <ItemCard key={item.id} item={item} featured />)}
             </div>
           </section>
         )}
@@ -97,13 +89,20 @@ export default async function HomePage() {
             <div key={category.id}>
               <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                 <h2 className="text-xl font-bold">{category.name}</h2>
-                <Link
-                  href={`/category/${category.slug}`}
-                  className="flex items-center gap-1 text-sm font-medium text-primary hover:underline"
-                >
-                  Kaikki tuotteet
-                  <ArrowRight className="size-4" />
-                </Link>
+                <div className="flex flex-wrap items-center gap-3">
+                  {eventAdmin && isSystemCategorySlug(category.slug) && (
+                    <ButtonLink href="/admin/events/new" variant="outline" size="sm">
+                      <Plus /> Lisää tapahtuma
+                    </ButtonLink>
+                  )}
+                  <Link
+                    href={`/category/${category.slug}`}
+                    className="flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+                  >
+                    Kaikki tuotteet
+                    <ArrowRight className="size-4" />
+                  </Link>
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
                 {category.items.map((item) => (

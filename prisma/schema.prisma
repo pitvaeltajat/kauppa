@@ -271,6 +271,8 @@ model SiteSettings {
   updatedAt      DateTime @updatedAt
   /// Background photo for the front-page banner. NULL = plain banner, no photo.
   bannerImageUrl String?
+  /// CSS background-position for the banner image, e.g. "50% 50%".
+  bannerPosition String @default("50% 50%")
 }
 
 /// Singleton settings for the kammi rental (exactly one row, id "singleton"),

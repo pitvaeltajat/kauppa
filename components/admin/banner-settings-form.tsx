@@ -10,9 +10,19 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { LoadingPill } from '@/components/ui/loading-pill';
 
-export function BannerSettingsForm({ bannerImageUrl }: { bannerImageUrl: string | null }) {
+export function BannerSettingsForm({
+  bannerImageUrl,
+  bannerPosition,
+}: {
+  bannerImageUrl: string | null;
+  bannerPosition: string;
+}) {
   const [state, action, pending] = useActionState(saveSiteSettings, undefined);
   const [imageUrl, setImageUrl] = useState(bannerImageUrl ?? '');
+  const [positionX, setPositionX] = useState(() => Number.parseFloat(bannerPosition) || 50);
+  const [positionY, setPositionY] = useState(
+    () => Number.parseFloat(bannerPosition.split(/\s+/)[1] ?? '') || 50,
+  );
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -63,12 +73,13 @@ export function BannerSettingsForm({ bannerImageUrl }: { bannerImageUrl: string 
       )}
 
       <input type="hidden" name="bannerImageUrl" value={imageUrl} />
+      <input type="hidden" name="bannerPosition" value={`${positionX} ${positionY}`} />
 
       <div className="space-y-1.5">
         <Label htmlFor="bannerImageUrl">Bannerin taustakuva</Label>
         <Input
           id="bannerImageUrl"
-          type="url"
+          type="text"
           inputMode="url"
           spellCheck={false}
           autoCapitalize="none"
@@ -118,10 +129,53 @@ export function BannerSettingsForm({ bannerImageUrl }: { bannerImageUrl: string 
         </p>
       </div>
 
+      <div className="space-y-4 rounded-md border bg-background p-4">
+        <div>
+          <Label>Rajauskohta</Label>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Valitse, mihin kohtaan kuva tarkennetaan, kun banneri rajautuu.
+          </p>
+        </div>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <Label htmlFor="banner-position-x">Vaakasuunnassa</Label>
+            <span className="text-muted-foreground">{positionX}%</span>
+          </div>
+          <input
+            id="banner-position-x"
+            type="range"
+            min="0"
+            max="100"
+            step="1"
+            value={positionX}
+            onChange={(event) => setPositionX(Number(event.target.value))}
+            className="w-full accent-[hsl(244,51%,24%)]"
+          />
+          <div className="flex justify-between text-xs text-muted-foreground"><span>Vasen</span><span>Keskikohta</span><span>Oikea</span></div>
+        </div>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <Label htmlFor="banner-position-y">Pystysuunnassa</Label>
+            <span className="text-muted-foreground">{positionY}%</span>
+          </div>
+          <input
+            id="banner-position-y"
+            type="range"
+            min="0"
+            max="100"
+            step="1"
+            value={positionY}
+            onChange={(event) => setPositionY(Number(event.target.value))}
+            className="w-full accent-[hsl(244,51%,24%)]"
+          />
+          <div className="flex justify-between text-xs text-muted-foreground"><span>Yläosa</span><span>Keskikohta</span><span>Alaosa</span></div>
+        </div>
+      </div>
+
       <div className="space-y-1.5">
         <Label>Esikatselu</Label>
         <div className="overflow-hidden rounded-lg border">
-          <SiteBanner imageUrl={imageUrl || null} />
+          <SiteBanner imageUrl={imageUrl || null} imagePosition={`${positionX}% ${positionY}%`} />
         </div>
       </div>
 

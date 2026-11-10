@@ -6,15 +6,21 @@ const CONTACT_EMAIL = 'info@pitkajarvenvaeltajat.fi';
  * details (moved up from the footer). `imageUrl` is an optional background
  * photo set in admin; it fades into the banner so the dark text stays legible,
  * and without it the banner is a clean light band. */
-export function SiteBanner({ imageUrl }: { imageUrl?: string | null }) {
+export function SiteBanner({
+  imageUrl,
+  imagePosition = '50% 50%',
+}: {
+  imageUrl?: string | null;
+  imagePosition?: string;
+}) {
   return (
     <section className="relative isolate overflow-hidden border-b bg-card">
       {imageUrl && (
         <>
           <div
             aria-hidden
-            className="absolute inset-0 -z-10 bg-cover bg-center"
-            style={{ backgroundImage: `url("${imageUrl}")` }}
+            className="absolute inset-0 -z-10 bg-cover"
+            style={{ backgroundImage: `url("${imageUrl}")`, backgroundPosition: imagePosition }}
           />
           {/* Fade the photo toward the banner colour, top and bottom, so the
               navy text keeps enough contrast over any image. */}

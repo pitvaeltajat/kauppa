@@ -18,13 +18,20 @@ export async function saveSiteSettings(
   if (!(await requireSuper())) return { error: 'Ei käyttöoikeutta.' };
 
   const bannerImageUrl = ((formData.get('bannerImageUrl') as string) ?? '').trim() || null;
+  const bannerPosition = normalizeBannerPosition(formData.get('bannerPosition') as string);
 
   await prisma.siteSettings.upsert({
     where: { id: 'singleton' },
-    create: { id: 'singleton', bannerImageUrl },
-    update: { bannerImageUrl },
+    create: { id: 'singleton', bannerImageUrl, bannerPosition },
+    update: { bannerImageUrl, bannerPosition },
   });
 
   revalidatePath('/', 'layout');
   return {};
+}
+
+function normalizeBannerPosition(raw: string): string {
+  const [x, y] = raw.split(/\s+/).map(Number);
+  const clamp = (value: number) => Math.min(100, Math.max(0, Number.isFinite(value) ? value : 50));
+  return `${clamp(x)}% ${clamp(y)}%`;
 }

@@ -17,7 +17,10 @@ export default async function AdminSettingsPage() {
           Valitse etusivun bannerin taustakuva. Yhteystiedot ja esittelyteksti ovat kiinteät.
         </p>
       </div>
-      <BannerSettingsForm bannerImageUrl={settings?.bannerImageUrl ?? null} />
+      <BannerSettingsForm
+        bannerImageUrl={settings?.bannerImageUrl ?? null}
+        bannerPosition={settings?.bannerPosition ?? '50% 50%'}
+      />
     </div>
   );
 }

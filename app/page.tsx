@@ -8,13 +8,14 @@ import { SiteBanner } from '@/components/site-banner';
 import { ButtonLink } from '@/components/ui/button-link';
 import { listedItemWhere } from '@/lib/catalog';
 import { isSystemCategorySlug } from '@/lib/categories';
+import { getSiteSettings } from '@/lib/siteSettings';
 
 export default async function HomePage() {
   const session = await auth();
   const role = await getUserRole(session?.user?.email ?? null);
   const eventAdmin = isEventAdmin(role);
   const listed = listedItemWhere();
-  const [categories, items] = await Promise.all([
+  const [categories, items, settings] = await Promise.all([
     prisma.category.findMany({
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
     }),
@@ -23,6 +24,7 @@ export default async function HomePage() {
       orderBy: [{ featured: 'desc' }, { sortOrder: 'asc' }, { name: 'asc' }],
       include: { category: true },
     }),
+    getSiteSettings(),
   ]);
 
   const grouped = [...categories].sort((a, b) => {
@@ -36,7 +38,7 @@ export default async function HomePage() {
 
   return (
     <div>
-      <SiteBanner />
+      <SiteBanner imageUrl={settings?.bannerImageUrl} imagePosition={settings?.bannerPosition} />
 
       <div className="container">
         {/* Featured items */}

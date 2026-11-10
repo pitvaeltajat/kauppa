@@ -14,6 +14,7 @@ import { LoadingPill } from '@/components/ui/loading-pill';
 import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
 import { ItemImage } from '@/components/item-image';
+import { KuvatPicker } from '@/components/admin/kuvat-picker';
 
 export type ItemFormValues = {
   id?: string;
@@ -357,6 +358,7 @@ export function ItemForm({
               onChange={onPickImage}
             />
             <div className="flex items-center gap-2">
+              <KuvatPicker onSelect={setImageUrl} />
               <Button
                 type="button"
                 size="sm"

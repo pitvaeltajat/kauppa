@@ -11,6 +11,7 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'cdn.holvi.com' },
+      { protocol: 'https', hostname: '**.kuvat.fi' },
       ...(photosHost ? [{ protocol: 'https' as const, hostname: photosHost }] : []),
     ],
   },

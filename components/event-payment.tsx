@@ -29,7 +29,8 @@ export function EventPayment({
   total: string;
   status: string;
 }) {
-  const [email, setEmail] = useState('');
+  const [payerEmail, setPayerEmail] = useState('');
+  const [parentEmail, setParentEmail] = useState('');
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -56,6 +57,29 @@ export function EventPayment({
     setCopied(true);
   }
 
+  async function sendInstructions() {
+    setError(null);
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/event-payment/${encodeURIComponent(token)}/email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: parentEmail.trim() }),
+      });
+      const data = (await response.json()) as { error?: string; sent?: boolean };
+      if (!response.ok || !data.sent) {
+        setError(data.error ?? 'Maksuohjetta ei voitu lähettää.');
+        return;
+      }
+      setParentEmail('');
+      setCopied(false);
+    } catch {
+      setError('Maksuohjetta ei voitu lähettää. Tarkista yhteys ja yritä uudelleen.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function openPayment() {
     setError(null);
     setLoading(true);
@@ -63,7 +87,7 @@ export function EventPayment({
       const response = await fetch(`/api/event-payment/${encodeURIComponent(token)}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim() || undefined }),
+        body: JSON.stringify({ email: payerEmail.trim() || undefined }),
       });
       const data = (await response.json()) as { clientSecret?: string; error?: string; alreadyPaid?: boolean };
       if (!response.ok || !data.clientSecret) {
@@ -100,7 +124,7 @@ export function EventPayment({
   }
   return (
     <div className="container flex justify-center py-12">
-      <Card className="w-full max-w-xl">
+      <Card className="w-full max-w-2xl">
         <CardHeader className="items-center text-center">
           {paid ? <CheckCircle2 className="size-12 text-success" /> : <Share2 className="size-12 text-primary" />}
           <CardTitle>{paid ? 'Ilmoittautuminen on maksettu' : cancelled ? 'Ilmoittautuminen on peruttu' : 'Tapahtumamaksu'}</CardTitle>
@@ -114,45 +138,68 @@ export function EventPayment({
           </div>
 
           {!paid && !cancelled && (
-            <>
-              <p className="text-sm text-muted-foreground">
-                Ilmoittautuminen on vastaanotettu, mutta se vahvistuu vasta maksun jälkeen. Jaa tämä sivu vanhemmalle.
-              </p>
-              <div className="grid gap-2 sm:grid-cols-2">
-                <Button type="button" variant="cta" onClick={share}>
-                  <Share2 className="size-4" /> Jaa vanhemmalle
-                </Button>
-                <Button type="button" variant="outline" onClick={copyLink}>
-                  <Copy className="size-4" /> {copied ? 'Linkki kopioitu' : 'Kopioi linkki'}
-                </Button>
-              </div>
-              <a
-                className="block text-center text-sm text-primary underline"
-                href={`mailto:?subject=${encodeURIComponent(`Maksu: ${eventName}`)}&body=${encodeURIComponent(message)}`}
-              >
-                Lähetä sähköpostilla
-              </a>
-              {!clientSecret && (
-                <div className="space-y-3 border-t pt-4">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="parent-email">Maksajan sähköposti (valinnainen)</Label>
-                    <Input id="parent-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="vanhempi@example.com" />
-                  </div>
-                  <Button type="button" variant="cta" className="w-full" onClick={openPayment} disabled={loading || !stripePromise}>
-                    {loading ? <LoadingPill className="bg-current/25" /> : 'Maksa nyt'}
-                  </Button>
+            <div className="space-y-4">
+              <section className="space-y-4 rounded-lg border-2 border-primary/20 bg-primary/5 p-5">
+                <div>
+                  <h2 className="text-lg font-bold">Osallistujalle</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Ilmoittautuminen on vastaanotettu. Jaa maksuohje vanhemmalle, jotta hän voi maksaa omalla laitteellaan.
+                  </p>
                 </div>
-              )}
-              {clientSecret && stripePromise && (
-                <Elements stripe={stripePromise} options={{ clientSecret, locale: 'fi' }}>
-                  <PaymentForm token={token} />
-                </Elements>
-              )}
+                <Button type="button" variant="cta" className="w-full" onClick={share}>
+                  <Share2 className="size-4" /> Jaa maksuohje vanhemmalle
+                </Button>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <Button type="button" variant="outline" onClick={copyLink}>
+                    <Copy className="size-4" /> {copied ? 'Linkki kopioitu' : 'Kopioi linkki'}
+                  </Button>
+                  <a
+                    className="inline-flex min-h-10 items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-primary underline-offset-4 hover:underline"
+                    href={`mailto:?subject=${encodeURIComponent(`Maksu: ${eventName}`)}&body=${encodeURIComponent(message)}`}
+                  >
+                    Lähetä sähköpostilla
+                  </a>
+                </div>
+                <div className="space-y-2 border-t border-primary/15 pt-3">
+                  <Label htmlFor="parent-email">Tai lähetä maksuohje vanhemman sähköpostiin</Label>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <Input id="parent-email" type="email" value={parentEmail} onChange={(e) => setParentEmail(e.target.value)} placeholder="vanhempi@example.com" />
+                    <Button type="button" variant="outline" onClick={sendInstructions} disabled={loading || !parentEmail.trim()}>
+                      Lähetä ohje
+                    </Button>
+                  </div>
+                </div>
+              </section>
+
+              <section className="space-y-4 rounded-lg border p-5">
+                <div>
+                  <h2 className="text-lg font-bold">Vanhemmalle</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Avaa maksuohje ja maksa ilmoittautuminen. Maksu vahvistaa osallistumisen.
+                  </p>
+                </div>
+                {!clientSecret && (
+                  <div className="space-y-3">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="payer-email">Maksajan sähköposti (valinnainen)</Label>
+                      <Input id="payer-email" type="email" value={payerEmail} onChange={(e) => setPayerEmail(e.target.value)} placeholder="vanhempi@example.com" />
+                    </div>
+                    <Button type="button" variant="cta" className="w-full" onClick={openPayment} disabled={loading || !stripePromise}>
+                      {loading ? <LoadingPill className="bg-current/25" /> : 'Maksa nyt'}
+                    </Button>
+                  </div>
+                )}
+                {clientSecret && stripePromise && (
+                  <Elements stripe={stripePromise} options={{ clientSecret, locale: 'fi' }}>
+                    <PaymentForm token={token} />
+                  </Elements>
+                )}
+                <Button type="button" variant="ghost" className="w-full text-destructive hover:text-destructive" onClick={cancelRegistration} disabled={loading}>
+                  Peru ilmoittautuminen
+                </Button>
+              </section>
               {error && <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
-              <Button type="button" variant="ghost" className="w-full text-destructive hover:text-destructive" onClick={cancelRegistration} disabled={loading}>
-                Peru ilmoittautuminen
-              </Button>
-            </>
+            </div>
           )}
           {paid && <p className="text-center text-sm text-muted-foreground">Maksu on vastaanotettu ja ilmoittautuminen vahvistettu.</p>}
           {cancelled && <p className="text-center text-sm text-muted-foreground">Ilmoittautuminen on peruttu. Maksulinkki ei ole enää käytettävissä.</p>}

@@ -21,16 +21,21 @@ export function ItemImage({
   className?: string;
 }) {
   if (src) {
+    const kuvatImage = isKuvatImage(src);
     return (
       <div className={cn('relative aspect-square w-full overflow-hidden rounded-md bg-muted', className)}>
-        <Image
-          src={src}
-          alt={alt}
-          fill
-          unoptimized={isKuvatImage(src)}
-          sizes="(min-width: 1024px) 300px, (min-width: 640px) 33vw, 100vw"
-          className="object-cover"
-        />
+        {kuvatImage ? (
+          // eslint-disable-next-line @next/next/no-img-element -- Kuvat.fi must bypass Next image optimization.
+          <img src={src} alt={alt} className="absolute inset-0 size-full object-cover" />
+        ) : (
+          <Image
+            src={src}
+            alt={alt}
+            fill
+            sizes="(min-width: 1024px) 300px, (min-width: 640px) 33vw, 100vw"
+            className="object-cover"
+          />
+        )}
       </div>
     );
   }

@@ -34,6 +34,7 @@ export function EventPayment({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [currentStatus, setCurrentStatus] = useState(status);
   const url = typeof window === 'undefined' ? '' : window.location.href;
   const message = useMemo(
     () =>
@@ -77,13 +78,32 @@ export function EventPayment({
     }
   }
 
-  const paid = status === 'PAID' || status === 'COMPLETED';
+  const paid = currentStatus === 'PAID' || currentStatus === 'COMPLETED';
+  const cancelled = currentStatus === 'CANCELLED';
+  async function cancelRegistration() {
+    if (!window.confirm('Perutaanko ilmoittautuminen? Tätä ei voi palauttaa tästä linkistä.')) return;
+    setError(null);
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/event-payment/${encodeURIComponent(token)}/cancel`, { method: 'POST' });
+      const data = (await response.json()) as { error?: string; cancelled?: boolean };
+      if (!response.ok || !data.cancelled) {
+        setError(data.error ?? 'Ilmoittautumista ei voitu perua.');
+        return;
+      }
+      setCurrentStatus('CANCELLED');
+    } catch {
+      setError('Ilmoittautumista ei voitu perua. Tarkista yhteys ja yritä uudelleen.');
+    } finally {
+      setLoading(false);
+    }
+  }
   return (
     <div className="container flex justify-center py-12">
       <Card className="w-full max-w-xl">
         <CardHeader className="items-center text-center">
           {paid ? <CheckCircle2 className="size-12 text-success" /> : <Share2 className="size-12 text-primary" />}
-          <CardTitle>{paid ? 'Ilmoittautuminen on maksettu' : 'Tapahtumamaksu'}</CardTitle>
+          <CardTitle>{paid ? 'Ilmoittautuminen on maksettu' : cancelled ? 'Ilmoittautuminen on peruttu' : 'Tapahtumamaksu'}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-5">
           <div className="rounded-md border p-4 text-sm">
@@ -93,7 +113,7 @@ export function EventPayment({
             <p className="mt-2 text-lg font-bold">{total}</p>
           </div>
 
-          {!paid && (
+          {!paid && !cancelled && (
             <>
               <p className="text-sm text-muted-foreground">
                 Ilmoittautuminen on vastaanotettu, mutta se vahvistuu vasta maksun jälkeen. Jaa tämä sivu vanhemmalle.
@@ -129,9 +149,13 @@ export function EventPayment({
                 </Elements>
               )}
               {error && <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
+              <Button type="button" variant="ghost" className="w-full text-destructive hover:text-destructive" onClick={cancelRegistration} disabled={loading}>
+                Peru ilmoittautuminen
+              </Button>
             </>
           )}
           {paid && <p className="text-center text-sm text-muted-foreground">Maksu on vastaanotettu ja ilmoittautuminen vahvistettu.</p>}
+          {cancelled && <p className="text-center text-sm text-muted-foreground">Ilmoittautuminen on peruttu. Maksulinkki ei ole enää käytettävissä.</p>}
         </CardContent>
       </Card>
     </div>

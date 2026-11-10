@@ -78,6 +78,7 @@ export function KammiBooking({
   const [eventInfo, setEventInfo] = useState('');
   const [hostQuestions, setHostQuestions] = useState('');
   const [billingEmail, setBillingEmail] = useState('');
+  const [paymentMode, setPaymentMode] = useState<'now' | 'request'>('now');
   const [error, setError] = useState<string | null>(null);
   const [selectionError, setSelectionError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -171,6 +172,7 @@ export function KammiBooking({
           eventInfo,
           hostQuestions,
           billingEmail,
+          paymentMode,
         }),
       });
       const data = (await res.json()) as { url?: string; error?: string };
@@ -487,6 +489,19 @@ export function KammiBooking({
               placeholder="jos eri kuin yllä"
             />
           </div>
+          {!isFree && (
+            <fieldset className="space-y-2 border-t pt-3">
+              <legend className="text-sm font-medium">Maksu</legend>
+              <label className="flex cursor-pointer items-start gap-2 text-sm">
+                <input type="radio" className="mt-0.5 size-4" checked={paymentMode === 'now'} onChange={() => setPaymentMode('now')} />
+                <span><span className="font-medium">Maksa nyt itse</span><span className="block text-xs text-muted-foreground">Maksu avautuu heti.</span></span>
+              </label>
+              <label className="flex cursor-pointer items-start gap-2 text-sm">
+                <input type="radio" className="mt-0.5 size-4" checked={paymentMode === 'request'} onChange={() => setPaymentMode('request')} />
+                <span><span className="font-medium">Jaa maksuohje maksajalle</span><span className="block text-xs text-muted-foreground">Saat linkin, jonka voi jakaa sähköpostilla tai puhelimen jakovalikosta.</span></span>
+              </label>
+            </fieldset>
+          )}
         </div>
 
         {error && (
@@ -505,13 +520,15 @@ export function KammiBooking({
           ) : isFree ? (
             'Varaa (maksuton)'
           ) : (
-            'Varaa ja maksa'
+            paymentMode === 'request' ? 'Varaa ja jaa maksuohje' : 'Varaa ja maksa'
           )}
         </Button>
         <p className="text-center text-xs text-muted-foreground">
           {isFree
             ? 'Ovikoodi ja ohjeet tulevat sähköpostiisi heti varauksen jälkeen.'
-            : 'Vuoro varmistuu maksamalla. Ovikoodi ja ohjeet tulevat sähköpostiin maksun jälkeen.'}
+            : paymentMode === 'request'
+              ? 'Varaus pidetään maksamatta 24 tuntia. Se vahvistuu, kun maksaja maksaa linkin kautta.'
+              : 'Vuoro varmistuu maksamalla. Ovikoodi ja ohjeet tulevat sähköpostiin maksun jälkeen.'}
         </p>
       </div>
 

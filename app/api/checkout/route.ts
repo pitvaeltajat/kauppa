@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { randomUUID } from 'node:crypto';
 import { prisma } from '@/lib/prisma';
 import { getStripe } from '@/lib/stripe';
 import { buildCheckout, type CheckoutRequestItem } from '@/lib/checkout';
@@ -77,10 +78,17 @@ export async function POST(req: Request) {
   });
   const eventItemIds = new Set(items.filter((i) => i.isEvent).map((i) => i.id));
   const invoiceRequested = payload.paymentMethod === 'invoice';
+  const deferredEventPayment = payload.paymentMethod === 'deferred_event';
   const eventOnly = result.lines.every((line) => eventItemIds.has(line.itemId));
   if (invoiceRequested && !eventOnly) {
     return NextResponse.json(
       { error: 'Laskulla voi ilmoittautua vain tapahtumiin. Poista muut tuotteet korista.' },
+      { status: 400 },
+    );
+  }
+  if (deferredEventPayment && !eventOnly) {
+    return NextResponse.json(
+      { error: 'Vanhemman maksu-linkki toimii vain tapahtumailmoittautumisissa.' },
       { status: 400 },
     );
   }
@@ -147,6 +155,7 @@ export async function POST(req: Request) {
       email,
       name,
       totalCents: result.totalCents,
+      paymentToken: deferredEventPayment ? randomUUID() : undefined,
       lines: {
         create: result.lines.map((line) => {
           const snapshots = answerResult.snapshotsByItem[line.itemId] ?? [];
@@ -176,6 +185,13 @@ export async function POST(req: Request) {
   });
 
   try {
+    if (deferredEventPayment) {
+      return NextResponse.json({
+        paymentMethod: 'deferred_event',
+        orderId: order.id,
+        paymentToken: order.paymentToken,
+      });
+    }
     const stripe = getStripe();
     if (invoiceRequested) {
       const customer = await stripe.customers.create({

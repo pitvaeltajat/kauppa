@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { formatCents } from '@/lib/money';
+import { formatEventDates } from '@/lib/catalog';
 import { renderEmail, renderButton, escapeHtml, publicUrl, type EmailContent } from './layout';
 import { sendEmail } from './ses-client';
 
@@ -144,4 +145,40 @@ export async function sendNewOrderAdminEmail(orderId: string): Promise<void> {
   if (!data) return;
   const { subject, html } = renderNewOrderAdminEmail(data);
   await sendEmail(recipients, subject, html);
+}
+
+/** Send a child-created event payment link to the parent after signup. */
+export async function sendEventPaymentLinkEmail(orderId: string, recipient: string): Promise<void> {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    select: {
+      id: true,
+      totalCents: true,
+      paymentToken: true,
+      lines: {
+        select: {
+          name: true,
+          item: { select: { startsAt: true, endsAt: true } },
+          participants: { select: { name: true }, orderBy: { createdAt: 'asc' } },
+        },
+      },
+    },
+  });
+  if (!order?.paymentToken) return;
+  const eventName = order.lines.map((line) => line.name).join(', ');
+  const dates = formatEventDates(order.lines[0]?.item.startsAt, order.lines[0]?.item.endsAt);
+  const participants = order.lines.flatMap((line) => line.participants.map((p) => p.name));
+  const link = `${publicUrl()}/event-payment/${encodeURIComponent(order.paymentToken)}`;
+  const html = renderEmail(`
+    <h1>Tapahtumamaksu</h1>
+    <p>Sinulle on lähetetty maksuohje tapahtumailmoittautumiseen.</p>
+    <div class="info-box">
+      <strong>${escapeHtml(eventName)}</strong>${dates ? `<br>${escapeHtml(dates)}` : ''}<br>
+      ${participants.length ? `Osallistuja: ${escapeHtml(participants.join(', '))}<br>` : ''}
+      Hinta: <strong>${formatCents(order.totalCents)}</strong>
+    </div>
+    <p>Ilmoittautuminen vahvistuu, kun maksu on suoritettu.</p>
+    ${renderButton(link, 'Avaa maksuohjeet')}
+  `);
+  await sendEmail(recipient, `Maksuohje: ${eventName}`, html);
 }

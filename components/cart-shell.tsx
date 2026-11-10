@@ -68,7 +68,7 @@ export function CartShell({
   const [codeChecking, setCodeChecking] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<'card' | 'invoice'>('card');
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'deferred'>('card');
   const participantNamesPrefilled = useRef(false);
 
   const ids = useMemo(() => items.map((i) => i.id).sort(), [items]);
@@ -99,7 +99,7 @@ export function CartShell({
     return [{ cartItem, item }];
   });
   const eventOnly = lines.length > 0 && lines.every(({ item }) => item?.isEvent === true);
-  const invoiceCheckout = eventOnly && paymentMethod === 'invoice';
+  const deferredCheckout = eventOnly && paymentMethod === 'deferred';
 
   // A signed-in user's details are the convenient default, but only fill empty
   // fields once so changing the cart or editing a field never overwrites input.
@@ -208,7 +208,7 @@ export function CartShell({
 
   async function goToCheckout() {
     setError(null);
-    if (!invoiceCheckout && !stripePromise) {
+    if (!deferredCheckout && !stripePromise) {
       setError('Maksupalvelua ei ole vielä konfiguroitu. Ota yhteyttä ylläpitoon.');
       return;
     }
@@ -234,14 +234,17 @@ export function CartShell({
           items: items.map((i) => ({ id: i.id, quantity: i.quantity })),
           answers,
           name: initialUser.name.trim() || undefined,
-          email: email.trim() || undefined,
+          // A child’s account email must not become the parent’s receipt
+          // address when the parent-payment flow is selected.
+          email: deferredCheckout ? undefined : email.trim() || undefined,
           discountCode: discount?.code,
-          paymentMethod: invoiceCheckout ? 'invoice' : 'card',
+          paymentMethod: deferredCheckout ? 'deferred_event' : 'card',
         }),
       });
       const data = (await res.json()) as {
-        paymentMethod?: 'card' | 'invoice';
+        paymentMethod?: 'card' | 'invoice' | 'deferred_event';
         orderId?: string;
+        paymentToken?: string | null;
         invoiceUrl?: string | null;
         invoicePdfUrl?: string | null;
         clientSecret?: string | null;
@@ -250,6 +253,11 @@ export function CartShell({
       };
       if (!res.ok) {
         setError(data.error ?? 'Maksua ei voitu aloittaa. Yritä uudelleen.');
+        return;
+      }
+      if (data.paymentMethod === 'deferred_event' && data.paymentToken) {
+        cartStore.clear();
+        router.push(`/event-payment/${encodeURIComponent(data.paymentToken)}`);
         return;
       }
       if (data.paymentMethod === 'invoice' && data.orderId) {
@@ -540,14 +548,14 @@ export function CartShell({
         <div className="space-y-3 border-t pt-4">
           <div className="space-y-1.5">
             <Label htmlFor="email">
-              {invoiceCheckout ? 'Vanhemman sähköposti (lasku lähetetään tähän)' : 'Sähköposti (kuitti lähetetään tähän)'}
+              {deferredCheckout ? 'Sähköposti (valinnainen, kuitti lähetetään tähän)' : 'Sähköposti (kuitti lähetetään tähän)'}
             </Label>
             <Input
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder={invoiceCheckout ? 'vanhempi@example.com' : 'etunimi@example.com'}
+              placeholder={deferredCheckout ? 'vanhempi@example.com' : 'etunimi@example.com'}
             />
           </div>
         </div>
@@ -578,16 +586,16 @@ export function CartShell({
                 type="radio"
                 name="payment-method"
                 className="mt-0.5 size-4 accent-[hsl(244,51%,24%)]"
-                checked={paymentMethod === 'invoice'}
+                checked={paymentMethod === 'deferred'}
                 onChange={() => {
-                  setPaymentMethod('invoice');
+                  setPaymentMethod('deferred');
                   setError(null);
                 }}
               />
               <span>
-                <span className="font-medium">Vanhempi maksaa laskulla</span>
+                <span className="font-medium">Vanhempi maksaa myöhemmin</span>
                 <span className="block text-xs text-muted-foreground">
-                  Lasku lähetetään vanhemman sähköpostiin. Eräpäivä on 14 päivän kuluttua.
+                  Saat jaettavan maksuohjeen. Vanhempi voi maksaa turvallisesti omalla laitteellaan.
                 </span>
               </span>
             </label>
@@ -598,7 +606,7 @@ export function CartShell({
           <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
         )}
 
-        {clientSecret && stripePromise && !invoiceCheckout ? (
+        {clientSecret && stripePromise && !deferredCheckout ? (
           <Elements
             stripe={stripePromise}
             options={{
@@ -627,16 +635,16 @@ export function CartShell({
           >
             {loading ? (
               <LoadingPill className="bg-current/25" />
-            ) : invoiceCheckout ? (
-              'Lähetä ilmoittautuminen ja lasku'
+            ) : deferredCheckout ? (
+              'Ilmoittaudu ja pyydä vanhempaa maksamaan'
             ) : (
               'Jatka maksamiseen'
             )}
           </Button>
         )}
         <p className="text-center text-xs text-muted-foreground">
-          {invoiceCheckout
-            ? 'Lasku lähetetään vanhemman sähköpostiin. Ilmoittautuminen vahvistuu maksun jälkeen.'
+          {deferredCheckout
+            ? 'Ilmoittautuminen vahvistuu, kun vanhempi maksaa jaettavan maksuohjeen kautta.'
             : eventOnly
               ? 'Maksat tapahtuman verkossa. Tapahtumatuotteen ostaminen toimii samalla ilmoittautumisena. Saat kuitin sähköpostiisi.'
               : 'Maksat tuotteen verkossa ja noudat sen kokouksessa ryhmänjohtajalta tai erikseen sovittuna aikana kololta. Saat kuitin sähköpostiisi.'}

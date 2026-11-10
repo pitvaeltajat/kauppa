@@ -91,7 +91,7 @@ export type CreateHoldResult =
  */
 export async function createKammiHold(
   input: CreateHoldInput,
-  { free = false }: { free?: boolean } = {},
+  { free = false, holdMinutes = HOLD_MINUTES }: { free?: boolean; holdMinutes?: number } = {},
 ): Promise<CreateHoldResult> {
   const settings = await getKammiSettings();
   if (!settings.active) return { ok: false, error: 'Kammin verkkovaraus ei ole tällä hetkellä käytössä.' };
@@ -128,7 +128,7 @@ export async function createKammiHold(
         hostQuestions: input.hostQuestions,
         billingEmail: input.billingEmail,
         totalCents: free ? 0 : price.totalCents,
-        holdExpiresAt: free ? null : new Date(Date.now() + HOLD_MINUTES * 60_000),
+        holdExpiresAt: free ? null : new Date(Date.now() + holdMinutes * 60_000),
         paidAt: free ? new Date() : null,
       },
     });

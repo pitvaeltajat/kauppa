@@ -9,6 +9,7 @@ export {
   sendOrderReceiptEmail,
   renderNewOrderAdminEmail,
   sendNewOrderAdminEmail,
+  sendEventPaymentLinkEmail,
   type OrderEmailData,
 } from './orderEmails';
 export {

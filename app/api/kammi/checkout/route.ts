@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { randomUUID } from 'node:crypto';
 import { prisma } from '@/lib/prisma';
 import { getStripe } from '@/lib/stripe';
 import { auth } from '@/lib/auth';
@@ -39,6 +40,7 @@ export async function POST(req: Request) {
     typeof payload.billingEmail === 'string' && payload.billingEmail.includes('@')
       ? payload.billingEmail.trim().slice(0, 254)
       : null;
+  const paymentRequest = payload.paymentMode === 'request';
 
   if (!email) return NextResponse.json({ error: 'Anna sähköpostiosoite kuittia varten.' }, { status: 400 });
   if (!name) return NextResponse.json({ error: 'Anna nimesi.' }, { status: 400 });
@@ -75,9 +77,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ url: '/kammi/kiitos' });
   }
 
-  const hold = await createKammiHold(holdInput);
+  const hold = await createKammiHold(holdInput, { holdMinutes: paymentRequest ? 24 * 60 : undefined });
   if (!hold.ok) return NextResponse.json({ error: hold.error }, { status: 400 });
   const booking = hold.booking;
+
+  if (paymentRequest) {
+    const paymentToken = randomUUID();
+    await prisma.kammiBooking.update({ where: { id: booking.id }, data: { paymentToken } });
+    return NextResponse.json({ url: `/kammi/pay/${encodeURIComponent(paymentToken)}` });
+  }
 
   try {
     const stripe = getStripe();

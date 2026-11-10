@@ -158,6 +158,8 @@ model Order {
   totalCents          Int
   stripeSessionId     String?     @unique
   stripePaymentIntent String?
+  /// Random bearer token for a child-created event registration payment link.
+  paymentToken        String?     @unique
   stripeCustomerId    String?
   stripeInvoiceId     String?     @unique
   invoiceUrl          String?
@@ -240,6 +242,8 @@ model KammiBooking {
   billingEmail    String?
   totalCents      Int
   stripeSessionId String?       @unique
+  /// Random bearer token for a payer-separated booking payment link.
+  paymentToken    String?       @unique
   holdExpiresAt   DateTime?
   googleEventId   String?
   paidAt          DateTime?

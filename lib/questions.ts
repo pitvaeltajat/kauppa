@@ -52,6 +52,45 @@ export type AnswerSnapshot = {
   answer: string | string[];
 };
 
+export type ParticipantAnswerRow = {
+  name: string;
+  answers: AnswerSnapshot[];
+};
+
+/** Split an event line's snapshot into one row per purchased participant. */
+export function splitParticipantAnswers(
+  quantity: number,
+  snapshots: AnswerSnapshot[],
+): ParticipantAnswerRow[] {
+  const count = Math.max(1, quantity);
+  const participantSnapshot = snapshots.find(
+    (snapshot) => snapshot.questionId === PARTICIPANT_NAME_QUESTION.id,
+  );
+  const names = participantSnapshot
+    ? Array.isArray(participantSnapshot.answer)
+      ? participantSnapshot.answer
+      : [participantSnapshot.answer]
+    : [];
+
+  return Array.from({ length: count }, (_, participantIndex) => {
+    const suffix = ` ${participantIndex + 1}`;
+    const answers = snapshots
+      .filter((snapshot) => snapshot !== participantSnapshot)
+      .flatMap((snapshot) => {
+        if (count === 1) return [snapshot];
+        if (snapshot.prompt.endsWith(suffix)) {
+          return [{ ...snapshot, prompt: snapshot.prompt.slice(0, -suffix.length) }];
+        }
+        return snapshot.prompt.match(/ \d+$/) ? [] : participantIndex === 0 ? [snapshot] : [];
+      });
+
+    return {
+      name: names[participantIndex] ?? `Osallistuja ${participantIndex + 1}`,
+      answers,
+    };
+  });
+}
+
 export type BuildSnapshotsResult =
   { ok: true; snapshotsByItem: Record<string, AnswerSnapshot[]> } | { ok: false; error: string };
 

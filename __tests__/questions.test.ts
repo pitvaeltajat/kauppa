@@ -4,6 +4,7 @@ import {
   validateAndBuildAnswers,
   withEventQuestions,
   buildParticipantNames,
+  splitParticipantAnswers,
   PARTICIPANT_NAME_QUESTION,
   type ItemQuestionLike,
 } from '@/lib/questions';
@@ -161,6 +162,42 @@ describe('buildParticipantNames', () => {
         type: 'TEXT',
         answer: ['Aatu', 'Bea', 'Cee'],
       });
+  });
+});
+
+describe('splitParticipantAnswers', () => {
+  it('creates one row per participant and keeps their answers together', () => {
+    expect(
+      splitParticipantAnswers(2, [
+        {
+          questionId: 'osallistujan-nimi',
+          prompt: 'Osallistujan nimi',
+          type: 'TEXT',
+          answer: ['Aatu', 'Bea'],
+        },
+        { questionId: 'q1', prompt: 'Ikä 1', type: 'NUMBER', answer: '12' },
+        { questionId: 'q1', prompt: 'Ikä 2', type: 'NUMBER', answer: '13' },
+      ]),
+    ).toEqual([
+      {
+        name: 'Aatu',
+        answers: [{ questionId: 'q1', prompt: 'Ikä', type: 'NUMBER', answer: '12' }],
+      },
+      { name: 'Bea', answers: [{ questionId: 'q1', prompt: 'Ikä', type: 'NUMBER', answer: '13' }] },
+    ]);
+  });
+
+  it('supports the scalar snapshot format used by older orders', () => {
+    expect(
+      splitParticipantAnswers(1, [
+        {
+          questionId: 'osallistujan-nimi',
+          prompt: 'Osallistujan nimi',
+          type: 'TEXT',
+          answer: 'Aatu',
+        },
+      ]),
+    ).toEqual([{ name: 'Aatu', answers: [] }]);
   });
 });
 

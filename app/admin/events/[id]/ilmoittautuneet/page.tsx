@@ -7,15 +7,11 @@ import { fi } from 'date-fns/locale';
 import { prisma } from '@/lib/prisma';
 import { formatEventDates } from '@/lib/catalog';
 import { requireEventAdmin } from '@/lib/admin-guard';
+import { splitParticipantAnswers, type AnswerSnapshot } from '@/lib/questions';
 import { Badge } from '@/components/ui/badge';
 import { RegistrantEmails } from '@/components/admin/registrant-emails';
 
 export const metadata: Metadata = { title: 'Ilmoittautuneet' };
-
-// A registration is a paid/handed-over order or an issued invoice that contains
-// a line for this event. The buyer is the contact; a line quantity > 1 means
-// several spots on one order.
-type AnswerSnapshot = { prompt?: string; answer?: string | string[] };
 
 function formatAnswer(answer: string | string[] | undefined): string {
   if (Array.isArray(answer)) return answer.join(', ');
@@ -52,17 +48,22 @@ export default async function EventRegistrationsPage({
     orderBy: { createdAt: 'asc' },
   });
 
-  const rows = orders.map((order) => ({
-    id: order.id,
-    name: order.name,
-    email: order.email,
-    status: order.status,
-    createdAt: order.createdAt,
-    quantity: order.lines.reduce((sum, line) => sum + line.quantity, 0),
-    answers: order.lines.flatMap((line) => (line.answers as AnswerSnapshot[] | null) ?? []),
-  }));
+  const rows = orders.flatMap((order) =>
+    order.lines.flatMap((line, lineIndex) =>
+      splitParticipantAnswers(line.quantity, (line.answers as AnswerSnapshot[] | null) ?? []).map(
+        (participant, participantIndex) => ({
+          id: `${order.id}-${lineIndex}-${participantIndex}`,
+          name: participant.name,
+          email: order.email,
+          status: order.status,
+          createdAt: order.createdAt,
+          answers: participant.answers,
+        }),
+      ),
+    ),
+  );
 
-  const spots = rows.reduce((sum, row) => sum + row.quantity, 0);
+  const spots = rows.length;
   // Unique, non-empty emails preserve first-seen order.
   const emails = [...new Set(rows.map((r) => r.email?.trim()).filter((e): e is string => !!e))];
 
@@ -76,8 +77,8 @@ export default async function EventRegistrationsPage({
       </Link>
       <h1 className="text-2xl font-bold">{event.name}</h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        {formatEventDates(event.startsAt, event.endsAt)} · {rows.length} ilmoittautumista
-        {spots !== rows.length && ` · ${spots} paikkaa`}
+        {formatEventDates(event.startsAt, event.endsAt)} · {orders.length} ilmoittautumista
+        {spots !== orders.length && ` · ${spots} paikkaa`}
       </p>
 
       {rows.length === 0 ? (
@@ -96,7 +97,7 @@ export default async function EventRegistrationsPage({
                 <tr className="border-b text-xs uppercase text-muted-foreground">
                   <th className="px-4 py-3">Nimi</th>
                   <th className="px-4 py-3">Sähköposti</th>
-                  <th className="px-4 py-3 text-right">Paikkoja</th>
+                  <th className="px-4 py-3 text-right">Paikka</th>
                   <th className="px-4 py-3">Lisätiedot</th>
                   <th className="px-4 py-3">Ilmoittautui</th>
                   <th className="px-4 py-3">Tila</th>
@@ -104,10 +105,15 @@ export default async function EventRegistrationsPage({
               </thead>
               <tbody>
                 {rows.map((row) => (
-                  <tr key={row.id} className="border-b align-top transition-colors last:border-0 hover:bg-muted/40">
-                    <td className="px-4 py-3 font-medium">{row.name ?? 'ei nimeä'}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{row.email ?? 'ei sähköpostia'}</td>
-                    <td className="px-4 py-3 text-right">{row.quantity}</td>
+                  <tr
+                    key={row.id}
+                    className="border-b align-top transition-colors last:border-0 hover:bg-muted/40"
+                  >
+                    <td className="px-4 py-3 font-medium">{row.name}</td>
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {row.email ?? 'ei sähköpostia'}
+                    </td>
+                    <td className="px-4 py-3 text-right">1</td>
                     <td className="px-4 py-3 text-muted-foreground">
                       {row.answers.length === 0
                         ? 'ei vastauksia'

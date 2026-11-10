@@ -1,0 +1,3 @@
+import { Skeleton } from '@/components/ui/skeleton';
+
+export default function KammiPaymentLoading() { return <div className="container flex justify-center py-12" aria-busy="true"><div className="w-full max-w-xl rounded-lg border bg-card p-6"><Skeleton className="mx-auto size-12 rounded-full" /><Skeleton className="mx-auto mt-4 h-7 w-40" /><Skeleton className="mt-6 h-28 w-full" /><Skeleton className="mt-5 h-4 w-full" /><div className="mt-5 grid grid-cols-2 gap-2"><Skeleton className="h-10" /><Skeleton className="h-10" /></div><Skeleton className="mx-auto mt-4 h-4 w-40" /><Skeleton className="mt-5 h-10 w-full" /></div></div>; }

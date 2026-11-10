@@ -1,0 +1,3 @@
+import { Skeleton } from '@/components/ui/skeleton';
+
+export default function InvoiceSuccessLoading() { return <div className="container flex justify-center py-12" aria-busy="true"><div className="w-full max-w-xl rounded-lg border bg-card p-6 text-center"><Skeleton className="mx-auto size-12 rounded-full" /><Skeleton className="mx-auto mt-4 h-7 w-48" /><Skeleton className="mx-auto mt-4 h-4 w-5/6" /><div className="mt-5 space-y-3 rounded-md border p-4 text-left"><Skeleton className="h-5 w-2/3" /><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-full" /></div><Skeleton className="mx-auto mt-5 h-10 w-32" /></div></div>; }

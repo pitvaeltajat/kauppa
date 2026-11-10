@@ -1,6 +1,15 @@
 import Image from 'next/image';
 import { cn } from '@/lib/cn';
 
+function isKuvatImage(src: string) {
+  try {
+    const hostname = new URL(src).hostname;
+    return hostname === 'kuvat.fi' || hostname.endsWith('.kuvat.fi');
+  } catch {
+    return false;
+  }
+}
+
 /** Product image with a neutral "Ei kuvaa" placeholder when the item has none. */
 export function ItemImage({
   src,
@@ -18,6 +27,7 @@ export function ItemImage({
           src={src}
           alt={alt}
           fill
+          unoptimized={isKuvatImage(src)}
           sizes="(min-width: 1024px) 300px, (min-width: 640px) 33vw, 100vw"
           className="object-cover"
         />

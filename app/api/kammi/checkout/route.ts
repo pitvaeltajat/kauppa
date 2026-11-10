@@ -83,7 +83,12 @@ export async function POST(req: Request) {
 
   if (paymentRequest) {
     const paymentToken = randomUUID();
-    await prisma.kammiBooking.update({ where: { id: booking.id }, data: { paymentToken } });
+    // A payer-separated booking is an intentional indefinite hold. It remains
+    // visible as busy until the payer completes it or an admin cancels it.
+    await prisma.kammiBooking.update({
+      where: { id: booking.id },
+      data: { paymentToken, holdExpiresAt: null },
+    });
     return NextResponse.json({ url: `/kammi/pay/${encodeURIComponent(paymentToken)}` });
   }
 

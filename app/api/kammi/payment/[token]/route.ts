@@ -10,7 +10,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ token: 
   const payerEmail = typeof payload.email === 'string' && payload.email.includes('@') ? payload.email.trim().slice(0, 254) : null;
   const booking = await prisma.kammiBooking.findUnique({ where: { paymentToken: token } });
   if (!booking) return NextResponse.json({ error: 'Maksulinkkiä ei löydy.' }, { status: 404 });
-  if (booking.status !== 'PENDING' || !booking.holdExpiresAt || booking.holdExpiresAt < new Date()) {
+  if (booking.status !== 'PENDING') {
     return NextResponse.json({ error: 'Varaus ei ole enää maksettavissa.' }, { status: 400 });
   }
   const stripe = getStripe();
@@ -24,7 +24,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ token: 
     success_url: `${appUrl}/kammi/kiitos`,
     cancel_url: `${appUrl}/kammi/pay/${encodeURIComponent(token)}`,
     locale: 'fi',
-    expires_at: Math.min(Math.floor((booking.holdExpiresAt.getTime()) / 1000), Math.floor(Date.now() / 1000) + 30 * 60),
+    expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
   });
   await prisma.kammiBooking.update({ where: { id: booking.id }, data: { stripeSessionId: session.id, billingEmail: payerEmail ?? undefined } });
   return NextResponse.json({ url: session.url });

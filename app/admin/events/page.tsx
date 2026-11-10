@@ -19,19 +19,17 @@ export default async function AdminEventsPage() {
     orderBy: [{ startsAt: 'desc' }, { name: 'asc' }],
     include: {
       // Paid/handed-over orders plus issued-but-unpaid invoices are registrations.
-      _count: {
-        select: {
-          orderLines: {
-            where: {
-              order: {
-                OR: [
-                  { status: { in: ['PAID', 'COMPLETED'] } },
-                  { status: 'RECEIVED', stripeInvoiceId: { not: null } },
-                ],
-              },
-            },
+      // Count participants, falling back to line quantity for pre-migration rows.
+      orderLines: {
+        where: {
+          order: {
+            OR: [
+              { status: { in: ['PAID', 'COMPLETED'] } },
+              { status: 'RECEIVED', stripeInvoiceId: { not: null } },
+            ],
           },
         },
+        select: { quantity: true, participants: { select: { id: true } } },
       },
     },
   });
@@ -68,6 +66,10 @@ export default async function AdminEventsPage() {
             <tbody>
               {events.map((event) => {
                 const over = isEventOver(event.endsAt);
+                const participantCount = event.orderLines.reduce(
+                  (sum, line) => sum + (line.participants.length || line.quantity),
+                  0,
+                );
                 return (
                   <tr
                     key={event.id}
@@ -102,11 +104,11 @@ export default async function AdminEventsPage() {
                     <td className="px-4 py-3">
                       <div className="flex justify-end gap-2">
                         <ButtonLink
-                          href={`/admin/events/${event.id}/ilmoittautuneet`}
+                          href={`/admin/events/${event.id}/registrants`}
                           size="sm"
                           variant="outline"
                         >
-                          Ilmoittautuneet ({event._count.orderLines})
+                          Ilmoittautuneet ({participantCount})
                         </ButtonLink>
                         <ButtonLink href={`/admin/events/${event.id}`} size="sm" variant="outline">
                           Muokkaa

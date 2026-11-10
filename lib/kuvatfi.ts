@@ -16,7 +16,10 @@ function apiUrl(host: string, params: Record<string, string>) {
 }
 
 function isAllowedGalleryHost(host: string) {
-  return host === (process.env.KUVATFI_HOST?.trim() || KUVATFI_DEFAULT_HOST) || host.endsWith('.kuvat.fi');
+  return (
+    host === (process.env.KUVATFI_HOST?.trim() || KUVATFI_DEFAULT_HOST) ||
+    host.endsWith('.kuvat.fi')
+  );
 }
 
 async function callKuvatApi(host: string, params: Record<string, string>) {
@@ -47,7 +50,8 @@ async function createSession() {
     action: 'getSessionId',
     usersession: '',
   });
-  const sid = created && !Array.isArray(created) && typeof created.sid === 'string' ? created.sid : '';
+  const sid =
+    created && !Array.isArray(created) && typeof created.sid === 'string' ? created.sid : '';
   if (sid.length < 60) throw new Error('Kuvat.fi-istuntoa ei voitu luoda.');
 
   const login = await callKuvatApi('session.kuvat.fi', {
@@ -78,7 +82,10 @@ export async function getKuvatFolders(): Promise<KuvatFolder[]> {
   for (const rawGallery of galleries) {
     if (!isRecord(rawGallery) || rawGallery.type !== 'admin') continue;
     const gallery = rawGallery;
-    const host = typeof gallery.url === 'string' ? gallery.url.replace(/^https?:\/\//, '').replace(/\/$/, '') : '';
+    const host =
+      typeof gallery.url === 'string'
+        ? gallery.url.replace(/^https?:\/\//, '').replace(/\/$/, '')
+        : '';
     if (!host || !isAllowedGalleryHost(host)) continue;
     const tree = await callKuvatApi('kuvat.fi', {
       type: 'getFolderTree',
@@ -97,10 +104,22 @@ export async function getKuvatFolders(): Promise<KuvatFolder[]> {
   return result.sort((a, b) => a.name.localeCompare(b.name, 'fi'));
 }
 
-export type KuvatImage = { id: number; title: string; url: string; thumbnailUrl: string; width: number; height: number };
+export type KuvatImage = {
+  id: number;
+  title: string;
+  url: string;
+  thumbnailUrl: string;
+  width: number;
+  height: number;
+};
+
+function sourceDomain() {
+  return process.env.NEXTAUTH_URL ? new URL(process.env.NEXTAUTH_URL).hostname : 'kontti.pitva.fi';
+}
 
 export async function getKuvatImages(host: string, folder: string): Promise<KuvatImage[]> {
-  if (!isAllowedGalleryHost(host) || !folder.startsWith('/')) throw new Error('Virheellinen Kuvat.fi-kansio.');
+  if (!isAllowedGalleryHost(host) || !folder.startsWith('/'))
+    throw new Error('Virheellinen Kuvat.fi-kansio.');
   const sid = await createSession();
   const data = await callKuvatApi('kuvat.fi', {
     type: 'getFileListJSON',
@@ -122,9 +141,15 @@ export async function getKuvatImages(host: string, folder: string): Promise<Kuva
     const title = filepath.split('/').at(-1) || `Kuva ${id}`;
     const imageUrl = `https://${host}${filepath}`;
     const imageInfo = isRecord(image.url) ? image.url : null;
-    const thumb = imageInfo && typeof imageInfo.hash === 'string' && typeof imageInfo.ts === 'string'
-      ? `https://${imageInfo.ts}/tt/?key=${encodeURIComponent(imageInfo.hash)}&size=sqr480`
-      : `${imageUrl}?img=sqr480`;
+    const sizes = imageInfo && Array.isArray(imageInfo.sizes) ? imageInfo.sizes : [];
+    const thumbnailHost =
+      imageInfo && typeof imageInfo.ts === 'string'
+        ? imageInfo.ts.replace(/^https?:\/\//, '').replace(/\/$/, '')
+        : '';
+    const thumb =
+      imageInfo && typeof imageInfo.hash === 'string' && thumbnailHost && sizes.includes('sqr480')
+        ? `https://${thumbnailHost}/tt/?key=${encodeURIComponent(imageInfo.hash)}&size=sqr480`
+        : `${imageUrl.replace(/ /g, '+')}?application=${KUVATFI_APPLICATION}&version=${KUVATFI_VERSION}&sourcedomain=${encodeURIComponent(sourceDomain())}&usersession=${encodeURIComponent(sid)}&img=sqr480`;
     return [{ id, title, url: imageUrl, thumbnailUrl: thumb, width, height }];
   });
 }

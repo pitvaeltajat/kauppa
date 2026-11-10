@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { prisma } from '@/lib/prisma';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
@@ -47,15 +46,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     );
   }
 
-  const categories = await prisma.category.findMany({
-    orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
-  });
-
   return (
     <html lang="fi">
       <body>
         <div className="flex min-h-screen flex-col">
-          <SiteHeader categories={categories} role={role ?? undefined} />
+          <SiteHeader role={role ?? undefined} />
           <main className="flex-1">{children}</main>
           <SiteFooter />
         </div>

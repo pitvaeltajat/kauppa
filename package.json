@@ -5,7 +5,7 @@
   "type": "module",
   "packageManager": "pnpm@10.28.0",
   "engines": {
-    "node": ">=20"
+    "node": "26.x"
   },
   "scripts": {
     "dev": "USE_LOCAL_SES=true next dev & pnpm aws-ses-v2-local",

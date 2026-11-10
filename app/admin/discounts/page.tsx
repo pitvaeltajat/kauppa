@@ -29,8 +29,8 @@ export default async function AdminDiscountsPage() {
       </div>
 
       <p className="mb-4 text-sm text-muted-foreground">
-        Ostaja syöttää koodin ostoskorissa. &quot;Vain johtajien alennus&quot; -koodi alentaa vain
-        tapahtumia, joissa johtajien alennus on päällä.
+        Ostaja syöttää alennuskoodin ostoskorissa. Tavalliset koodit toimivat kaikissa tuotteissa;
+        vain <span className="font-mono">JOHTAJA</span> on tarkoitettu johtajien alennukseen.
       </p>
       <div className="mb-6 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 text-sm">
         <p className="font-semibold">JOHTAJA-koodin käyttö</p>
@@ -65,7 +65,9 @@ export default async function AdminDiscountsPage() {
                   <span className="text-sm font-normal text-muted-foreground">
                     −{code.percentOff} %
                   </span>
-                  {code.leaderOnly && <Badge variant="secondary">Johtajien alennus</Badge>}
+                  {code.code === LEADER_DISCOUNT_CODE && (
+                    <Badge variant="secondary">Johtajien alennus</Badge>
+                  )}
                   {immutable && <Badge variant="secondary">Lukittu järjestelmäkoodi</Badge>}
                   {!code.active && <Badge variant="secondary">Pois käytöstä</Badge>}
                   {expired && <Badge variant="destructive">Vanhentunut</Badge>}

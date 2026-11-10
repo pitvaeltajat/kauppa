@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { type DiscountCodeLike, normalizeCode } from '@/lib/discount';
+import { LEADER_DISCOUNT_CODE, type DiscountCodeLike, normalizeCode } from '@/lib/discount';
 
 /**
  * Look up a code the buyer typed and return it only if it is usable right now
@@ -12,5 +12,6 @@ export async function loadValidDiscount(raw: string | null | undefined): Promise
   const row = await prisma.discountCode.findUnique({ where: { code } });
   if (!row || !row.active) return null;
   if (row.validUntil && row.validUntil.getTime() < Date.now()) return null;
-  return { code: row.code, percentOff: row.percentOff, leaderOnly: row.leaderOnly };
+  // Only the built-in JOHTAJA code is scoped to leader-discount events.
+  return { code: row.code, percentOff: row.percentOff, leaderOnly: row.code === LEADER_DISCOUNT_CODE };
 }

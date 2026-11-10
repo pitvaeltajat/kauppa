@@ -9,7 +9,7 @@ import { getUserRole, isEventAdmin, isSuperAdmin, type Role } from '@/lib/admin'
 import { slugify } from '@/lib/slug';
 import { parseEurosInput } from '@/lib/money';
 import { parseQuestionDrafts } from '@/lib/questions';
-import { normalizeCode } from '@/lib/discount';
+import { LEADER_DISCOUNT_CODE, normalizeCode } from '@/lib/discount';
 
 export type ActionResult = { error?: string };
 
@@ -324,7 +324,8 @@ export async function saveDiscount(
     code,
     description: ((formData.get('description') as string) ?? '').trim(),
     percentOff,
-    leaderOnly: formData.get('leaderOnly') === 'on',
+    // JOHTAJA is the only code that is scoped to leader-discount events.
+    leaderOnly: code === LEADER_DISCOUNT_CODE,
     active: formData.get('active') === 'on',
     validUntil,
   };

@@ -287,11 +287,11 @@ async function main() {
     console.log(`Tuote: ${item.name}`);
   }
 
-  // The leaders' discount code. A leaderOnly code: only discounts events whose
+  // The built-in leaders' discount code. Only this code discounts events whose
   // "johtajien alennus" is turned on. Created once; admin edits it afterwards.
   await prisma.discountCode.upsert({
     where: { code: LEADER_DISCOUNT_CODE },
-    update: {},
+    update: { leaderOnly: true },
     create: {
       code: LEADER_DISCOUNT_CODE,
       description: 'Johtajien alennus tapahtumiin (50 %). Toimii vain johtajien alennus -tapahtumissa.',

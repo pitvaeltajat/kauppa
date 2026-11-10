@@ -19,7 +19,6 @@ export default async function EditDiscountPage({ params }: { params: Promise<{ i
     code: code.code,
     description: code.description,
     percentOff: code.percentOff,
-    leaderOnly: code.leaderOnly,
     active: code.active,
     validUntil: code.validUntil ? code.validUntil.toISOString().slice(0, 10) : null,
   };

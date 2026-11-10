@@ -14,7 +14,6 @@ export type DiscountFormValues = {
   code: string;
   description: string;
   percentOff: number;
-  leaderOnly: boolean;
   active: boolean;
   /** "YYYY-MM-DD" for the native date input, or null. */
   validUntil: string | null;
@@ -87,22 +86,6 @@ export function DiscountForm({ discount }: { discount?: DiscountFormValues }) {
         />
         <p className="text-xs text-muted-foreground">Tyhjä = ei päättymispäivää.</p>
       </div>
-
-      <label className="flex items-start gap-2 text-sm">
-        <input
-          type="checkbox"
-          name="leaderOnly"
-          defaultChecked={discount?.leaderOnly ?? false}
-          className="mt-0.5 size-4 accent-[hsl(244,51%,24%)]"
-        />
-        <span>
-          Vain johtajien alennus
-          <span className="block text-xs text-muted-foreground">
-            Alentaa vain niitä tapahtumia, joissa &quot;johtajien alennus&quot; on päällä. Muuten
-            koodi alentaa koko ostoskoria.
-          </span>
-        </span>
-      </label>
 
       <label className="flex items-center gap-2 text-sm">
         <input

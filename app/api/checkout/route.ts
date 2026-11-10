@@ -5,6 +5,7 @@ import { buildCheckout, type CheckoutRequestItem } from '@/lib/checkout';
 import {
   validateAndBuildAnswers,
   buildParticipantNames,
+  splitParticipantAnswers,
   PARTICIPANT_NAME_QUESTION,
   type AnswersByItem,
   type ItemQuestionLike,
@@ -147,13 +148,29 @@ export async function POST(req: Request) {
       name,
       totalCents: result.totalCents,
       lines: {
-        create: result.lines.map((line) => ({
-          itemId: line.itemId,
-          name: line.name,
-          priceCents: line.priceCents,
-          quantity: line.quantity,
-          answers: answerResult.snapshotsByItem[line.itemId] ?? [],
-        })),
+        create: result.lines.map((line) => {
+          const snapshots = answerResult.snapshotsByItem[line.itemId] ?? [];
+          const isEvent = eventItemIds.has(line.itemId);
+          return {
+            itemId: line.itemId,
+            name: line.name,
+            priceCents: line.priceCents,
+            quantity: line.quantity,
+            answers: isEvent ? [] : snapshots,
+            ...(isEvent
+              ? {
+                  participants: {
+                    create: splitParticipantAnswers(line.quantity, snapshots).map(
+                      (participant) => ({
+                        name: participant.name,
+                        answers: participant.answers,
+                      }),
+                    ),
+                  },
+                }
+              : {}),
+          };
+        }),
       },
     },
   });
@@ -232,5 +249,4 @@ export async function POST(req: Request) {
       { status: 500 },
     );
   }
-
 }

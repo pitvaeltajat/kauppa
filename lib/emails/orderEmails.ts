@@ -10,7 +10,13 @@ export type OrderEmailData = {
   name: string | null;
   email: string | null;
   totalCents: number;
-  lines: { name: string; quantity: number; priceCents: number; answers: Answer[] }[];
+  lines: {
+    name: string;
+    quantity: number;
+    priceCents: number;
+    answers: Answer[];
+    participants?: { name: string; answers: Answer[] }[];
+  }[];
 };
 
 /** "#A1B2C3D4" is the same short id the admin order list shows. */
@@ -31,13 +37,19 @@ function renderAnswers(answers: Answer[]): string {
 
 function renderLinesTable(data: OrderEmailData): string {
   const rows = data.lines
-    .map(
-      (line) => `
+    .map((line) => {
+      const participantDetails = (line.participants ?? [])
+        .map(
+          (participant) =>
+            `<div class="answers">Osallistuja: ${escapeHtml(participant.name)}${renderAnswers(participant.answers)}</div>`,
+        )
+        .join('');
+      return `
       <tr>
-        <td>${escapeHtml(line.name)} × ${line.quantity}${renderAnswers(line.answers)}</td>
+        <td>${escapeHtml(line.name)} × ${line.quantity}${participantDetails || renderAnswers(line.answers)}</td>
         <td class="num">${formatCents(line.priceCents * line.quantity)}</td>
-      </tr>`,
-    )
+      </tr>`;
+    })
     .join('');
   return `
     <table class="lines">
@@ -86,7 +98,15 @@ async function loadOrderEmailData(orderId: string): Promise<OrderEmailData | nul
       name: true,
       email: true,
       totalCents: true,
-      lines: { select: { name: true, quantity: true, priceCents: true, answers: true } },
+      lines: {
+        select: {
+          name: true,
+          quantity: true,
+          priceCents: true,
+          answers: true,
+          participants: { select: { name: true, answers: true }, orderBy: { createdAt: 'asc' } },
+        },
+      },
     },
   });
   if (!order) return null;
@@ -97,6 +117,10 @@ async function loadOrderEmailData(orderId: string): Promise<OrderEmailData | nul
       quantity: line.quantity,
       priceCents: line.priceCents,
       answers: Array.isArray(line.answers) ? (line.answers as Answer[]) : [],
+      participants: line.participants.map((participant) => ({
+        name: participant.name,
+        answers: Array.isArray(participant.answers) ? (participant.answers as Answer[]) : [],
+      })),
     })),
   };
 }

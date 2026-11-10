@@ -43,23 +43,37 @@ export default async function EventRegistrationsPage({
       email: true,
       status: true,
       createdAt: true,
-      lines: { where: { itemId: id }, select: { quantity: true, answers: true } },
+      lines: {
+        where: { itemId: id },
+        select: {
+          quantity: true,
+          answers: true,
+          participants: {
+            select: { id: true, name: true, answers: true },
+            orderBy: { createdAt: 'asc' },
+          },
+        },
+      },
     },
     orderBy: { createdAt: 'asc' },
   });
 
   const rows = orders.flatMap((order) =>
     order.lines.flatMap((line, lineIndex) =>
-      splitParticipantAnswers(line.quantity, (line.answers as AnswerSnapshot[] | null) ?? []).map(
-        (participant, participantIndex) => ({
-          id: `${order.id}-${lineIndex}-${participantIndex}`,
-          name: participant.name,
-          email: order.email,
-          status: order.status,
-          createdAt: order.createdAt,
-          answers: participant.answers,
-        }),
-      ),
+      (line.participants.length > 0
+        ? line.participants.map((participant) => ({
+            name: participant.name,
+            answers: (participant.answers as AnswerSnapshot[] | null) ?? [],
+          }))
+        : splitParticipantAnswers(line.quantity, (line.answers as AnswerSnapshot[] | null) ?? [])
+      ).map((participant, participantIndex) => ({
+        id: `${order.id}-${lineIndex}-${participantIndex}`,
+        name: participant.name,
+        email: order.email,
+        status: order.status,
+        createdAt: order.createdAt,
+        answers: participant.answers,
+      })),
     ),
   );
 

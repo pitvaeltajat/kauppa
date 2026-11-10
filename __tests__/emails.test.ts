@@ -7,7 +7,12 @@ const base: OrderEmailData = {
   email: 'maija@example.com',
   totalCents: 3200,
   lines: [
-    { name: 'PitVa-huivi', quantity: 2, priceCents: 1600, answers: [{ prompt: 'Koko', answer: 'M' }] },
+    {
+      name: 'PitVa-huivi',
+      quantity: 2,
+      priceCents: 1600,
+      answers: [{ prompt: 'Koko', answer: 'M' }],
+    },
   ],
 };
 
@@ -18,6 +23,23 @@ describe('renderOrderReceiptEmail', () => {
     expect(html).toContain('PitVa-huivi × 2');
     expect(html).toContain('Koko: M');
     expect(html).toContain('32,00'); // 2 × 16,00 total
+  });
+
+  it('shows event participants and their answers', () => {
+    const { html } = renderOrderReceiptEmail({
+      ...base,
+      lines: [
+        {
+          name: 'Johtajistoretki',
+          quantity: 2,
+          priceCents: 1600,
+          answers: [],
+          participants: [{ name: 'Aatu', answers: [{ prompt: 'Ikä', answer: '12' }] }],
+        },
+      ],
+    });
+    expect(html).toContain('Osallistuja: Aatu');
+    expect(html).toContain('Ikä: 12');
   });
 
   it('escapes HTML in buyer-supplied text so it cannot inject markup', () => {

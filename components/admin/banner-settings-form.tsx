@@ -4,6 +4,7 @@ import { useRef, useState, useActionState } from 'react';
 import { Upload } from 'lucide-react';
 import { saveSiteSettings } from '@/lib/actions/site';
 import { SiteBanner } from '@/components/site-banner';
+import { KuvatPicker } from '@/components/admin/kuvat-picker';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -45,7 +46,9 @@ export function BannerSettingsForm({ bannerImageUrl }: { bannerImageUrl: string 
       if (!uploaded.ok) throw new Error('upload failed');
       setImageUrl(publicUrl);
     } catch {
-      setUploadError('Kuvan lataus epäonnistui. Tarkista tiedostomuoto (JPG/PNG/WebP) ja koko (enintään 10 MB).');
+      setUploadError(
+        'Kuvan lataus epäonnistui. Tarkista tiedostomuoto (JPG/PNG/WebP) ja koko (enintään 10 MB).',
+      );
     } finally {
       setUploading(false);
     }
@@ -54,7 +57,9 @@ export function BannerSettingsForm({ bannerImageUrl }: { bannerImageUrl: string 
   return (
     <form action={action} className="max-w-2xl space-y-5">
       {state?.error && (
-        <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{state.error}</p>
+        <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {state.error}
+        </p>
       )}
 
       <input type="hidden" name="bannerImageUrl" value={imageUrl} />
@@ -79,6 +84,12 @@ export function BannerSettingsForm({ bannerImageUrl }: { bannerImageUrl: string 
           onChange={onPickImage}
         />
         <div className="flex items-center gap-2">
+          <KuvatPicker
+            onSelect={(url) => {
+              setImageUrl(url);
+              setUploadError(null);
+            }}
+          />
           <Button
             type="button"
             size="sm"
@@ -86,7 +97,13 @@ export function BannerSettingsForm({ bannerImageUrl }: { bannerImageUrl: string 
             disabled={uploading}
             onClick={() => fileRef.current?.click()}
           >
-            {uploading ? <LoadingPill className="bg-current/25" /> : <><Upload /> Lataa kuva</>}
+            {uploading ? (
+              <LoadingPill className="bg-current/25" />
+            ) : (
+              <>
+                <Upload /> Lataa kuva
+              </>
+            )}
           </Button>
           {imageUrl && !uploading && (
             <Button type="button" size="sm" variant="ghost" onClick={() => setImageUrl('')}>

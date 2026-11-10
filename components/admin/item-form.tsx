@@ -319,15 +319,16 @@ export function ItemForm({
             <ItemImage src={imageUrl || null} alt="Tuotekuvan esikatselu" />
           </div>
           <div className="flex-1 space-y-2">
+            {/* Migrated products can use same-origin paths such as /products/foo.jpeg. */}
             <Input
               id="imageUrl"
-              type="url"
+              type="text"
               inputMode="url"
               spellCheck={false}
               autoCapitalize="none"
               value={imageUrl}
               onChange={(e) => setImageUrl(e.target.value)}
-              placeholder="https://… tai lataa kuva alta"
+              placeholder="https://… tai /products/…"
             />
             <input
               ref={fileRef}

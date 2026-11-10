@@ -82,7 +82,7 @@ export function ItemForm({
   const [questions, setQuestions] = useState<QuestionDraft[]>(
     item?.questions?.map(draftFromQuestion) ?? [],
   );
-  const [isEvent, setIsEvent] = useState(item?.isEvent ?? eventMode);
+  const isEvent = eventMode;
   const [imageUrl, setImageUrl] = useState(item?.imageUrl ?? '');
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -182,28 +182,7 @@ export function ItemForm({
         </div>
       </div>
 
-      {/* Event controls. In eventMode the kind is locked on; otherwise a
-          superadmin can turn any product into an event. */}
-      {eventMode ? (
-        <input type="hidden" name="isEvent" value="on" />
-      ) : (
-        <label className="flex items-start gap-2 rounded-md border bg-background p-4 text-sm">
-          <input
-            type="checkbox"
-            name="isEvent"
-            checked={isEvent}
-            onChange={(e) => setIsEvent(e.target.checked)}
-            className="mt-0.5 size-4 accent-[hsl(244,51%,24%)]"
-          />
-          <span>
-            <span className="font-medium">Tämä on tapahtuma</span>
-            <span className="mt-1 block text-xs text-muted-foreground">
-              Tapahtumalle kysytään päivämäärät, ja se poistuu etusivulta viikon kuluttua
-              päättymisestä.
-            </span>
-          </span>
-        </label>
-      )}
+      {eventMode && <input type="hidden" name="eventMode" value="on" />}
 
       {isEvent && (
         <div className="space-y-4 rounded-md border bg-background p-4">
@@ -366,7 +345,13 @@ export function ItemForm({
                 disabled={uploading}
                 onClick={() => fileRef.current?.click()}
               >
-                {uploading ? <LoadingPill className="bg-current/25" /> : <><Upload /> Lataa kuva</>}
+                {uploading ? (
+                  <LoadingPill className="bg-current/25" />
+                ) : (
+                  <>
+                    <Upload /> Lataa kuva
+                  </>
+                )}
               </Button>
               {imageUrl && !uploading && (
                 <Button type="button" size="sm" variant="ghost" onClick={() => setImageUrl('')}>
@@ -512,7 +497,13 @@ export function ItemForm({
           Peruuta
         </Link>
         <Button type="submit" disabled={pending}>
-        {pending ? <LoadingPill className="bg-current/25" /> : item ? 'Tallenna tuote' : 'Luo tuote'}
+          {pending ? (
+            <LoadingPill className="bg-current/25" />
+          ) : item ? (
+            'Tallenna tuote'
+          ) : (
+            'Luo tuote'
+          )}
         </Button>
       </div>
     </form>

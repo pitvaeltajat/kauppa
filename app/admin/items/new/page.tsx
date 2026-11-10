@@ -8,6 +8,7 @@ export const metadata: Metadata = { title: 'Uusi tuote' };
 
 export default async function NewItemPage() {
   const categories = await prisma.category.findMany({
+    where: { slug: { not: 'tapahtumat' } },
     orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
   });
 

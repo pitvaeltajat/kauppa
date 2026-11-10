@@ -14,9 +14,13 @@ export default async function EditItemPage({ params }: { params: Promise<{ id: s
       where: { id },
       include: { questions: { orderBy: { sortOrder: 'asc' } } },
     }),
-    prisma.category.findMany({ orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }] }),
+    prisma.category.findMany({
+      where: { slug: { not: 'tapahtumat' } },
+      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+    }),
   ]);
   if (!item) notFound();
+  if (item.isEvent) notFound();
 
   const formValues: ItemFormValues = {
     id: item.id,

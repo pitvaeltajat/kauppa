@@ -371,7 +371,9 @@ export function CartShell({
                   {Array.from({ length: cartItem.quantity }).map((_, participantIndex) => (
                     <div key={participantIndex} className="space-y-4 rounded-md border bg-card p-4">
                       {cartItem.quantity > 1 && (
-                        <p className="text-sm font-semibold">Osallistuja {participantIndex + 1}</p>
+                        <p className="text-sm font-semibold">
+                          {item.isEvent ? 'Osallistuja' : 'Tuote'} {participantIndex + 1}
+                        </p>
                       )}
                       {item.questions.map((question) => {
                         const current = answers[item.id]?.[question.id]?.[participantIndex];

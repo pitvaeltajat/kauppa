@@ -4,9 +4,9 @@ services:
   postgres:
     image: postgres:17-alpine
     environment:
-      POSTGRES_USER: kauppa
-      POSTGRES_PASSWORD: kauppa
-      POSTGRES_DB: kauppa
+      POSTGRES_USER: kontti
+      POSTGRES_PASSWORD: kontti
+      POSTGRES_DB: kontti
     ports:
       - "5437:5432"
     volumes:

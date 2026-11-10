@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound, permanentRedirect } from 'next/navigation';
-import { ChevronRight, CalendarDays } from 'lucide-react';
+import { ChevronRight, CalendarDays, Pencil } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
 import { formatCents } from '@/lib/money';
 import { formatEventDates, isEventOver } from '@/lib/catalog';
@@ -9,6 +9,9 @@ import { ItemImage } from '@/components/item-image';
 import { AddToCartForm } from '@/components/add-to-cart-form';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import { ButtonLink } from '@/components/ui/button-link';
+import { adminRole } from '@/lib/admin-guard';
+import { isEventAdmin, isSuperAdmin } from '@/lib/admin';
 
 export async function generateMetadata({
   params,
@@ -39,6 +42,8 @@ export default async function ItemPage({ params }: { params: Promise<{ slug: str
   const soldOut = item.stock === 0;
   const eventDates = item.isEvent ? formatEventDates(item.startsAt, item.endsAt) : '';
   const eventOver = item.isEvent && isEventOver(item.endsAt);
+  const role = await adminRole();
+  const canEdit = item.isEvent ? isEventAdmin(role) : isSuperAdmin(role);
 
   return (
     <div className="container py-8">
@@ -61,7 +66,18 @@ export default async function ItemPage({ params }: { params: Promise<{ slug: str
         <ItemImage src={item.imageUrl} alt={item.name} className="md:max-w-xl" />
         <div>
           <p className="text-sm text-muted-foreground">{item.category.name}</p>
-          <h1 className="mt-1 text-2xl font-bold">{item.name}</h1>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <h1 className="mt-1 text-2xl font-bold">{item.name}</h1>
+            {canEdit && (
+              <ButtonLink
+                href={item.isEvent ? `/admin/events/${item.id}` : `/admin/items/${item.id}`}
+                variant="outline"
+                size="sm"
+              >
+                <Pencil /> Muokkaa
+              </ButtonLink>
+            )}
+          </div>
           {eventDates && (
             <p className="mt-2 flex items-center gap-1.5 text-sm font-medium text-primary">
               <CalendarDays className="size-4" /> {eventDates}

@@ -139,7 +139,12 @@ export async function getKuvatImages(host: string, folder: string): Promise<Kuva
     const width = Number(image.i_x) || 100;
     const height = Number(image.i_y) || 100;
     const title = filepath.split('/').at(-1) || `Kuva ${id}`;
-    const imageUrl = `https://${host}${filepath}`;
+    const encodedPath = filepath
+      .split('/')
+      .map((part) => encodeURIComponent(part))
+      .join('/');
+    const imagePathUrl = `https://${host}${encodedPath}`;
+    const imageUrl = `${imagePathUrl}?img=full`;
     const imageInfo = isRecord(image.url) ? image.url : null;
     const sizes = imageInfo && Array.isArray(imageInfo.sizes) ? imageInfo.sizes : [];
     const thumbnailHost =
@@ -149,7 +154,7 @@ export async function getKuvatImages(host: string, folder: string): Promise<Kuva
     const thumb =
       imageInfo && typeof imageInfo.hash === 'string' && thumbnailHost && sizes.includes('sqr480')
         ? `https://${thumbnailHost}/tt/?key=${encodeURIComponent(imageInfo.hash)}&size=sqr480`
-        : `${imageUrl.replace(/ /g, '+')}?application=${KUVATFI_APPLICATION}&version=${KUVATFI_VERSION}&sourcedomain=${encodeURIComponent(sourceDomain())}&usersession=${encodeURIComponent(sid)}&img=sqr480`;
+        : `${imagePathUrl}?application=${KUVATFI_APPLICATION}&version=${KUVATFI_VERSION}&sourcedomain=${encodeURIComponent(sourceDomain())}&usersession=${encodeURIComponent(sid)}&img=sqr480`;
     return [{ id, title, url: imageUrl, thumbnailUrl: thumb, width, height }];
   });
 }

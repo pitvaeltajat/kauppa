@@ -53,7 +53,7 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
   const router = useRouter();
   const { items } = useCart();
   const [catalog, setCatalog] = useState<Map<string, FetchedItem>>(new Map());
-  const [catalogLoaded, setCatalogLoaded] = useState(false);
+  const [catalogLoadedFor, setCatalogLoadedFor] = useState<string | null>(null);
   const [answers, setAnswers] = useState<Answers>({});
   const [email, setEmail] = useState(initialUser.email);
   const [error, setError] = useState<string | null>(null);
@@ -69,18 +69,19 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
   const participantNamesPrefilled = useRef(false);
 
   const ids = useMemo(() => items.map((i) => i.id).sort(), [items]);
+  const idsKey = ids.join(',');
+  const catalogLoaded = catalogLoadedFor === idsKey;
 
   // Fetch fresh catalog rows for whatever is in the cart.
   useEffect(() => {
     if (ids.length === 0) return;
     let cancelled = false;
-    setCatalogLoaded(false);
     fetch(`/api/items?ids=${ids.map(encodeURIComponent).join(',')}`)
       .then((r) => r.json())
       .then((data: { items?: FetchedItem[] }) => {
         if (cancelled) return;
         setCatalog(new Map((data.items ?? []).map((item) => [item.id, item])));
-        setCatalogLoaded(true);
+        setCatalogLoadedFor(idsKey);
       })
       .catch(() => {
         if (!cancelled)
@@ -89,7 +90,7 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
     return () => {
       cancelled = true;
     };
-  }, [ids]);
+  }, [ids, idsKey]);
 
   const lines = items.flatMap((cartItem) => {
     const item = catalog.get(cartItem.id);

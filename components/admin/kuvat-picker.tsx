@@ -21,6 +21,7 @@ export function KuvatPicker({ onSelect }: { onSelect: (url: string) => void }) {
   const [images, setImages] = useState<Image[]>([]);
   const [folderKey, setFolderKey] = useState('');
   const [loading, setLoading] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -73,6 +74,26 @@ export function KuvatPicker({ onSelect }: { onSelect: (url: string) => void }) {
     }
   }
 
+  async function chooseImage(image: Image) {
+    setImporting(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/items/kuvat/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: image.url }),
+      });
+      const data = (await response.json()) as { publicUrl?: string; error?: string };
+      if (!response.ok || !data.publicUrl) throw new Error(data.error || 'Kuvan tuonti epäonnistui.');
+      onSelect(data.publicUrl);
+      setOpen(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Kuvan tuonti epäonnistui.');
+    } finally {
+      setImporting(false);
+    }
+  }
+
   return (
     <>
       <Button type="button" size="sm" variant="outline" onClick={() => void loadFolders()}>
@@ -102,7 +123,7 @@ export function KuvatPicker({ onSelect }: { onSelect: (url: string) => void }) {
               <Select
                 value={folderKey}
                 onChange={(event) => void chooseFolder(event.target.value)}
-                disabled={loading || !folders.length}
+                disabled={loading || importing || !folders.length}
                 aria-label="Kuvakansio"
               >
                 <option value="">Valitse kuvakansio ({folders.length})</option>
@@ -115,9 +136,10 @@ export function KuvatPicker({ onSelect }: { onSelect: (url: string) => void }) {
                   </option>
                 ))}
               </Select>
-              {loading && (
+              {(loading || importing) && (
                 <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="size-4 animate-spin" /> Ladataan…
+                  <Loader2 className="size-4 animate-spin" />
+                  {importing ? 'Pakataan ja tallennetaan omaan kuvapalveluun…' : 'Ladataan…'}
                 </p>
               )}
               {error && (
@@ -132,10 +154,8 @@ export function KuvatPicker({ onSelect }: { onSelect: (url: string) => void }) {
                       key={image.id}
                       type="button"
                       className="group overflow-hidden rounded-md border text-left hover:border-primary focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
-                      onClick={() => {
-                        onSelect(image.url);
-                        setOpen(false);
-                      }}
+                      onClick={() => void chooseImage(image)}
+                      disabled={importing}
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element -- Kuvat.fi thumbnail URLs are dynamic */}
                       <img

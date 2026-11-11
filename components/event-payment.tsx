@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useSyncExternalStore } from 'react';
 import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 import { CheckCircle2, Copy, Share2 } from 'lucide-react';
@@ -36,7 +36,15 @@ export function EventPayment({
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [currentStatus, setCurrentStatus] = useState(status);
-  const url = typeof window === 'undefined' ? '' : window.location.href;
+  // window.location only exists on the client. Reading it during render makes
+  // the client output differ from the server HTML (the mailto href below), so
+  // render the empty server snapshot first and let React swap in the real link
+  // after hydration. Same pattern as KammiPayment.
+  const url = useSyncExternalStore(
+    () => () => {},
+    () => window.location.href,
+    () => '',
+  );
   const message = useMemo(
     () =>
       `Hei! Olen ilmoittautunut tapahtumaan ${eventName}${dates ? ` (${dates})` : ''}. Hinta on ${total}. Voit maksaa ilmoittautumisen tästä: ${url}`,

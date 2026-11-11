@@ -15,7 +15,7 @@ export function AddToCartForm({
   className,
 }: {
   itemId: string;
-  variants?: { id: string; name: string; priceCents: number }[];
+  variants?: { id: string; name: string | null; priceCents: number }[];
   withQuantity?: boolean;
   disabled?: boolean;
   className?: string;
@@ -32,7 +32,7 @@ export function AddToCartForm({
 
   return (
     <div className={cn('flex flex-wrap items-center gap-3', className)}>
-      {variants.length > 0 && (
+      {variants.length > 1 && (
         <label className="flex min-w-56 flex-col gap-1 text-sm">
           <span className="font-medium">Vaihtoehto</span>
           <select

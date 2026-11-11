@@ -39,7 +39,7 @@ type FetchedItem = {
   stock: number | null;
   isEvent: boolean;
   leaderDiscount: boolean;
-  variants: { id: string; name: string; priceCents: number }[];
+  variants: { id: string; name: string | null; priceCents: number }[];
   questions: CheckoutQuestion[];
 };
 

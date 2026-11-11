@@ -19,7 +19,7 @@ export type BuildableItem = {
   active: boolean;
   /** Event opted into the leaders' discount (ignored by non-leader codes). */
   leaderDiscount?: boolean;
-  variants?: { id: string; name: string; priceCents: number; active: boolean }[];
+  variants?: { id: string; name: string | null; priceCents: number; active: boolean }[];
 };
 
 export type ComputedLine = {

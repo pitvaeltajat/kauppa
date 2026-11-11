@@ -50,7 +50,7 @@ export type ItemFormValues = {
     required: boolean;
     options: string[];
   }[];
-  variants: { id: string; name: string; priceCents: number }[];
+  variants: { id: string; name: string | null; priceCents: number }[];
 };
 
 type QuestionDraft = {
@@ -80,7 +80,7 @@ function emptyDraft(): QuestionDraft {
 function draftFromVariant(variant: ItemFormValues['variants'][number]): VariantDraft {
   return {
     key: variant.id,
-    name: variant.name,
+    name: variant.name ?? '',
     price: (variant.priceCents / 100).toFixed(2).replace('.', ','),
   };
 }
@@ -105,7 +105,9 @@ export function ItemForm({
     item?.questions?.map(draftFromQuestion) ?? [],
   );
   const [variants, setVariants] = useState<VariantDraft[]>(
-    item?.variants?.map(draftFromVariant) ?? [],
+    item?.variants?.length
+      ? item.variants.map(draftFromVariant)
+      : [{ key: 'new-price', name: '', price: item ? (item.priceCents / 100).toFixed(2).replace('.', ',') : '' }],
   );
   const [name, setName] = useState(item?.name ?? '');
   const [slug, setSlug] = useState(item?.slug ?? '');
@@ -307,22 +309,6 @@ export function ItemForm({
           </Select>
           <p className="text-xs text-muted-foreground">Vain sisäiseen kirjanpitoon.</p>
         </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="price">Perushinta (€) *</Label>
-          <Input
-            id="price"
-            name="price"
-            required
-            inputMode="decimal"
-            pattern="[0-9]+([.,][0-9]{1,2})?"
-            title="Hinta euroina, esim. 16 tai 16,00"
-            defaultValue={item ? (item.priceCents / 100).toFixed(2).replace('.', ',') : ''}
-            placeholder="16,00"
-          />
-          <p className="text-xs text-muted-foreground">
-            Variaatioilla tämä toimii varahintana. Variaatiot määrittävät hinnan kassalla.
-          </p>
-        </div>
       </div>
 
       {!isEvent && (
@@ -468,10 +454,31 @@ export function ItemForm({
             <Plus /> Lisää variaatio
           </Button>
         </div>
-        {variants.length === 0 ? (
-          <p className="rounded-md border border-dashed px-3 py-4 text-center text-xs text-muted-foreground">
-            Ei variaatioita. Tuote käyttää yllä määritettyä perushintaa.
-          </p>
+        {variants.length === 1 ? (
+          <div className="space-y-1.5">
+            <Label htmlFor={`variant-price-${variants[0].key}`}>Hinta (€) *</Label>
+            <Input
+              id={`variant-price-${variants[0].key}`}
+              value={variants[0].price}
+              onChange={(event) =>
+                setVariants((prev) =>
+                  prev.map((current) =>
+                    current.key === variants[0].key
+                      ? { ...current, price: event.target.value }
+                      : current,
+                  ),
+                )
+              }
+              required
+              inputMode="decimal"
+              pattern="[0-9]+([.,][0-9]{1,2})?"
+              title="Hinta euroina, esimerkiksi 16 tai 16,00"
+              placeholder="16,00"
+            />
+            <p className="text-xs text-muted-foreground">
+              Yksi hinta näkyy tuotteella suoraan ilman variaatiovalintaa.
+            </p>
+          </div>
         ) : (
           <div className="space-y-2">
             {variants.map((variant, index) => (
@@ -491,6 +498,7 @@ export function ItemForm({
                       )
                     }
                     placeholder="Esimerkiksi pitkä leiri"
+                    required
                   />
                 </div>
                 <div className="w-32 space-y-1.5">
@@ -515,9 +523,7 @@ export function ItemForm({
                   type="button"
                   aria-label={`Poista variaatio ${index + 1}`}
                   className="mb-2 text-muted-foreground transition-colors hover:text-destructive"
-                  onClick={() =>
-                    setVariants((prev) => prev.filter((current) => current.key !== variant.key))
-                  }
+                  onClick={() => setVariants((prev) => prev.filter((current) => current.key !== variant.key))}
                 >
                   <Trash2 className="size-4" />
                 </button>

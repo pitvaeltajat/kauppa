@@ -91,9 +91,9 @@ export default async function ItemPage({ params }: { params: Promise<{ slug: str
             </p>
           )}
           <p className="mt-3 text-3xl font-bold">
-            {item.variants.length > 0 ? 'Alkaen ' : ''}
+            {item.variants.length > 1 ? 'Alkaen ' : ''}
             {formatCents(
-              item.variants.length > 0
+              item.variants.length > 1
                 ? Math.min(...item.variants.map((variant) => variant.priceCents))
                 : item.priceCents,
             )}

@@ -141,9 +141,6 @@ export async function saveItem(
     if (!accountingClass) return { error: 'Valittu kirjanpitoluokka ei ole käytettävissä.' };
   }
 
-  const priceCents = parseEurosInput((formData.get('price') as string) ?? '');
-  if (priceCents === null) return { error: 'Anna hinta, esimerkiksi 16,00.' };
-
   const slug = slugify(((formData.get('slug') as string) ?? '').trim() || name);
   const existing = await prisma.item.findUnique({ where: { slug } });
   if (existing && existing.id !== id) {
@@ -179,7 +176,7 @@ export async function saveItem(
     questionRows = parsed.questions;
   }
 
-  const variantRows: { name: string; priceCents: number; sortOrder: number }[] = [];
+  const variantRows: { name: string | null; priceCents: number; sortOrder: number }[] = [];
   const variantsRaw = ((formData.get('variants') as string) ?? '').trim();
   if (variantsRaw) {
     let parsedVariants: unknown;
@@ -188,19 +185,37 @@ export async function saveItem(
     } catch {
       return { error: 'Variaatioiden tiedot ovat virheelliset.' };
     }
-    if (!Array.isArray(parsedVariants)) return { error: 'Variaatioiden tiedot ovat virheelliset.' };
+    if (!Array.isArray(parsedVariants) || parsedVariants.length === 0) {
+      return { error: 'Tuotteella on oltava vähintään yksi hinta.' };
+    }
+    if (
+      parsedVariants.length > 1 &&
+      parsedVariants.some((row) => {
+        const candidate = row as { name?: unknown };
+        return typeof candidate.name !== 'string' || !candidate.name.trim();
+      })
+    ) {
+      return { error: 'Nimeä kaikki variaatiot, kun tuotteella on useampi hinta.' };
+    }
     for (const [index, row] of parsedVariants.entries()) {
       const candidate = row as { name?: unknown; price?: unknown };
       const variantName =
-        typeof candidate.name === 'string' ? candidate.name.trim().slice(0, 120) : '';
-      if (!variantName) return { error: `Anna nimi variaatiolle ${index + 1}.` };
+        parsedVariants.length === 1
+          ? null
+          : typeof candidate.name === 'string'
+            ? candidate.name.trim().slice(0, 120)
+            : null;
       const variantPrice = parseEurosInput(
         typeof candidate.price === 'string' ? candidate.price : '',
       );
-      if (variantPrice === null) return { error: `Anna hinta variaatiolle "${variantName}".` };
+      if (variantPrice === null) {
+        return { error: `Anna hinta${variantName ? ` variaatiolle "${variantName}"` : ''}.` };
+      }
       variantRows.push({ name: variantName, priceCents: variantPrice, sortOrder: index });
     }
   }
+  if (variantRows.length === 0) return { error: 'Tuotteella on oltava vähintään yksi hinta.' };
+  const priceCents = variantRows[0].priceCents;
 
   const data = {
     name,

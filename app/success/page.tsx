@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
-import { CheckCircle2 } from 'lucide-react';
+import { AlertCircle, CheckCircle2 } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
+import { getStripe } from '@/lib/stripe';
 import { formatCents } from '@/lib/money';
 import { ButtonLink } from '@/components/ui/button-link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,27 +14,62 @@ export default async function SuccessPage({
 }: {
   searchParams: Promise<{
     session_id?: string | string[];
+    redirect_status?: string | string[];
   }>;
 }) {
   const params = await searchParams;
   const sessionId = Array.isArray(params.session_id) ? params.session_id[0] : params.session_id;
+  const redirectStatus = Array.isArray(params.redirect_status)
+    ? params.redirect_status[0]
+    : params.redirect_status;
   const order = sessionId
     ? await prisma.order.findFirst({
         where: { stripeSessionId: sessionId },
         include: { lines: { include: { item: true } } },
       })
     : null;
+  const stripeSession = sessionId?.startsWith('cs_')
+    ? await getStripe()
+        .checkout.sessions.retrieve(sessionId)
+        .catch(() => null)
+    : null;
+  const paymentFailed =
+    redirectStatus === 'failed' ||
+    redirectStatus === 'canceled' ||
+    stripeSession?.payment_status === 'unpaid' ||
+    stripeSession?.status === 'expired';
   const isEventOrder = order?.lines.some((line) => line.item.isEvent) ?? false;
 
   return (
     <div className="container flex justify-center py-12">
       <Card className="w-full max-w-xl">
         <CardHeader className="items-center text-center">
-          <CheckCircle2 className="size-12 text-success" />
-          <CardTitle>Kiitos tilauksesta!</CardTitle>
+          {paymentFailed ? (
+            <>
+              <AlertCircle className="size-12 text-destructive" />
+              <CardTitle>Maksu ei onnistunut</CardTitle>
+            </>
+          ) : (
+            <>
+              <CheckCircle2 className="size-12 text-success" />
+              <CardTitle>Kiitos tilauksesta!</CardTitle>
+            </>
+          )}
         </CardHeader>
         <CardContent className="space-y-4">
-          {order ? (
+          {paymentFailed ? (
+            <>
+              <p className="text-sm text-muted-foreground">
+                Maksua ei veloitettu. Voit palata ostoskoriin ja yrittää uudelleen toisella
+                maksutavalla.
+              </p>
+              <div className="flex justify-center pt-2">
+                <ButtonLink href="/cart" variant="cta">
+                  Palaa ostoskoriin
+                </ButtonLink>
+              </div>
+            </>
+          ) : order ? (
             <>
               <p className="text-sm text-muted-foreground">
                 Tilaus{' '}
@@ -89,22 +125,26 @@ export default async function SuccessPage({
             </>
           ) : (
             <p className="text-sm text-muted-foreground">
-              Maksu on vastaanotettu. Jos kuitti ei tullut perille, ota yhteyttä:
+              Maksun tilaa ei voitu varmistaa. Jos rahaa veloitettiin, ota yhteyttä:
               info@pitkajarvenvaeltajat.fi.
             </p>
           )}
 
-          <div className="rounded-md bg-accent/60 px-4 py-3 text-xs text-muted-foreground">
-            {isEventOrder
-              ? 'Tapahtumatuotteen ostaminen vahvisti ilmoittautumisen. Saat tapahtuman tarkemmat ohjeet erikseen.'
-              : 'Tuotteet noudetaan kokouksessa ryhmänjohtajalta tai erikseen sovittuna aikana kololta. Emme postita tuotteita.'}
-          </div>
+          {!paymentFailed && order && (
+            <div className="rounded-md bg-accent/60 px-4 py-3 text-xs text-muted-foreground">
+              {isEventOrder
+                ? 'Tapahtumatuotteen ostaminen vahvisti ilmoittautumisen. Saat tapahtuman tarkemmat ohjeet erikseen.'
+                : 'Tuotteet noudetaan kokouksessa ryhmänjohtajalta tai erikseen sovittuna aikana kololta. Emme postita tuotteita.'}
+            </div>
+          )}
 
-          <div className="flex justify-center gap-3 pt-2">
-            <ButtonLink href="/" variant="cta">
-              Takaisin tuotteisiin
-            </ButtonLink>
-          </div>
+          {!paymentFailed && (
+            <div className="flex justify-center gap-3 pt-2">
+              <ButtonLink href="/" variant="cta">
+                Takaisin tuotteisiin
+              </ButtonLink>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

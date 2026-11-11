@@ -283,11 +283,16 @@ function EventPaymentForm() {
     const { checkout } = checkoutState;
     setError(null);
     setLoading(true);
-    const result = await checkout.confirm({
-      redirect: 'if_required',
-    });
-    if (result.type === 'error') setError(result.error.message ?? 'Maksu epäonnistui.');
-    setLoading(false);
+    try {
+      const result = await checkout.confirm({
+        redirect: 'if_required',
+      });
+      if (result.type === 'error') setError(result.error.message ?? 'Maksu epäonnistui.');
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Maksu epäonnistui.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (

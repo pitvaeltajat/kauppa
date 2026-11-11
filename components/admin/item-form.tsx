@@ -452,7 +452,9 @@ export function ItemForm({
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-medium text-muted-foreground">{index + 1}.</span>
                   <span className="text-sm font-medium">{question.prompt}</span>
-                  <span className="ml-auto text-xs text-muted-foreground">Pakollinen</span>
+                  <span className="ml-auto text-xs text-muted-foreground">
+                    {question.required ? 'Vastaus pakollinen' : 'Vastaus valinnainen'}
+                  </span>
                 </div>
               </div>
             ))}

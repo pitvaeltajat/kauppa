@@ -134,7 +134,7 @@ describe('withEventQuestions', () => {
       nameQuestion,
     ]);
     expect(result[0].required).toBe(true);
-    expect(result[1].required).toBe(true);
+    expect(result[1].required).toBe(false);
   });
 
   it('leaves non-events untouched', () => {

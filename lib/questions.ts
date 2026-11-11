@@ -35,7 +35,7 @@ export const DIETARY_REQUIREMENTS_QUESTION: ItemQuestionLike = {
   id: 'erityisruokavaliot-ja-allergiat',
   prompt: 'Erityisruokavaliot ja allergiat (kirjoita "ei", jos niitä ei ole)',
   type: 'TEXT',
-  required: true,
+  required: false,
   options: [],
 };
 

@@ -246,7 +246,13 @@ function answerForParticipant(
 ): AnswerValue {
   if (quantity === 1) {
     if (raw === undefined) return '';
-    return Array.isArray(raw) && raw.some(Array.isArray) ? (raw[0] ?? []) : (raw as AnswerValue);
+    // The cart always sends one answer slot per unit, so a single unit arrives
+    // as a one-element array (CHECKBOX as an array of option arrays). Unwrap it
+    // instead of handing the array to the scalar TEXT/NUMBER validation.
+    if (!Array.isArray(raw)) return raw;
+    if (raw.some(Array.isArray)) return (raw[0] as AnswerValue | undefined) ?? [];
+    if (type === 'CHECKBOX') return raw as string[];
+    return typeof raw[0] === 'string' ? raw[0] : '';
   }
 
   if (!Array.isArray(raw)) return '';

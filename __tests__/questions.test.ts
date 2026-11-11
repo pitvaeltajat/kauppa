@@ -107,6 +107,37 @@ describe('validateAndBuildAnswers', () => {
     if (result.ok) expect(result.snapshotsByItem.empty).toEqual([]);
   });
 
+  it('accepts the one-entry-per-unit shape the cart sends for a single unit', () => {
+    const result = validateAndBuildAnswers(
+      { itemA: [DIETARY_REQUIREMENTS_QUESTION, sizeQuestion, nameQuestion], itemB: [perks] },
+      {
+        itemA: {
+          [DIETARY_REQUIREMENTS_QUESTION.id]: ['ei'],
+          q1: ['M'],
+          q2: ['Aatu Vaelta'],
+        },
+        itemB: { q4: [['Pipo']] },
+      },
+      { itemA: 1, itemB: 1 },
+    );
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.snapshotsByItem.itemA).toEqual([
+        {
+          questionId: DIETARY_REQUIREMENTS_QUESTION.id,
+          prompt: DIETARY_REQUIREMENTS_QUESTION.prompt,
+          type: 'TEXT',
+          answer: 'ei',
+        },
+        { questionId: 'q1', prompt: 'Hupparin koko', type: 'RADIO', answer: 'M' },
+        { questionId: 'q2', prompt: 'Nimikyltin teksti', type: 'TEXT', answer: 'Aatu Vaelta' },
+      ]);
+      expect(result.snapshotsByItem.itemB).toEqual([
+        { questionId: 'q4', prompt: 'Lisävarusteet', type: 'CHECKBOX', answer: ['Pipo'] },
+      ]);
+    }
+  });
+
   it('validates every question once per purchased unit', () => {
     const result = validateAndBuildAnswers(
       { itemA: [nameQuestion, sizeQuestion] },

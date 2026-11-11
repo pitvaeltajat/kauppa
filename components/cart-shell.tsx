@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -71,6 +71,7 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
   const checkoutRequestKey = useRef<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'deferred'>('card');
   const participantNamesPrefilled = useRef(false);
+  const autoCheckoutStarted = useRef(false);
 
   const ids = useMemo(() => items.map((i) => i.id).sort(), [items]);
   const idsKey = ids.join(',');
@@ -185,31 +186,34 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
     });
   }
 
-  function missingAnswerMessage(item: FetchedItem, quantity: number): string | null {
-    const itemAnswers = answers[item.id] ?? {};
-    for (let participantIndex = 0; participantIndex < quantity; participantIndex++) {
-      for (const question of item.questions) {
-        const value = itemAnswers[question.id]?.[participantIndex];
-        if (
-          question.id === PARTICIPANT_NAME_QUESTION.id &&
-          (!value || typeof value !== 'string' || value.trim() === '')
-        ) {
-          return `Anna jokaisen osallistujan nimi (${item.name}).`;
-        }
-        const empty =
-          value === undefined || value === '' || (Array.isArray(value) && value.length === 0);
-        if (
-          empty &&
-          (question.required || question.type === 'RADIO' || question.type === 'CHECKBOX')
-        ) {
-          return `Vastaa kysymykseen "${question.prompt}" (${item.name}).`;
+  const missingAnswerMessage = useCallback(
+    (item: FetchedItem, quantity: number): string | null => {
+      const itemAnswers = answers[item.id] ?? {};
+      for (let participantIndex = 0; participantIndex < quantity; participantIndex++) {
+        for (const question of item.questions) {
+          const value = itemAnswers[question.id]?.[participantIndex];
+          if (
+            question.id === PARTICIPANT_NAME_QUESTION.id &&
+            (!value || typeof value !== 'string' || value.trim() === '')
+          ) {
+            return `Anna jokaisen osallistujan nimi (${item.name}).`;
+          }
+          const empty =
+            value === undefined || value === '' || (Array.isArray(value) && value.length === 0);
+          if (
+            empty &&
+            (question.required || question.type === 'RADIO' || question.type === 'CHECKBOX')
+          ) {
+            return `Vastaa kysymykseen "${question.prompt}" (${item.name}).`;
+          }
         }
       }
-    }
-    return null;
-  }
+      return null;
+    },
+    [answers],
+  );
 
-  async function goToCheckout() {
+  const goToCheckout = useCallback(async () => {
     setError(null);
     if (lines.length === 0 || lines.some(({ item }) => !item)) {
       setError('Jokin korin tuotteista ei ole enää myynnissä. Poista se korista.');
@@ -256,6 +260,7 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
         error?: string;
       };
       if (!res.ok) {
+        autoCheckoutStarted.current = false;
         checkoutRequestKey.current = null;
         setError(data.error ?? 'Maksua ei voitu aloittaa. Yritä uudelleen.');
         return;
@@ -275,15 +280,63 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
         return;
       }
       if (!data.clientSecret) {
+        autoCheckoutStarted.current = false;
         setError('Maksua ei voitu aloittaa. Yritä uudelleen.');
         return;
       }
     } catch {
+      autoCheckoutStarted.current = false;
       setError('Maksua ei voitu aloittaa. Tarkista yhteys ja yritä uudelleen.');
     } finally {
       setLoading(false);
     }
-  }
+  }, [
+    answers,
+    deferredCheckout,
+    discount,
+    email,
+    initialUser.name,
+    items,
+    lines,
+    missingAnswerMessage,
+    router,
+  ]);
+
+  useEffect(() => {
+    if (
+      !catalogLoaded ||
+      deferredCheckout ||
+      clientSecret ||
+      loading ||
+      autoCheckoutStarted.current
+    ) {
+      return;
+    }
+    if (lines.length === 0 || lines.some(({ item }) => !item)) return;
+    if (lines.some(({ cartItem, item }) => item && missingAnswerMessage(item, cartItem.quantity))) {
+      return;
+    }
+    autoCheckoutStarted.current = true;
+    const timer = window.setTimeout(() => void goToCheckout(), 0);
+    return () => window.clearTimeout(timer);
+  }, [
+    answers,
+    catalogLoaded,
+    deferredCheckout,
+    discount,
+    email,
+    clientSecret,
+    goToCheckout,
+    lines,
+    loading,
+    missingAnswerMessage,
+  ]);
+
+  const cardCheckoutReady =
+    catalogLoaded &&
+    lines.length > 0 &&
+    !lines.some(({ item }) => !item) &&
+    !lines.some(({ cartItem, item }) => item && missingAnswerMessage(item, cartItem.quantity));
 
   if (items.length === 0) {
     return (
@@ -637,6 +690,10 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
           >
             <PaymentForm loading={loading} onError={setError} onLoading={setLoading} />
           </CheckoutElementsProvider>
+        ) : !deferredCheckout && cardCheckoutReady && !error ? (
+          <div className="flex min-h-11 items-center justify-center gap-2 rounded-md bg-muted px-4 py-2 text-sm text-muted-foreground">
+            <LoadingPill /> Valmistellaan maksutapoja…
+          </div>
         ) : (
           <Button
             variant="cta"

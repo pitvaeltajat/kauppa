@@ -15,6 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
 import { ItemImage } from '@/components/item-image';
 import { KuvatPicker } from '@/components/admin/kuvat-picker';
+import { DEFAULT_EVENT_ACCOUNTING_CLASS_NAME } from '@/lib/accounting';
 
 export type ItemFormValues = {
   id?: string;
@@ -273,7 +274,14 @@ export function ItemForm({
           <Select
             id="accountingClassId"
             name="accountingClassId"
-            defaultValue={item?.accountingClassId ?? ''}
+            defaultValue={
+              item?.accountingClassId ??
+              (eventMode
+                ? (accountingClasses.find(
+                    ({ name }) => name === DEFAULT_EVENT_ACCOUNTING_CLASS_NAME,
+                  )?.id ?? '')
+                : '')
+            }
           >
             <option value="">Ei luokkaa</option>
             {accountingClasses.map((accountingClass) => (

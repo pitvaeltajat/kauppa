@@ -11,6 +11,7 @@ import { parseEurosInput } from '@/lib/money';
 import { parseQuestionDrafts } from '@/lib/questions';
 import { LEADER_DISCOUNT_CODE, normalizeCode } from '@/lib/discount';
 import { isSystemCategorySlug } from '@/lib/categories';
+import { DEFAULT_EVENT_ACCOUNTING_CLASS_NAME } from '@/lib/accounting';
 
 export type ActionResult = { error?: string };
 
@@ -124,7 +125,14 @@ export async function saveItem(
     }
   }
 
-  const accountingClassId = ((formData.get('accountingClassId') as string) ?? '').trim() || null;
+  let accountingClassId = ((formData.get('accountingClassId') as string) ?? '').trim() || null;
+  if (isEvent && !accountingClassId) {
+    const defaultAccountingClass = await prisma.accountingClass.findUnique({
+      where: { name: DEFAULT_EVENT_ACCOUNTING_CLASS_NAME },
+      select: { id: true },
+    });
+    accountingClassId = defaultAccountingClass?.id ?? null;
+  }
   if (accountingClassId) {
     const accountingClass = await prisma.accountingClass.findUnique({
       where: { id: accountingClassId },

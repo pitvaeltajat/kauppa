@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/cn';
 
 /** Product image with a neutral "Ei kuvaa" placeholder when the item has none. */
@@ -15,6 +15,18 @@ export function ItemImage({
 }) {
   const [loadedSrc, setLoadedSrc] = useState<string | null>(null);
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
+  const imageRef = useRef<HTMLImageElement>(null);
+
+  useEffect(() => {
+    const image = imageRef.current;
+    if (src && image?.complete) {
+      if (image.naturalWidth > 0) {
+        setLoadedSrc(src);
+      } else {
+        setFailedSrc(src);
+      }
+    }
+  }, [src]);
 
   if (src) {
     const loaded = loadedSrc === src;
@@ -32,6 +44,7 @@ export function ItemImage({
         ) : (
           // eslint-disable-next-line @next/next/no-img-element -- Item image URLs can come from S3 or migrated assets.
           <img
+            ref={imageRef}
             src={src}
             alt={alt}
             loading="lazy"

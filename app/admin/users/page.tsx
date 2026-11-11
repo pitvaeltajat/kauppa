@@ -49,7 +49,6 @@ export default async function AdminUsersPage() {
                 <th className="px-4 py-3">Nimi</th>
                 <th className="px-4 py-3">Rooli</th>
                 <th className="px-4 py-3">Rekisteröitynyt</th>
-                <th className="px-4 py-3">Viimeksi kirjautunut</th>
                 <th className="px-4 py-3 text-right">Toiminnot</th>
               </tr>
             </thead>
@@ -84,11 +83,6 @@ export default async function AdminUsersPage() {
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">
                       {format(user.createdAt, 'd.M.yyyy', { locale: fi })}
-                    </td>
-                    <td className="px-4 py-3 text-muted-foreground">
-                      {user.lastLoginAt
-                        ? format(user.lastLoginAt, 'd.M.yyyy HH.mm', { locale: fi })
-                        : 'Ei vielä'}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex justify-end">

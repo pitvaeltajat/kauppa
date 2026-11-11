@@ -5,6 +5,11 @@ import { fi } from 'date-fns/locale';
 /** How long an event stays listed after it ends, before auto-hiding. */
 const EVENT_GRACE_MS = 7 * 24 * 60 * 60 * 1000;
 
+/** The catalog displays the lowest active variation price for an item. */
+export function lowestVariantPrice(variants: { priceCents: number }[]): number {
+  return variants.length > 0 ? Math.min(...variants.map((variant) => variant.priceCents)) : 0;
+}
+
 /**
  * Where-filter for items the public shop lists (front page, category pages,
  * header). An item shows when it is active, not manually hidden, and, if it is

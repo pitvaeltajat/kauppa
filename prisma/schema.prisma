@@ -72,7 +72,6 @@ model Item {
   name           String
   slug           String         @unique
   description    String         @default("")
-  priceCents     Int
   /// Image URL shown in the catalog. NULL renders the "Ei kuvaa" placeholder.
   imageUrl       String?
   /// NULL = unlimited stock (bundle offers, event registrations).

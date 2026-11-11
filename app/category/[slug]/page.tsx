@@ -5,6 +5,7 @@ import { ChevronRight } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
 import { ItemCard } from '@/components/item-card';
 import { listedItemWhere } from '@/lib/catalog';
+import { lowestVariantPrice } from '@/lib/catalog';
 
 export async function generateMetadata({
   params,
@@ -24,6 +25,7 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
       items: {
         where: listedItemWhere(),
         orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+        include: { variants: { where: { active: true }, select: { priceCents: true } } },
       },
     },
   });
@@ -41,7 +43,9 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
       </nav>
 
       <h1 className="text-2xl font-bold">{category.name}</h1>
-      {category.description && <p className="mt-1 text-sm text-muted-foreground">{category.description}</p>}
+      {category.description && (
+        <p className="mt-1 text-sm text-muted-foreground">{category.description}</p>
+      )}
 
       {category.items.length === 0 ? (
         <p className="mt-8 rounded-lg border border-dashed bg-card px-4 py-8 text-sm text-muted-foreground">
@@ -50,7 +54,10 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
       ) : (
         <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
           {category.items.map((item) => (
-            <ItemCard key={item.id} item={item} />
+            <ItemCard
+              key={item.id}
+              item={{ ...item, priceCents: lowestVariantPrice(item.variants) }}
+            />
           ))}
         </div>
       )}

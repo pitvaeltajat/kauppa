@@ -9,6 +9,7 @@ import { requireEventAdmin } from '@/lib/admin-guard';
 import { Badge } from '@/components/ui/badge';
 import { ButtonLink } from '@/components/ui/button-link';
 import { FormButton } from '@/components/admin/form-button';
+import { lowestVariantPrice } from '@/lib/catalog';
 
 export const metadata: Metadata = { title: 'Tapahtumat' };
 
@@ -31,6 +32,7 @@ export default async function AdminEventsPage() {
         },
         select: { quantity: true, participants: { select: { id: true } } },
       },
+      variants: { where: { active: true }, select: { priceCents: true } },
     },
   });
 
@@ -89,7 +91,9 @@ export default async function AdminEventsPage() {
                     <td className="px-4 py-3 text-muted-foreground">
                       {formatEventDates(event.startsAt, event.endsAt) || 'ei päivää'}
                     </td>
-                    <td className="px-4 py-3 text-right">{formatCents(event.priceCents)}</td>
+                    <td className="px-4 py-3 text-right">
+                      {formatCents(lowestVariantPrice(event.variants))}
+                    </td>
                     <td className="px-4 py-3">
                       {!event.active ? (
                         <Badge variant="secondary">Ei myynnissä</Badge>

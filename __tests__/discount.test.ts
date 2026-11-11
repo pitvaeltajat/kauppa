@@ -11,18 +11,18 @@ import {
 const leaderEvent: BuildableItem = {
   id: 'e1',
   name: 'Johtajistoretki',
-  priceCents: 2500,
   stock: null,
   active: true,
   leaderDiscount: true,
+  variants: [{ id: 'e1-default', name: null, priceCents: 2500, active: true }],
 };
 const plainEvent: BuildableItem = {
   id: 'e2',
   name: 'Perheretki',
-  priceCents: 1500,
   stock: null,
   active: true,
   leaderDiscount: false,
+  variants: [{ id: 'e2-default', name: null, priceCents: 1500, active: true }],
 };
 
 const JOHTAJA = { code: 'JOHTAJA', percentOff: 50, leaderOnly: true };
@@ -82,11 +82,11 @@ describe('buildCheckout with a discount', () => {
   });
 
   it('a whole-cart code discounts every line', () => {
-    const result = buildCheckout(
-      [{ id: 'e2', quantity: 2 }],
-      [plainEvent],
-      { code: 'KESA10', percentOff: 10, leaderOnly: false },
-    );
+    const result = buildCheckout([{ id: 'e2', quantity: 2 }], [plainEvent], {
+      code: 'KESA10',
+      percentOff: 10,
+      leaderOnly: false,
+    });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.lines[0].priceCents).toBe(1350);

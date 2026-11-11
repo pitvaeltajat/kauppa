@@ -215,14 +215,12 @@ export async function saveItem(
     }
   }
   if (variantRows.length === 0) return { error: 'Tuotteella on oltava vähintään yksi hinta.' };
-  const priceCents = variantRows[0].priceCents;
 
   const data = {
     name,
     slug,
     categoryId,
     accountingClassId,
-    priceCents,
     stock: isEvent ? null : stock,
     imageUrl,
     sortOrder: isEvent ? existingSortOrder : sortOrder,

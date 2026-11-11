@@ -34,7 +34,6 @@ type FetchedItem = {
   id: string;
   slug: string;
   name: string;
-  priceCents: number;
   imageUrl: string | null;
   stock: number | null;
   isEvent: boolean;
@@ -124,15 +123,15 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
     participantNamesPrefilled.current = true;
   }, [catalog, catalogLoaded, initialUser.name, lines]);
 
-  const totalCents = lines.reduce((sum, { cartItem, item, variant }) => {
-    return sum + (variant?.priceCents ?? item?.priceCents ?? 0) * cartItem.quantity;
+  const totalCents = lines.reduce((sum, { cartItem, variant }) => {
+    return sum + (variant?.priceCents ?? 0) * cartItem.quantity;
   }, 0);
 
   // Discount preview (UX only - checkout re-validates against the database).
   const discountCents = discount
     ? lines.reduce((sum, { cartItem, item, variant }) => {
         if (!item || !discountApplies(discount, item)) return sum;
-        const priceCents = variant?.priceCents ?? item.priceCents;
+        const priceCents = variant?.priceCents ?? 0;
         const saved = priceCents - discountedUnitCents(priceCents, discount.percentOff);
         return sum + saved * cartItem.quantity;
       }, 0)
@@ -321,7 +320,7 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
                     {item.name}
                   </Link>
                   <p className="text-sm text-muted-foreground">
-                    {formatCents(variant?.priceCents ?? item.priceCents)} / kpl
+                    {formatCents(variant?.priceCents ?? 0)} / kpl
                     {variant ? ` - ${variant.name}` : ''}
                   </p>
                 </>
@@ -364,7 +363,7 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
                 </div>
                 {item && (
                   <span className="text-sm font-semibold">
-                    {formatCents((variant?.priceCents ?? item.priceCents) * cartItem.quantity)}
+                    {formatCents((variant?.priceCents ?? 0) * cartItem.quantity)}
                   </span>
                 )}
                 <button

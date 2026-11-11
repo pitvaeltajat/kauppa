@@ -3,7 +3,7 @@ import { auth } from '@/lib/auth';
 import { getUserRole, isEventAdmin, isSuperAdmin } from '@/lib/admin';
 import { ItemCard } from '@/components/item-card';
 import { SiteBanner } from '@/components/site-banner';
-import { listedItemWhere } from '@/lib/catalog';
+import { listedItemWhere, lowestVariantPrice } from '@/lib/catalog';
 import { getSiteSettings } from '@/lib/siteSettings';
 import { HomepageOrganizer } from '@/components/admin/homepage-organizer';
 
@@ -20,10 +20,18 @@ export default async function HomePage() {
     prisma.item.findMany({
       where: listed,
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
-      include: { category: true },
+      include: {
+        category: true,
+        variants: { where: { active: true }, select: { priceCents: true } },
+      },
     }),
     getSiteSettings(),
   ]);
+
+  const catalogItems = items.map((item) => ({
+    ...item,
+    priceCents: lowestVariantPrice(item.variants),
+  }));
 
   const grouped = [...categories]
     .sort((a, b) => {
@@ -33,7 +41,7 @@ export default async function HomePage() {
     })
     .map((category) => ({
       ...category,
-      items: items.filter((item) => item.categoryId === category.id),
+      items: catalogItems.filter((item) => item.categoryId === category.id),
     }));
 
   return (
@@ -45,10 +53,10 @@ export default async function HomePage() {
           <HomepageOrganizer categories={grouped} canReorderProducts={canReorderProducts} />
         ) : (
           <>
-            {items.some((item) => item.featured) && (
+            {catalogItems.some((item) => item.featured) && (
               <section className="border-t py-8">
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  {items
+                  {catalogItems
                     .filter((item) => item.featured)
                     .sort((a, b) => a.featuredOrder - b.featuredOrder)
                     .map((item) => (

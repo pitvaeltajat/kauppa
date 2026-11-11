@@ -4,16 +4,16 @@ import { buildCheckout, type BuildableItem } from '@/lib/checkout';
 const pipo: BuildableItem = {
   id: 'a',
   name: 'PitVa-pipo',
-  priceCents: 1600,
   stock: 5,
   active: true,
+  variants: [{ id: 'default-a', name: null, priceCents: 1600, active: true }],
 };
 const unlimited: BuildableItem = {
   id: 'b',
   name: 'Setin hinta',
-  priceCents: 1200,
   stock: null,
   active: true,
+  variants: [{ id: 'default-b', name: null, priceCents: 1200, active: true }],
 };
 const hidden: BuildableItem = { ...pipo, id: 'c', name: 'Hylätty', active: false };
 
@@ -31,7 +31,7 @@ describe('buildCheckout', () => {
     expect(result.lines).toEqual([
       {
         itemId: 'a',
-        variantId: null,
+        variantId: 'default-a',
         variantName: null,
         name: 'PitVa-pipo',
         priceCents: 1600,
@@ -39,7 +39,7 @@ describe('buildCheckout', () => {
       },
       {
         itemId: 'b',
-        variantId: null,
+        variantId: 'default-b',
         variantName: null,
         name: 'Setin hinta',
         priceCents: 1200,
@@ -63,7 +63,7 @@ describe('buildCheckout', () => {
       expect(result.lines).toEqual([
         {
           itemId: 'a',
-          variantId: null,
+          variantId: 'default-a',
           variantName: null,
           name: 'PitVa-pipo',
           priceCents: 1600,
@@ -128,10 +128,13 @@ describe('buildCheckout', () => {
     expect(result.totalCents).toBe(8000);
   });
 
-  it('requires a valid variant when an item has variants', () => {
+  it('requires a valid variant when an item has multiple variants', () => {
     const item: BuildableItem = {
       ...pipo,
-      variants: [{ id: 'short', name: 'Lyhyt leiri', priceCents: 2500, active: true }],
+      variants: [
+        { id: 'short', name: 'Lyhyt leiri', priceCents: 2500, active: true },
+        { id: 'long', name: 'Pitkä leiri', priceCents: 4000, active: true },
+      ],
     };
     expect(buildCheckout([{ id: 'a', quantity: 1 }], [item]).ok).toBe(false);
     expect(buildCheckout([{ id: 'a', variantId: 'missing', quantity: 1 }], [item]).ok).toBe(false);

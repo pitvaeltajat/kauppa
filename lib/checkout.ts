@@ -14,7 +14,6 @@ export type CheckoutRequestItem = { id: string; quantity: number; variantId?: st
 export type BuildableItem = {
   id: string;
   name: string;
-  priceCents: number;
   stock: number | null;
   active: boolean;
   /** Event opted into the leaders' discount (ignored by non-leader codes). */
@@ -90,14 +89,16 @@ export function buildCheckout(
     }
 
     const variants = item.variants ?? [];
-    if (variants.length > 0 && !variantId) {
+    if (variants.length === 0) {
+      return { ok: false, error: `Tuotteella "${item.name}" ei ole hintaa.` };
+    }
+    if (variants.length > 1 && !variantId) {
       return { ok: false, error: `Valitse tuotteelle "${item.name}" vaihtoehto.` };
     }
-    if (variantId && variants.length === 0) {
-      return { ok: false, error: `Tuotteen "${item.name}" vaihtoehto ei ole käytettävissä.` };
-    }
-    const variant = variantId ? variants.find((candidate) => candidate.id === variantId) : null;
-    if (variantId && (!variant || !variant.active)) {
+    const variant =
+      variants.find((candidate) => candidate.id === variantId) ??
+      (variants.length === 1 ? variants[0] : null);
+    if (!variant || !variant.active) {
       return {
         ok: false,
         error: `Valittu vaihtoehto tuotteelle "${item.name}" ei ole saatavilla.`,
@@ -106,7 +107,7 @@ export function buildCheckout(
 
     // Apply the discount per unit so Stripe line items and the order snapshot
     // stay in integer cents. A leaderOnly code skips lines that didn't opt in.
-    const basePriceCents = variant?.priceCents ?? item.priceCents;
+    const basePriceCents = variant.priceCents;
     let priceCents = basePriceCents;
     const variantName = variant?.name ?? null;
     let name = variantName ? `${item.name} - ${variantName}` : item.name;

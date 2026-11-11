@@ -30,7 +30,6 @@ export type ItemFormValues = {
   slug: string;
   categoryId: string;
   accountingClassId: string | null;
-  priceCents: number;
   stock: number | null;
   imageUrl: string | null;
   description: string;
@@ -107,7 +106,7 @@ export function ItemForm({
   const [variants, setVariants] = useState<VariantDraft[]>(
     item?.variants?.length
       ? item.variants.map(draftFromVariant)
-      : [{ key: 'new-price', name: '', price: item ? (item.priceCents / 100).toFixed(2).replace('.', ',') : '' }],
+      : [{ key: 'new-price', name: '', price: '' }],
   );
   const [name, setName] = useState(item?.name ?? '');
   const [slug, setSlug] = useState(item?.slug ?? '');
@@ -523,7 +522,9 @@ export function ItemForm({
                   type="button"
                   aria-label={`Poista variaatio ${index + 1}`}
                   className="mb-2 text-muted-foreground transition-colors hover:text-destructive"
-                  onClick={() => setVariants((prev) => prev.filter((current) => current.key !== variant.key))}
+                  onClick={() =>
+                    setVariants((prev) => prev.filter((current) => current.key !== variant.key))
+                  }
                 >
                   <Trash2 className="size-4" />
                 </button>

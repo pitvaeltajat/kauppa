@@ -14,8 +14,7 @@ const categories = [
   {
     name: 'PitVa-tuotteet',
     slug: 'pitva-tuotteet',
-    description:
-      'PitVa-merkkituotteita: pipoja, lakkeja, kasseja, huppareita ja nimikylttejä.',
+    description: 'PitVa-merkkituotteita: pipoja, lakkeja, kasseja, huppareita ja nimikylttejä.',
     sortOrder: 1,
   },
   {
@@ -113,8 +112,7 @@ const items = [
     category: 'pitva-tuotteet',
     priceCents: 3900,
     stock: null,
-    description:
-      'ILovePitVa-huppari lapsille. Uusi mallisto! Valitse hupparin koko ostoskorissa.',
+    description: 'ILovePitVa-huppari lapsille. Uusi mallisto! Valitse hupparin koko ostoskorissa.',
     questions: [
       {
         prompt: 'Hupparin koko',
@@ -244,7 +242,6 @@ async function main() {
       update: {
         name: item.name,
         description: item.description,
-        priceCents: item.priceCents,
         stock: item.stock ?? null,
         imageUrl: event.imageUrl ?? null,
         categoryId: category.id,
@@ -254,13 +251,19 @@ async function main() {
         name: item.name,
         slug,
         description: item.description,
-        priceCents: item.priceCents,
         stock: item.stock ?? null,
         imageUrl: event.imageUrl ?? null,
         categoryId: category.id,
         ...eventFields,
       },
     });
+
+    const variantCount = await prisma.itemVariant.count({ where: { itemId: upserted.id } });
+    if (variantCount === 0) {
+      await prisma.itemVariant.create({
+        data: { itemId: upserted.id, name: null, priceCents: item.priceCents, sortOrder: 0 },
+      });
+    }
 
     // Checkout questions are only seeded when the item has none yet, so
     // admin-edited questions survive re-seeding.
@@ -294,7 +297,8 @@ async function main() {
     update: { leaderOnly: true },
     create: {
       code: LEADER_DISCOUNT_CODE,
-      description: 'Johtajien alennus tapahtumiin (50 %). Toimii vain johtajien alennus -tapahtumissa.',
+      description:
+        'Johtajien alennus tapahtumiin (50 %). Toimii vain johtajien alennus -tapahtumissa.',
       percentOff: LEADER_DISCOUNT_PERCENT,
       leaderOnly: true,
     },

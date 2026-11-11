@@ -8,6 +8,7 @@ import { requireSuperAdmin } from '@/lib/admin-guard';
 import { Badge } from '@/components/ui/badge';
 import { ButtonLink } from '@/components/ui/button-link';
 import { FormButton } from '@/components/admin/form-button';
+import { lowestVariantPrice } from '@/lib/catalog';
 
 export const metadata: Metadata = { title: 'Tuotteet' };
 
@@ -16,7 +17,10 @@ export default async function AdminItemsPage() {
   const items = await prisma.item.findMany({
     where: { isEvent: false },
     orderBy: [{ category: { sortOrder: 'asc' } }, { sortOrder: 'asc' }, { name: 'asc' }],
-    include: { category: true },
+    include: {
+      category: true,
+      variants: { where: { active: true }, select: { priceCents: true } },
+    },
   });
 
   return (
@@ -59,7 +63,9 @@ export default async function AdminItemsPage() {
                   </Link>
                 </td>
                 <td className="px-4 py-3 text-muted-foreground">{item.category.name}</td>
-                <td className="px-4 py-3 text-right">{formatCents(item.priceCents)}</td>
+                <td className="px-4 py-3 text-right">
+                  {formatCents(lowestVariantPrice(item.variants))}
+                </td>
                 <td className="px-4 py-3 text-right">{item.stock === null ? '−' : item.stock}</td>
                 <td className="px-4 py-3">
                   {item.active ? (

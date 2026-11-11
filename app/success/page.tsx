@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { formatCents } from '@/lib/money';
 import { ButtonLink } from '@/components/ui/button-link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ReceiptEmailForm } from '@/components/receipt-email-form';
 
 export const metadata: Metadata = { title: 'Kiitos tilauksesta' };
 
@@ -16,13 +17,12 @@ export default async function SuccessPage({
 }) {
   const params = await searchParams;
   const sessionId = Array.isArray(params.session_id) ? params.session_id[0] : params.session_id;
-  const order =
-    sessionId
-      ? await prisma.order.findFirst({
-          where: { stripeSessionId: sessionId },
-          include: { lines: { include: { item: true } } },
-        })
-      : null;
+  const order = sessionId
+    ? await prisma.order.findFirst({
+        where: { stripeSessionId: sessionId },
+        include: { lines: { include: { item: true } } },
+      })
+    : null;
   const isEventOrder = order?.lines.some((line) => line.item.isEvent) ?? false;
 
   return (
@@ -43,6 +43,9 @@ export default async function SuccessPage({
                 on vastaanotettu. Maksu vahvistetaan hetken kuluttua ja kuitti lähetetään
                 sähköpostiisi.
               </p>
+              {!order.email && order.status === 'PAID' && sessionId && (
+                <ReceiptEmailForm sessionId={sessionId} />
+              )}
               <div className="divide-y rounded-md border">
                 {order.lines.map((line) => {
                   const answers = Array.isArray(line.answers)

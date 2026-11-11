@@ -651,7 +651,7 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
             variant="cta"
             size="lg"
             className="w-full"
-            disabled={loading || lines.length === 0 || lines.some(({ item }) => !item)}
+            disabled={loading || lines.length === 0}
             onClick={goToCheckout}
           >
             {loading ? (

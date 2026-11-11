@@ -14,6 +14,7 @@ export const metadata: Metadata = { title: 'Tuotteet' };
 export default async function AdminItemsPage() {
   await requireSuperAdmin();
   const items = await prisma.item.findMany({
+    where: { isEvent: false },
     orderBy: [{ category: { sortOrder: 'asc' } }, { sortOrder: 'asc' }, { name: 'asc' }],
     include: { category: true },
   });

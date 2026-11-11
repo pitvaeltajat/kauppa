@@ -8,6 +8,7 @@ import {
   buildParticipantNames,
   splitParticipantAnswers,
   PARTICIPANT_NAME_QUESTION,
+  DIETARY_REQUIREMENTS_QUESTION,
   type AnswersByItem,
   type ItemQuestionLike,
 } from '@/lib/questions';
@@ -141,6 +142,9 @@ export async function POST(req: Request) {
       required: q.required,
       options: q.options as string[],
     });
+  }
+  for (const item of items) {
+    if (item.isEvent) questionsByItem[item.id]?.unshift(DIETARY_REQUIREMENTS_QUESTION);
   }
   const answers =
     typeof payload.answers === 'object' && payload.answers !== null

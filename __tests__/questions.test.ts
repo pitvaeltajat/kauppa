@@ -6,6 +6,7 @@ import {
   buildParticipantNames,
   splitParticipantAnswers,
   PARTICIPANT_NAME_QUESTION,
+  DIETARY_REQUIREMENTS_QUESTION,
   type ItemQuestionLike,
 } from '@/lib/questions';
 
@@ -127,8 +128,13 @@ describe('validateAndBuildAnswers', () => {
 describe('withEventQuestions', () => {
   it('prepends a mandatory participant name for events', () => {
     const result = withEventQuestions(true, [nameQuestion]);
-    expect(result).toEqual([PARTICIPANT_NAME_QUESTION, nameQuestion]);
+    expect(result).toEqual([
+      PARTICIPANT_NAME_QUESTION,
+      DIETARY_REQUIREMENTS_QUESTION,
+      nameQuestion,
+    ]);
     expect(result[0].required).toBe(true);
+    expect(result[1].required).toBe(true);
   });
 
   it('leaves non-events untouched', () => {
@@ -137,6 +143,7 @@ describe('withEventQuestions', () => {
 
   it('still prepends the question for the cart to render', () => {
     expect(withEventQuestions(true, [])[0]).toBe(PARTICIPANT_NAME_QUESTION);
+    expect(withEventQuestions(true, [])[1]).toBe(DIETARY_REQUIREMENTS_QUESTION);
   });
 });
 

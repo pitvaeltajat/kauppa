@@ -30,13 +30,24 @@ export const PARTICIPANT_NAME_QUESTION: ItemQuestionLike = {
   options: [],
 };
 
+/** Every event also asks for dietary restrictions and allergies. */
+export const DIETARY_REQUIREMENTS_QUESTION: ItemQuestionLike = {
+  id: 'erityisruokavaliot-ja-allergiat',
+  prompt: 'Erityisruokavaliot ja allergiat (kirjoita "ei", jos niitä ei ole)',
+  type: 'TEXT',
+  required: true,
+  options: [],
+};
+
 /** Prepends the mandatory participant-name question for events, else unchanged.
  * The cart renders every question once per unit of quantity. */
 export function withEventQuestions<T extends ItemQuestionLike>(
   isEvent: boolean,
   questions: T[],
 ): (T | ItemQuestionLike)[] {
-  return isEvent ? [PARTICIPANT_NAME_QUESTION, ...questions] : questions;
+  return isEvent
+    ? [PARTICIPANT_NAME_QUESTION, DIETARY_REQUIREMENTS_QUESTION, ...questions]
+    : questions;
 }
 
 export type AnswerValue = string | string[];

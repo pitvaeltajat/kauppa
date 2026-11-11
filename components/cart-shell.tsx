@@ -739,7 +739,12 @@ function PaymentForm({
   async function submitPayment(
     expressCheckoutConfirmEvent?: StripeExpressCheckoutElementConfirmEvent,
   ) {
-    if (checkoutState.type !== 'success' || !checkoutState.checkout.canConfirm) return;
+    if (checkoutState.type !== 'success') {
+      expressCheckoutConfirmEvent?.paymentFailed({
+        message: 'Maksulomake ei ole vielä valmis. Yritä uudelleen.',
+      });
+      return;
+    }
     const { checkout } = checkoutState;
     onError(null);
     onLoading(true);

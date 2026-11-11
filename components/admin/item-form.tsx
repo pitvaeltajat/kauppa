@@ -572,7 +572,9 @@ export function ItemForm({
         )}
         {questions.length === 0 && (
           <p className="rounded-md border border-dashed px-3 py-4 text-center text-xs text-muted-foreground">
-            Ei kysymyksiä - tuote ostetaan suoraan ilman lisätietoja.
+            {eventMode
+              ? 'Ei lisäkysymyksiä - tapahtuma ostetaan suoraan ilman lisätietoja.'
+              : 'Ei kysymyksiä - tuote ostetaan suoraan ilman lisätietoja.'}
           </p>
         )}
         {questions.map((q, index) => (
@@ -653,9 +655,9 @@ export function ItemForm({
           {pending ? (
             <LoadingPill className="bg-current/25" />
           ) : item ? (
-            'Tallenna tuote'
+            eventMode ? 'Tallenna tapahtuma' : 'Tallenna tuote'
           ) : (
-            'Luo tuote'
+            eventMode ? 'Luo tapahtuma' : 'Luo tuote'
           )}
         </Button>
       </div>

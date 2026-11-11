@@ -311,6 +311,7 @@ export function KammiBooking({
                     const iso = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                     const past = iso < today || iso >= windowEnd;
                     const selected = !!(start && iso === start) || !!(end && iso === end);
+                    const currentDay = iso === today;
                     return (
                       <button
                         key={iso}
@@ -322,8 +323,13 @@ export function KammiBooking({
                           past
                             ? 'cursor-not-allowed text-muted-foreground/40'
                             : 'hover:border-primary'
-                        } ${selected ? 'font-bold text-cta-foreground ring-2 ring-primary' : ''}`}
+                        } ${selected ? 'font-bold text-cta-foreground ring-2 ring-primary' : ''} ${
+                          currentDay && !selected
+                            ? 'font-semibold ring-1 ring-primary/40 ring-inset'
+                            : ''
+                        }`}
                         title={labels[iso] ? `${fiDate(iso)}: ${labels[iso]}` : undefined}
+                        aria-current={currentDay ? 'date' : undefined}
                         aria-label={`${fiDate(iso)}${labels[iso] ? ` – varattu: ${labels[iso]}` : statuses[iso]?.n ? ' (varattu)' : ''}`}
                       >
                         <span>{day}</span>

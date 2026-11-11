@@ -242,7 +242,7 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
       });
       const data = (await res.json()) as {
         paymentMethod?: 'card' | 'invoice' | 'deferred_event';
-        orderId?: string;
+        invoiceAccessToken?: string | null;
         paymentToken?: string | null;
         invoiceUrl?: string | null;
         invoicePdfUrl?: string | null;
@@ -260,9 +260,9 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
         router.push(`/event-payment/${encodeURIComponent(data.paymentToken)}`);
         return;
       }
-      if (data.paymentMethod === 'invoice' && data.orderId) {
+      if (data.paymentMethod === 'invoice' && data.invoiceAccessToken) {
         cartStore.clear();
-        router.push(`/invoice/success?order_id=${encodeURIComponent(data.orderId)}`);
+        router.push(`/invoice/success?token=${encodeURIComponent(data.invoiceAccessToken)}`);
         return;
       }
       if (!data.clientSecret || !data.paymentIntentId) {

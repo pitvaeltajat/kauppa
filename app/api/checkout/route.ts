@@ -62,6 +62,7 @@ export async function POST(req: Request) {
         return NextResponse.json({
           paymentMethod: 'invoice',
           orderId: existing.id,
+          invoiceAccessToken: existing.invoiceAccessToken,
           invoiceUrl: existing.invoiceUrl,
           invoicePdfUrl: existing.invoicePdfUrl,
         });
@@ -194,6 +195,7 @@ export async function POST(req: Request) {
       name,
       totalCents: result.totalCents,
       checkoutKey: checkoutKey ?? undefined,
+      invoiceAccessToken: invoiceRequested ? randomUUID() : undefined,
       paymentToken: deferredEventPayment ? randomUUID() : undefined,
       lines: {
         create: result.lines.map((line) => {
@@ -279,7 +281,7 @@ export async function POST(req: Request) {
       });
       return NextResponse.json({
         paymentMethod: 'invoice',
-        orderId: order.id,
+        invoiceAccessToken: order.invoiceAccessToken,
         invoiceUrl: sent.hosted_invoice_url,
         invoicePdfUrl: sent.invoice_pdf,
       });

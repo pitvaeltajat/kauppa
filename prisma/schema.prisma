@@ -180,6 +180,7 @@ model Order {
   stripeCustomerId    String?
   stripeInvoiceId     String?     @unique
   checkoutKey         String?     @unique
+  invoiceAccessToken  String?     @unique
   invoiceUrl          String?
   invoicePdfUrl       String?
   invoiceDueAt        DateTime?

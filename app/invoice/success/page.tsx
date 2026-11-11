@@ -10,12 +10,12 @@ export const metadata: Metadata = { title: 'Lasku lähetetty' };
 export default async function InvoiceSuccessPage({
   searchParams,
 }: {
-  searchParams: Promise<{ order_id?: string }>;
+  searchParams: Promise<{ token?: string }>;
 }) {
-  const { order_id: orderId } = await searchParams;
-  const order = orderId
-    ? await prisma.order.findUnique({
-        where: { id: orderId },
+  const { token } = await searchParams;
+  const order = token
+    ? await prisma.order.findFirst({
+        where: { invoiceAccessToken: token, status: 'RECEIVED' },
         select: {
           id: true,
           email: true,
@@ -38,18 +38,26 @@ export default async function InvoiceSuccessPage({
           {order ? (
             <>
               <p className="text-sm text-muted-foreground">
-                Ilmoittautuminen <span className="font-medium text-foreground">#{order.id.slice(-8).toUpperCase()}</span>{' '}
+                Ilmoittautuminen{' '}
+                <span className="font-medium text-foreground">
+                  #{order.id.slice(-8).toUpperCase()}
+                </span>{' '}
                 on vastaanotettu. Lasku lähetettiin osoitteeseen{' '}
-                <span className="font-medium text-foreground">{order.email}</span>. Ilmoittautuminen vahvistuu,
-                kun lasku on maksettu.
+                <span className="font-medium text-foreground">{order.email}</span>. Ilmoittautuminen
+                vahvistuu, kun lasku on maksettu.
               </p>
               <div className="divide-y rounded-md border">
                 {order.lines.map((line, index) => (
-                  <div key={`${line.name}-${index}`} className="flex items-baseline justify-between gap-3 px-4 py-2 text-sm">
+                  <div
+                    key={`${line.name}-${index}`}
+                    className="flex items-baseline justify-between gap-3 px-4 py-2 text-sm"
+                  >
                     <span>
                       {line.name} <span className="text-muted-foreground">× {line.quantity}</span>
                     </span>
-                    <span className="shrink-0 font-medium">{formatCents(line.priceCents * line.quantity)}</span>
+                    <span className="shrink-0 font-medium">
+                      {formatCents(line.priceCents * line.quantity)}
+                    </span>
                   </div>
                 ))}
                 <div className="flex items-baseline justify-between gap-3 px-4 py-2 text-sm font-bold">
@@ -59,12 +67,22 @@ export default async function InvoiceSuccessPage({
               </div>
               <div className="flex flex-wrap justify-center gap-3">
                 {order.invoiceUrl && (
-                  <ButtonLink href={order.invoiceUrl} target="_blank" rel="noreferrer" variant="cta">
+                  <ButtonLink
+                    href={order.invoiceUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    variant="cta"
+                  >
                     Avaa lasku
                   </ButtonLink>
                 )}
                 {order.invoicePdfUrl && (
-                  <ButtonLink href={order.invoicePdfUrl} target="_blank" rel="noreferrer" variant="outline">
+                  <ButtonLink
+                    href={order.invoicePdfUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    variant="outline"
+                  >
                     <FileText className="size-4" /> Lataa PDF
                   </ButtonLink>
                 )}
@@ -76,7 +94,8 @@ export default async function InvoiceSuccessPage({
             </p>
           )}
           <div className="rounded-md bg-accent/60 px-4 py-3 text-xs text-muted-foreground">
-            Tarkistathan, että vanhempi maksaa laskun ennen tapahtumaa. Laskun eräpäivä on 14 päivän kuluttua.
+            Tarkistathan, että vanhempi maksaa laskun ennen tapahtumaa. Laskun eräpäivä on 14 päivän
+            kuluttua.
           </div>
           <div className="flex justify-center pt-2">
             <ButtonLink href="/" variant="cta">

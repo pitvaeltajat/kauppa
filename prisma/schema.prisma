@@ -181,6 +181,7 @@ model Order {
   stripeInvoiceId     String?     @unique
   checkoutKey         String?     @unique
   invoiceAccessToken  String?     @unique
+  invoiceAccessTokenExpiresAt DateTime?
   invoiceUrl          String?
   invoicePdfUrl       String?
   invoiceDueAt        DateTime?

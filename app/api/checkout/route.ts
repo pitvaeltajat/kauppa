@@ -277,6 +277,7 @@ export async function POST(req: Request) {
           invoiceUrl: sent.hosted_invoice_url,
           invoicePdfUrl: sent.invoice_pdf,
           invoiceDueAt: sent.due_date ? new Date(sent.due_date * 1000) : null,
+          invoiceAccessTokenExpiresAt: sent.due_date ? new Date(sent.due_date * 1000) : null,
         },
       });
       return NextResponse.json({

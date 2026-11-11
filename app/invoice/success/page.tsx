@@ -15,7 +15,11 @@ export default async function InvoiceSuccessPage({
   const { token } = await searchParams;
   const order = token
     ? await prisma.order.findFirst({
-        where: { invoiceAccessToken: token, status: 'RECEIVED' },
+        where: {
+          invoiceAccessToken: token,
+          status: 'RECEIVED',
+          invoiceAccessTokenExpiresAt: { gt: new Date() },
+        },
         select: {
           id: true,
           email: true,

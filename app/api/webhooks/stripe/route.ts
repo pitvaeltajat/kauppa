@@ -40,7 +40,7 @@ export async function POST(req: Request) {
     case 'checkout.session.completed': {
       const session = event.data.object;
       const orderId = session.metadata?.orderId;
-      if (orderId) {
+      if (orderId && session.payment_status === 'paid') {
         const newlyPaid = await markOrderPaid(orderId, session);
         // Only mail on the real transition, so a duplicate webhook delivery
         // doesn't send the receipt twice. Failures are logged, not thrown.
@@ -61,7 +61,32 @@ export async function POST(req: Request) {
           );
         }
       } else {
-        console.warn('checkout.session.completed ilman orderId:ta', session.id);
+        if (!orderId) console.warn('checkout.session.completed ilman orderId:ta', session.id);
+      }
+      break;
+    }
+    case 'checkout.session.async_payment_succeeded': {
+      const session = event.data.object;
+      const orderId = session.metadata?.orderId;
+      if (orderId) {
+        const newlyPaid = await markOrderPaid(orderId, session);
+        if (newlyPaid) {
+          await trySendEmail(`order receipt ${orderId}`, () => sendOrderReceiptEmail(orderId));
+          await trySendEmail(`new-order notice ${orderId}`, () => sendNewOrderAdminEmail(orderId));
+        }
+      } else {
+        console.warn('checkout.session.async_payment_succeeded ilman orderId:ta', session.id);
+      }
+      break;
+    }
+    case 'checkout.session.async_payment_failed': {
+      const session = event.data.object;
+      if (session.metadata?.orderId) {
+        console.warn(
+          'Checkoutin viivästetty maksu epäonnistui',
+          session.metadata.orderId,
+          session.id,
+        );
       }
       break;
     }

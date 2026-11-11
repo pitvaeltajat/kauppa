@@ -7,10 +7,10 @@ import { ItemForm } from '@/components/admin/item-form';
 export const metadata: Metadata = { title: 'Uusi tuote' };
 
 export default async function NewItemPage() {
-  const categories = await prisma.category.findMany({
-    where: { slug: { not: 'tapahtumat' } },
-    orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
-  });
+  const [categories, accountingClasses] = await Promise.all([
+    prisma.category.findMany({ where: { slug: { not: 'tapahtumat' } }, orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }] }),
+    prisma.accountingClass.findMany({ orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }] }),
+  ]);
 
   return (
     <div>
@@ -21,7 +21,7 @@ export default async function NewItemPage() {
         <ChevronLeft className="size-4" /> Tuotteet
       </Link>
       <h1 className="mb-6 text-2xl font-bold">Uusi tuote</h1>
-      <ItemForm categories={categories} />
+      <ItemForm categories={categories} accountingClasses={accountingClasses} />
     </div>
   );
 }

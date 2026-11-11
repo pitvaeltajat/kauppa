@@ -3,11 +3,13 @@ import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
 import { ItemForm } from '@/components/admin/item-form';
 import { requireEventAdmin } from '@/lib/admin-guard';
+import { prisma } from '@/lib/prisma';
 
 export const metadata: Metadata = { title: 'Uusi tapahtuma' };
 
 export default async function NewEventPage() {
   await requireEventAdmin();
+  const accountingClasses = await prisma.accountingClass.findMany({ orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }] });
   return (
     <div>
       <Link
@@ -17,7 +19,7 @@ export default async function NewEventPage() {
         <ChevronLeft className="size-4" /> Tapahtumat
       </Link>
       <h1 className="mb-6 text-2xl font-bold">Uusi tapahtuma</h1>
-      <ItemForm categories={[]} eventMode />
+      <ItemForm categories={[]} accountingClasses={accountingClasses} eventMode />
     </div>
   );
 }

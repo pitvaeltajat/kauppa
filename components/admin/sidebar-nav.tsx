@@ -36,6 +36,7 @@ export function AdminSidebarNav({ superadmin }: { superadmin: boolean }) {
             label: 'Ylläpito',
             links: [
               { href: '/admin/kammi', label: 'Kammi' },
+              { href: '/admin/accounting-classes', label: 'Kirjanpitoluokat' },
               { href: '/admin/asetukset', label: 'Asetukset' },
               { href: '/admin/users', label: 'Käyttäjät' },
             ],

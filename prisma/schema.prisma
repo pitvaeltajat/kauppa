@@ -49,6 +49,19 @@ model Category {
   @@index([sortOrder])
 }
 
+/// Internal accounting grouping. Never shown in the public shop.
+model AccountingClass {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  items     Item[]
+  kammiBookings KammiBooking[]
+
+  @@index([sortOrder, name])
+}
+
 /// One sellable thing, with 0..n questions the buyer answers at checkout
 /// (TEXT, NUMBER, RADIO or CHECKBOX) — e.g. a huppari size or a name for a
 /// custom item. Answers are snapshotted onto the order line.
@@ -82,6 +95,8 @@ model Item {
   sortOrder      Int            @default(0)
   categoryId     String
   category       Category       @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  accountingClassId String?
+  accountingClass   AccountingClass? @relation(fields: [accountingClassId], references: [id], onDelete: SetNull)
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
   orderLines     OrderLine[]
@@ -240,6 +255,8 @@ model KammiBooking {
   hostQuestions   String?
   /// Invoicing email if different from the contact ("Laskutusosoite").
   billingEmail    String?
+  accountingClassId String?
+  accountingClass   AccountingClass? @relation(fields: [accountingClassId], references: [id], onDelete: SetNull)
   totalCents      Int
   stripeSessionId String?       @unique
   /// Random bearer token for a payer-separated booking payment link.

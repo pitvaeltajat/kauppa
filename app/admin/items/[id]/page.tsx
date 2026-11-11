@@ -9,7 +9,7 @@ export const metadata: Metadata = { title: 'Muokkaa tuotetta' };
 
 export default async function EditItemPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [item, categories] = await Promise.all([
+  const [item, categories, accountingClasses] = await Promise.all([
     prisma.item.findUnique({
       where: { id },
       include: { questions: { orderBy: { sortOrder: 'asc' } } },
@@ -18,6 +18,7 @@ export default async function EditItemPage({ params }: { params: Promise<{ id: s
       where: { slug: { not: 'tapahtumat' } },
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
     }),
+    prisma.accountingClass.findMany({ orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }] }),
   ]);
   if (!item) notFound();
   if (item.isEvent) notFound();
@@ -27,6 +28,7 @@ export default async function EditItemPage({ params }: { params: Promise<{ id: s
     name: item.name,
     slug: item.slug,
     categoryId: item.categoryId,
+    accountingClassId: item.accountingClassId,
     priceCents: item.priceCents,
     stock: item.stock,
     imageUrl: item.imageUrl,
@@ -57,7 +59,7 @@ export default async function EditItemPage({ params }: { params: Promise<{ id: s
         <ChevronLeft className="size-4" /> Tuotteet
       </Link>
       <h1 className="mb-6 text-2xl font-bold">Muokkaa tuotetta</h1>
-      <ItemForm categories={categories} item={formValues} />
+      <ItemForm categories={categories} accountingClasses={accountingClasses} item={formValues} />
     </div>
   );
 }

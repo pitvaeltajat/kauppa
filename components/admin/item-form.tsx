@@ -21,6 +21,7 @@ export type ItemFormValues = {
   name: string;
   slug: string;
   categoryId: string;
+  accountingClassId: string | null;
   priceCents: number;
   stock: number | null;
   imageUrl: string | null;
@@ -67,11 +68,13 @@ function emptyDraft(): QuestionDraft {
 
 export function ItemForm({
   categories,
+  accountingClasses,
   item,
   eventMode = false,
   returnHref = eventMode ? '/admin/events' : '/admin/items',
 }: {
   categories: Category[];
+  accountingClasses: { id: string; name: string }[];
   item?: ItemFormValues;
   /** Events-only form (used by event admins): locks isEvent on, hides the
    * category picker (events go to Tapahtumat automatically). */
@@ -265,6 +268,22 @@ export function ItemForm({
             </Select>
           </div>
         )}
+        <div className="space-y-1.5">
+          <Label htmlFor="accountingClassId">Kirjanpitoluokka</Label>
+          <Select
+            id="accountingClassId"
+            name="accountingClassId"
+            defaultValue={item?.accountingClassId ?? ''}
+          >
+            <option value="">Ei luokkaa</option>
+            {accountingClasses.map((accountingClass) => (
+              <option key={accountingClass.id} value={accountingClass.id}>
+                {accountingClass.name}
+              </option>
+            ))}
+          </Select>
+          <p className="text-xs text-muted-foreground">Vain sisäiseen kirjanpitoon.</p>
+        </div>
         <div className="space-y-1.5">
           <Label htmlFor="price">Hinta (€) *</Label>
           <Input

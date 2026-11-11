@@ -122,6 +122,15 @@ export async function saveItem(
     }
   }
 
+  const accountingClassId = ((formData.get('accountingClassId') as string) ?? '').trim() || null;
+  if (accountingClassId) {
+    const accountingClass = await prisma.accountingClass.findUnique({
+      where: { id: accountingClassId },
+      select: { id: true },
+    });
+    if (!accountingClass) return { error: 'Valittu kirjanpitoluokka ei ole käytettävissä.' };
+  }
+
   const priceCents = parseEurosInput((formData.get('price') as string) ?? '');
   if (priceCents === null) return { error: 'Anna hinta, esimerkiksi 16,00.' };
 
@@ -164,6 +173,7 @@ export async function saveItem(
     name,
     slug,
     categoryId,
+    accountingClassId,
     priceCents,
     stock,
     imageUrl,
@@ -309,6 +319,37 @@ export async function deleteCategory(formData: FormData): Promise<void> {
   revalidatePath('/', 'layout');
   // Re-render the categories page to reflect the change.
   redirect('/admin/categories');
+}
+
+// --- Accounting classes --------------------------------------------------
+
+export async function saveAccountingClass(
+  _prev: ActionResult | undefined,
+  formData: FormData,
+): Promise<ActionResult> {
+  if (!isSuperAdmin(await currentRole())) return { error: 'Ei käyttöoikeutta.' };
+
+  const name = ((formData.get('name') as string) ?? '').trim().slice(0, 120);
+  if (!name) return { error: 'Anna kirjanpitoluokalle nimi.' };
+  const sortOrder = Number((formData.get('sortOrder') as string) ?? '0') || 0;
+  const existing = await prisma.accountingClass.findUnique({ where: { name } });
+  if (existing) return { error: 'Tämän niminen kirjanpitoluokka on jo olemassa.' };
+
+  await prisma.accountingClass.create({ data: { name, sortOrder } });
+  revalidatePath('/admin/accounting-classes');
+  return {};
+}
+
+export async function deleteAccountingClass(formData: FormData): Promise<void> {
+  if (!isSuperAdmin(await currentRole())) return;
+  const id = ((formData.get('id') as string) ?? '').trim();
+  if (!id) return;
+  const itemCount = await prisma.item.count({ where: { accountingClassId: id } });
+  const bookingCount = await prisma.kammiBooking.count({ where: { accountingClassId: id } });
+  if (itemCount > 0 || bookingCount > 0) return;
+  await prisma.accountingClass.delete({ where: { id } });
+  revalidatePath('/admin/accounting-classes');
+  redirect('/admin/accounting-classes');
 }
 
 // --- Discount codes -------------------------------------------------------

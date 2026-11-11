@@ -80,3 +80,16 @@ export async function cancelKammiBookingAction(formData: FormData): Promise<void
   revalidatePath('/admin/kammi');
   revalidatePath('/kammi');
 }
+
+export async function setKammiAccountingClass(formData: FormData): Promise<void> {
+  if (!(await requireSuper())) return;
+  const id = ((formData.get('id') as string) ?? '').trim();
+  const accountingClassId = ((formData.get('accountingClassId') as string) ?? '').trim() || null;
+  if (!id) return;
+  if (accountingClassId) {
+    const accountingClass = await prisma.accountingClass.findUnique({ where: { id: accountingClassId }, select: { id: true } });
+    if (!accountingClass) return;
+  }
+  await prisma.kammiBooking.update({ where: { id }, data: { accountingClassId } });
+  revalidatePath('/admin/kammi');
+}

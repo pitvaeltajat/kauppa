@@ -19,9 +19,9 @@ function buildProviders(): Provider[] {
       Google({
         clientId: googleClientId,
         clientSecret: googleClientSecret,
-      // Do not restrict Google's account chooser with `hd`: a standing
-      // SUPERADMIN may use an account outside the Workspace domain. The
-      // signIn callback below remains the actual production allowlist.
+      authorization: process.env.GOOGLE_WORKSPACE_DOMAIN
+        ? { params: { hd: process.env.GOOGLE_WORKSPACE_DOMAIN } }
+        : undefined,
       }),
     );
   }
@@ -108,6 +108,8 @@ export const authConfig: NextAuthConfig = {
       if (account?.provider === 'dev-login') return true;
       const email = user?.email?.trim().toLowerCase();
       if (!email) return false;
+      const workspaceDomain = process.env.GOOGLE_WORKSPACE_DOMAIN?.trim().toLowerCase();
+      if (!workspaceDomain || !email.endsWith(`@${workspaceDomain}`)) return false;
       const existing = await prisma.user.findUnique({
         where: { email },
         select: { role: true, deletedAt: true },

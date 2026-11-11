@@ -56,10 +56,9 @@ KAUPPA_BOOTSTRAP_ADMIN_EMAILS="nimi@pitkajarvenvaeltajat.fi" pnpm db:seed
 pnpm db:admin nimi@pitkajarvenvaeltajat.fi
 ```
 
-`GOOGLE_WORKSPACE_DOMAIN` controls the role derived for domain accounts and the
-optional Workspace roster sync. It grants no admin rights by itself. Standing
-`SUPERADMIN` rows may sign in even when their Google account is outside that
-domain.
+`GOOGLE_WORKSPACE_DOMAIN` always restricts Google sign-in to that Workspace
+domain. It grants no admin rights by itself. Among domain accounts, only
+existing, active `SUPERADMIN` rows may sign in while the shop is restricted.
 
 ### Stripe (test mode)
 

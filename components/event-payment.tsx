@@ -35,7 +35,6 @@ export function EventPayment({
   total: string;
   status: string;
 }) {
-  const [payerEmail, setPayerEmail] = useState('');
   const [parentEmail, setParentEmail] = useState('');
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -101,7 +100,7 @@ export function EventPayment({
       const response = await fetch(`/api/event-payment/${encodeURIComponent(token)}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: payerEmail.trim() || undefined }),
+        body: JSON.stringify({}),
       });
       const data = (await response.json()) as {
         clientSecret?: string;
@@ -187,16 +186,10 @@ export function EventPayment({
                 <Button type="button" variant="cta" className="w-full" onClick={share}>
                   <Share2 className="size-4" /> Jaa maksuohje vanhemmalle
                 </Button>
-                <div className="grid gap-2 sm:grid-cols-2">
+                <div className="grid gap-2">
                   <Button type="button" variant="outline" onClick={copyLink}>
                     <Copy className="size-4" /> {copied ? 'Linkki kopioitu' : 'Kopioi linkki'}
                   </Button>
-                  <a
-                    className="inline-flex min-h-10 items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-primary underline-offset-4 hover:underline"
-                    href={`mailto:?subject=${encodeURIComponent(`Maksu: ${eventName}`)}&body=${encodeURIComponent(message)}`}
-                  >
-                    Lähetä sähköpostilla
-                  </a>
                 </div>
                 <div className="space-y-2 border-t border-primary/15 pt-3">
                   <Label htmlFor="parent-email">Tai lähetä maksuohje vanhemman sähköpostiin</Label>
@@ -229,16 +222,6 @@ export function EventPayment({
                 </div>
                 {!clientSecret && (
                   <div className="space-y-3">
-                    <div className="space-y-1.5">
-                      <Label htmlFor="payer-email">Maksajan sähköposti (valinnainen)</Label>
-                      <Input
-                        id="payer-email"
-                        type="email"
-                        value={payerEmail}
-                        onChange={(e) => setPayerEmail(e.target.value)}
-                        placeholder="vanhempi@example.com"
-                      />
-                    </div>
                     <Button
                       type="button"
                       variant="cta"

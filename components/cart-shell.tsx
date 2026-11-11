@@ -142,6 +142,7 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
         return sum + saved * cartItem.quantity;
       }, 0)
     : 0;
+  const freeEventRegistration = eventOnly && catalogLoaded && totalCents - discountCents === 0;
 
   async function applyCode() {
     const code = normalizeCode(codeInput);
@@ -252,8 +253,9 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
         }),
       });
       const data = (await res.json()) as {
-        paymentMethod?: 'elements' | 'invoice' | 'deferred_event';
+        paymentMethod?: 'elements' | 'invoice' | 'deferred_event' | 'free';
         clientSecret?: string | null;
+        orderId?: string;
         invoiceAccessToken?: string | null;
         paymentToken?: string | null;
         invoiceUrl?: string | null;
@@ -269,6 +271,11 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
       if (data.paymentMethod === 'deferred_event' && data.paymentToken) {
         cartStore.clear();
         router.push(`/event-payment/${encodeURIComponent(data.paymentToken)}`);
+        return;
+      }
+      if (data.paymentMethod === 'free' && data.orderId) {
+        cartStore.clear();
+        router.push(`/success?order_id=${encodeURIComponent(data.orderId)}`);
         return;
       }
       if (data.paymentMethod === 'invoice' && data.invoiceAccessToken) {
@@ -375,7 +382,9 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
                     {item.name}
                   </Link>
                   <p className="text-sm text-muted-foreground">
-                    {formatCents(variant?.priceCents ?? 0)} / kpl
+                    {item.isEvent && variant?.priceCents === 0
+                      ? 'Maksuton ilmoittautuminen'
+                      : `${formatCents(variant?.priceCents ?? 0)} / kpl`}
                     {variant?.name ? ` - ${variant.name}` : ''}
                   </p>
                 </>
@@ -590,7 +599,12 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
         </div>
 
         <div className="space-y-1.5 text-sm">
-          {discountCents > 0 ? (
+          {freeEventRegistration ? (
+            <div className="flex items-center justify-between">
+              <span>Ilmoittautuminen</span>
+              <span className="text-lg font-bold">Maksuton</span>
+            </div>
+          ) : discountCents > 0 ? (
             <>
               <div className="flex items-center justify-between text-muted-foreground">
                 <span>Välisumma</span>
@@ -630,7 +644,7 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
           </div>
         </div>
 
-        {eventOnly && catalogLoaded && (
+        {eventOnly && catalogLoaded && !freeEventRegistration && (
           <fieldset className="space-y-2 border-t pt-4">
             <legend className="text-sm font-medium">Maksutapa</legend>
             <label className="flex cursor-pointer items-start gap-2 text-sm">
@@ -691,6 +705,10 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
           >
             <PaymentForm loading={loading} onError={setError} onLoading={setLoading} />
           </CheckoutElementsProvider>
+        ) : !deferredCheckout && freeEventRegistration && cardCheckoutReady && !error ? (
+          <div className="flex min-h-11 items-center justify-center gap-2 rounded-md bg-muted px-4 py-2 text-sm text-muted-foreground">
+            <LoadingPill /> Vahvistetaan maksutonta ilmoittautumista…
+          </div>
         ) : !deferredCheckout && cardCheckoutReady && !error ? (
           <div className="flex min-h-11 items-center justify-center gap-2 rounded-md bg-muted px-4 py-2 text-sm text-muted-foreground">
             <LoadingPill /> Valmistellaan maksutapoja…
@@ -707,17 +725,21 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
               <LoadingPill className="bg-current/25" />
             ) : deferredCheckout ? (
               'Ilmoittaudu ja pyydä vanhempaa maksamaan'
+            ) : freeEventRegistration ? (
+              'Ilmoittaudu (maksuton)'
             ) : (
               'Jatka maksamiseen'
             )}
           </Button>
         )}
         <p className="text-center text-xs text-muted-foreground">
-          {deferredCheckout
-            ? 'Ilmoittautuminen vahvistuu, kun vanhempi maksaa jaettavan maksuohjeen kautta.'
-            : eventOnly
-              ? 'Maksat tapahtuman verkossa. Tapahtumatuotteen ostaminen toimii samalla ilmoittautumisena. Saat kuitin sähköpostiisi.'
-              : 'Maksat tuotteen verkossa ja noudat sen kokouksessa ryhmänjohtajalta tai erikseen sovittuna aikana kololta. Saat kuitin sähköpostiisi.'}
+          {freeEventRegistration
+            ? 'Tämä tapahtuma on maksuton. Ilmoittautuminen vahvistetaan heti.'
+            : deferredCheckout
+              ? 'Ilmoittautuminen vahvistuu, kun vanhempi maksaa jaettavan maksuohjeen kautta.'
+              : eventOnly
+                ? 'Maksat tapahtuman verkossa. Tapahtumatuotteen ostaminen toimii samalla ilmoittautumisena. Saat kuitin sähköpostiisi.'
+                : 'Maksat tuotteen verkossa ja noudat sen kokouksessa ryhmänjohtajalta tai erikseen sovittuna aikana kololta. Saat kuitin sähköpostiisi.'}
         </p>
       </div>
     </div>

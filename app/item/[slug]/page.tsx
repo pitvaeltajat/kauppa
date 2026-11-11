@@ -91,12 +91,15 @@ export default async function ItemPage({ params }: { params: Promise<{ slug: str
             </p>
           )}
           <p className="mt-3 text-3xl font-bold">
-            {item.variants.length > 1 ? 'Alkaen ' : ''}
-            {formatCents(
-              item.variants.length > 1
-                ? Math.min(...item.variants.map((variant) => variant.priceCents))
-                : (item.variants[0]?.priceCents ?? 0),
-            )}
+            {(() => {
+              const priceCents =
+                item.variants.length > 1
+                  ? Math.min(...item.variants.map((variant) => variant.priceCents))
+                  : (item.variants[0]?.priceCents ?? 0);
+              return item.isEvent && priceCents === 0
+                ? 'Maksuton ilmoittautuminen'
+                : `${item.variants.length > 1 ? 'Alkaen ' : ''}${formatCents(priceCents)}`;
+            })()}
           </p>
 
           {eventOver && (
@@ -128,6 +131,7 @@ export default async function ItemPage({ params }: { params: Promise<{ slug: str
               itemId={item.id}
               variants={item.variants}
               withQuantity
+              isEvent={item.isEvent}
               disabled={soldOut}
             />
           </div>

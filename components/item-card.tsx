@@ -46,7 +46,9 @@ export function ItemCard({
           <h3 className="min-w-0 truncate text-sm font-semibold" title={item.name}>
             {item.name}
           </h3>
-          <span className="shrink-0 text-sm font-bold">{formatCents(item.priceCents)}</span>
+          <span className="shrink-0 text-sm font-bold">
+            {item.isEvent && item.priceCents === 0 ? 'Maksuton' : formatCents(item.priceCents)}
+          </span>
         </div>
         {dates && (
           <p className="mt-1 flex items-center gap-1 text-xs font-medium text-primary">

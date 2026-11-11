@@ -11,12 +11,14 @@ export function AddToCartForm({
   itemId,
   variants = [],
   withQuantity = false,
+  isEvent = false,
   disabled = false,
   className,
 }: {
   itemId: string;
   variants?: { id: string; name: string | null; priceCents: number }[];
   withQuantity?: boolean;
+  isEvent?: boolean;
   disabled?: boolean;
   className?: string;
 }) {
@@ -72,7 +74,13 @@ export function AddToCartForm({
         </div>
       )}
       <Button type="button" disabled={disabled} onClick={handleAdd} className="min-w-44">
-        {added ? 'Lisätty koriin' : 'Lisää ostoskoriin'}
+        {added
+          ? isEvent
+            ? 'Ilmoittautuminen lisätty'
+            : 'Lisätty koriin'
+          : isEvent
+            ? 'Ilmoittaudu'
+            : 'Lisää ostoskoriin'}
       </Button>
     </div>
   );

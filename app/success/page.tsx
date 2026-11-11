@@ -15,20 +15,25 @@ export default async function SuccessPage({
 }: {
   searchParams: Promise<{
     session_id?: string | string[];
+    order_id?: string | string[];
     redirect_status?: string | string[];
   }>;
 }) {
   const params = await searchParams;
   const sessionId = Array.isArray(params.session_id) ? params.session_id[0] : params.session_id;
+  const orderId = Array.isArray(params.order_id) ? params.order_id[0] : params.order_id;
   const redirectStatus = Array.isArray(params.redirect_status)
     ? params.redirect_status[0]
     : params.redirect_status;
-  const order = sessionId
-    ? await prisma.order.findFirst({
-        where: { stripeSessionId: sessionId },
-        include: { lines: { include: { item: true } } },
-      })
-    : null;
+  const order =
+    sessionId || orderId
+      ? await prisma.order.findFirst({
+          where: sessionId
+            ? { stripeSessionId: sessionId }
+            : { id: orderId, status: 'PAID', totalCents: 0 },
+          include: { lines: { include: { item: true } } },
+        })
+      : null;
   const stripeSession = sessionId?.startsWith('cs_')
     ? await getStripe()
         .checkout.sessions.retrieve(sessionId)
@@ -40,6 +45,8 @@ export default async function SuccessPage({
     stripeSession?.payment_status === 'unpaid' ||
     stripeSession?.status === 'expired';
   const paymentSucceeded = !paymentFailed && stripeSession?.payment_status === 'paid';
+  const freeRegistration = Boolean(orderId && order?.status === 'PAID' && order.totalCents === 0);
+  const registrationSucceeded = paymentSucceeded || freeRegistration;
   const isEventOrder = order?.lines.some((line) => line.item.isEvent) ?? false;
 
   return (
@@ -54,12 +61,14 @@ export default async function SuccessPage({
           ) : (
             <>
               <CheckCircle2 className="size-12 text-success" />
-              <CardTitle>Kiitos tilauksesta!</CardTitle>
+              <CardTitle>
+                {freeRegistration ? 'Ilmoittautuminen vastaanotettu!' : 'Kiitos tilauksesta!'}
+              </CardTitle>
             </>
           )}
         </CardHeader>
         <CardContent className="space-y-4">
-          {paymentSucceeded && <ClearCartOnSuccess />}
+          {registrationSucceeded && <ClearCartOnSuccess />}
           {paymentFailed ? (
             <>
               <p className="text-sm text-muted-foreground">
@@ -75,12 +84,13 @@ export default async function SuccessPage({
           ) : order ? (
             <>
               <p className="text-sm text-muted-foreground">
-                Tilaus{' '}
+                {freeRegistration ? 'Ilmoittautuminen ' : 'Tilaus '}
                 <span className="font-medium text-foreground">
                   #{order.id.slice(-8).toUpperCase()}
                 </span>{' '}
-                on vastaanotettu. Maksu vahvistetaan hetken kuluttua ja kuitti lähetetään
-                sähköpostiisi.
+                {freeRegistration
+                  ? 'on vastaanotettu. Tapahtuma on maksuton, eikä maksuvälinettä tarvita.'
+                  : 'on vastaanotettu. Maksu vahvistetaan hetken kuluttua ja kuitti lähetetään sähköpostiisi.'}
               </p>
               {!order.email && order.status === 'PAID' && sessionId && (
                 <ReceiptEmailForm sessionId={sessionId} />

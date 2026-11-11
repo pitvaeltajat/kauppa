@@ -14,6 +14,7 @@ import {
 } from '@/lib/questions';
 import { loadValidDiscount } from '@/lib/discountCodes';
 import { normalizeCode } from '@/lib/discount';
+import { sendNewOrderAdminEmail, sendOrderReceiptEmail, trySendEmail } from '@/lib/emails';
 
 /**
  * Creates an Order row and a Stripe Checkout Session for the cart. Prices,
@@ -58,6 +59,9 @@ export async function POST(req: Request) {
           clientSecret: session.client_secret,
           checkoutSessionId: session.id,
         });
+      }
+      if (existing.status === 'PAID' && existing.totalCents === 0) {
+        return NextResponse.json({ paymentMethod: 'free', orderId: existing.id });
       }
       if (existing.invoiceUrl) {
         return NextResponse.json({
@@ -237,6 +241,37 @@ export async function POST(req: Request) {
   });
 
   try {
+    if (eventOnly && result.totalCents === 0) {
+      await prisma.$transaction(async (tx) => {
+        const lines = await tx.orderLine.findMany({
+          where: { orderId: order.id },
+          select: { itemId: true, quantity: true },
+        });
+        const itemRows = await tx.item.findMany({
+          where: { id: { in: lines.map((line) => line.itemId) } },
+          select: { id: true, stock: true },
+        });
+        const stockById = new Map(itemRows.map((item) => [item.id, item.stock]));
+        for (const line of lines) {
+          if (stockById.get(line.itemId) === null) continue;
+          const updated = await tx.item.updateMany({
+            where: { id: line.itemId, stock: { gte: line.quantity } },
+            data: { stock: { decrement: line.quantity } },
+          });
+          if (updated.count !== 1)
+            throw new Error('Tapahtuman paikat muuttuivat ilmoittautumisen aikana.');
+        }
+        await tx.order.update({
+          where: { id: order.id },
+          data: { status: 'PAID', paidAt: new Date() },
+        });
+      });
+      await trySendEmail(`free order receipt ${order.id}`, () => sendOrderReceiptEmail(order.id));
+      await trySendEmail(`free new-order notice ${order.id}`, () =>
+        sendNewOrderAdminEmail(order.id),
+      );
+      return NextResponse.json({ paymentMethod: 'free', orderId: order.id });
+    }
     if (deferredEventPayment) {
       return NextResponse.json({
         paymentMethod: 'deferred_event',

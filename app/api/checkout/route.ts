@@ -28,11 +28,49 @@ export async function POST(req: Request) {
     answers?: unknown;
     discountCode?: unknown;
     paymentMethod?: unknown;
+    requestKey?: unknown;
   };
   try {
     payload = await req.json();
   } catch {
     return NextResponse.json({ error: 'Virheellinen pyyntö.' }, { status: 400 });
+  }
+
+  const checkoutKey =
+    typeof payload.requestKey === 'string' && /^[A-Za-z0-9:_-]{16,100}$/.test(payload.requestKey)
+      ? payload.requestKey
+      : null;
+  if (checkoutKey) {
+    const existing = await prisma.order.findUnique({ where: { checkoutKey } });
+    if (existing) {
+      if (payload.paymentMethod === 'deferred_event' && existing.paymentToken) {
+        return NextResponse.json({
+          paymentMethod: 'deferred_event',
+          orderId: existing.id,
+          paymentToken: existing.paymentToken,
+        });
+      }
+      if (existing.stripePaymentIntent) {
+        const intent = await getStripe().paymentIntents.retrieve(existing.stripePaymentIntent);
+        return NextResponse.json({
+          paymentMethod: 'card',
+          clientSecret: intent.client_secret,
+          paymentIntentId: intent.id,
+        });
+      }
+      if (existing.invoiceUrl) {
+        return NextResponse.json({
+          paymentMethod: 'invoice',
+          orderId: existing.id,
+          invoiceUrl: existing.invoiceUrl,
+          invoicePdfUrl: existing.invoicePdfUrl,
+        });
+      }
+      return NextResponse.json(
+        { error: 'Maksu on jo käynnistymässä. Yritä hetken kuluttua uudelleen.' },
+        { status: 409 },
+      );
+    }
   }
 
   const raw = Array.isArray(payload.items) ? payload.items : [];
@@ -155,6 +193,7 @@ export async function POST(req: Request) {
       email,
       name,
       totalCents: result.totalCents,
+      checkoutKey: checkoutKey ?? undefined,
       paymentToken: deferredEventPayment ? randomUUID() : undefined,
       lines: {
         create: result.lines.map((line) => {
@@ -194,29 +233,38 @@ export async function POST(req: Request) {
     }
     const stripe = getStripe();
     if (invoiceRequested) {
-      const customer = await stripe.customers.create({
-        email: email ?? undefined,
-        name: name ?? undefined,
-        metadata: { orderId: order.id },
-      });
+      const customer = await stripe.customers.create(
+        {
+          email: email ?? undefined,
+          name: name ?? undefined,
+          metadata: { orderId: order.id },
+        },
+        { idempotencyKey: `${checkoutKey ?? order.id}:customer` },
+      );
       for (const line of result.lines) {
-        await stripe.invoiceItems.create({
-          customer: customer.id,
-          amount: line.priceCents * line.quantity,
-          currency: 'eur',
-          description: `${line.name} × ${line.quantity}`,
-          metadata: { orderId: order.id, itemId: line.itemId },
-        });
+        await stripe.invoiceItems.create(
+          {
+            customer: customer.id,
+            amount: line.priceCents * line.quantity,
+            currency: 'eur',
+            description: `${line.name} × ${line.quantity}`,
+            metadata: { orderId: order.id, itemId: line.itemId },
+          },
+          { idempotencyKey: `${checkoutKey ?? order.id}:item:${line.itemId}` },
+        );
       }
-      const invoice = await stripe.invoices.create({
-        customer: customer.id,
-        collection_method: 'send_invoice',
-        pending_invoice_items_behavior: 'include',
-        days_until_due: 14,
-        description: `Pitkäjärven Vaeltajat -tapahtumailmoittautuminen ${order.id.slice(-8).toUpperCase()}`,
-        footer: 'Ilmoittautuminen vahvistuu, kun lasku on maksettu.',
-        metadata: { orderId: order.id },
-      });
+      const invoice = await stripe.invoices.create(
+        {
+          customer: customer.id,
+          collection_method: 'send_invoice',
+          pending_invoice_items_behavior: 'include',
+          days_until_due: 14,
+          description: `Pitkäjärven Vaeltajat -tapahtumailmoittautuminen ${order.id.slice(-8).toUpperCase()}`,
+          footer: 'Ilmoittautuminen vahvistuu, kun lasku on maksettu.',
+          metadata: { orderId: order.id },
+        },
+        { idempotencyKey: `${checkoutKey ?? order.id}:invoice` },
+      );
       const finalized = await stripe.invoices.finalizeInvoice(invoice.id);
       const sent = await stripe.invoices.sendInvoice(finalized.id);
       await prisma.order.update({
@@ -237,14 +285,17 @@ export async function POST(req: Request) {
       });
     }
 
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: result.totalCents,
-      currency: 'eur',
-      automatic_payment_methods: { enabled: true },
-      receipt_email: email ?? undefined,
-      description: `Pitkäjärven Vaeltajat -tilaus ${order.id.slice(-8).toUpperCase()}`,
-      metadata: { orderId: order.id },
-    });
+    const paymentIntent = await stripe.paymentIntents.create(
+      {
+        amount: result.totalCents,
+        currency: 'eur',
+        automatic_payment_methods: { enabled: true },
+        receipt_email: email ?? undefined,
+        description: `Pitkäjärven Vaeltajat -tilaus ${order.id.slice(-8).toUpperCase()}`,
+        metadata: { orderId: order.id },
+      },
+      { idempotencyKey: checkoutKey ?? `checkout:${order.id}` },
+    );
 
     await prisma.order.update({
       where: { id: order.id },

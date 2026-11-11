@@ -176,8 +176,10 @@ model Order {
   stripePaymentIntent String?
   /// Random bearer token for a child-created event registration payment link.
   paymentToken        String?     @unique
+  paymentLinkEmailSentAt DateTime?
   stripeCustomerId    String?
   stripeInvoiceId     String?     @unique
+  checkoutKey         String?     @unique
   invoiceUrl          String?
   invoicePdfUrl       String?
   invoiceDueAt        DateTime?
@@ -260,6 +262,7 @@ model KammiBooking {
   accountingClass   AccountingClass? @relation(fields: [accountingClassId], references: [id], onDelete: SetNull)
   totalCents      Int
   stripeSessionId String?       @unique
+  requestKey      String?       @unique
   /// Random bearer token for a payer-separated booking payment link.
   paymentToken    String?       @unique
   holdExpiresAt   DateTime?

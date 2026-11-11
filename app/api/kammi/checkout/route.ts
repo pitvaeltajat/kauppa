@@ -5,7 +5,11 @@ import { getStripe } from '@/lib/stripe';
 import { auth } from '@/lib/auth';
 import { getUserRole, isEventAdmin } from '@/lib/admin';
 import { createKammiHold } from '@/lib/kammiBookings';
-import { trySendEmail, sendKammiConfirmationEmail, sendKammiHostNotificationEmail } from '@/lib/emails';
+import {
+  trySendEmail,
+  sendKammiConfirmationEmail,
+  sendKammiHostNotificationEmail,
+} from '@/lib/emails';
 import { toISODate, type KammiTier } from '@/lib/kammi';
 
 /**
@@ -41,8 +45,13 @@ export async function POST(req: Request) {
       ? payload.billingEmail.trim().slice(0, 254)
       : null;
   const paymentRequest = payload.paymentMode === 'request';
+  const requestKey =
+    typeof payload.requestKey === 'string' && /^[A-Za-z0-9:_-]{16,100}$/.test(payload.requestKey)
+      ? payload.requestKey
+      : null;
 
-  if (!email) return NextResponse.json({ error: 'Anna sähköpostiosoite kuittia varten.' }, { status: 400 });
+  if (!email)
+    return NextResponse.json({ error: 'Anna sähköpostiosoite kuittia varten.' }, { status: 400 });
   if (!name) return NextResponse.json({ error: 'Anna nimesi.' }, { status: 400 });
 
   // A logged-in pitva member's scout booking is free — decided here from the
@@ -50,6 +59,39 @@ export async function POST(req: Request) {
   const session = await auth();
   const pitvaMember = isEventAdmin(await getUserRole(session?.user?.email ?? null));
   const free = pitvaMember && tier === 'SCOUT';
+
+  if (requestKey) {
+    const existing = await prisma.kammiBooking.findUnique({ where: { requestKey } });
+    if (existing) {
+      if (existing.status === 'CANCELLED') {
+        return NextResponse.json({ error: 'Varaus on jo peruttu.' }, { status: 409 });
+      }
+      if (free || paymentRequest) {
+        if (paymentRequest && !existing.paymentToken) {
+          return NextResponse.json(
+            { error: 'Varaus on jo käynnistymässä. Yritä hetken kuluttua uudelleen.' },
+            { status: 409 },
+          );
+        }
+        return NextResponse.json({
+          url:
+            paymentRequest && existing.paymentToken
+              ? `/kammi/pay/${encodeURIComponent(existing.paymentToken)}`
+              : '/kammi/kiitos',
+        });
+      }
+      if (existing.stripeSessionId) {
+        const existingSession = await getStripe().checkout.sessions.retrieve(
+          existing.stripeSessionId,
+        );
+        return NextResponse.json({ url: existingSession.url });
+      }
+      return NextResponse.json(
+        { error: 'Varaus on jo käynnistymässä. Yritä hetken kuluttua uudelleen.' },
+        { status: 409 },
+      );
+    }
+  }
 
   const holdInput = {
     startISO,
@@ -62,6 +104,7 @@ export async function POST(req: Request) {
     eventInfo,
     hostQuestions,
     billingEmail,
+    requestKey,
   };
 
   if (free) {
@@ -77,7 +120,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ url: '/kammi/kiitos' });
   }
 
-  const hold = await createKammiHold(holdInput, { holdMinutes: paymentRequest ? 24 * 60 : undefined });
+  const hold = await createKammiHold(holdInput, {
+    holdMinutes: paymentRequest ? 24 * 60 : undefined,
+  });
   if (!hold.ok) return NextResponse.json({ error: hold.error }, { status: 400 });
   const booking = hold.booking;
 
@@ -94,29 +139,35 @@ export async function POST(req: Request) {
 
   try {
     const stripe = getStripe();
-    const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? req.headers.get('origin') ?? '').replace(/\/$/, '');
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? req.headers.get('origin') ?? '').replace(
+      /\/$/,
+      '',
+    );
     if (!appUrl) throw new Error('NEXT_PUBLIC_APP_URL puuttuu.');
 
     const label = `Kammi ${toISODate(booking.startDate)} – ${toISODate(booking.endDate)} (${booking.nights} yötä)`;
-    const session = await stripe.checkout.sessions.create({
-      mode: 'payment',
-      line_items: [
-        {
-          quantity: 1,
-          price_data: {
-            currency: 'eur',
-            unit_amount: booking.totalCents,
-            product_data: { name: label },
+    const session = await stripe.checkout.sessions.create(
+      {
+        mode: 'payment',
+        line_items: [
+          {
+            quantity: 1,
+            price_data: {
+              currency: 'eur',
+              unit_amount: booking.totalCents,
+              product_data: { name: label },
+            },
           },
-        },
-      ],
-      customer_email: email,
-      metadata: { kammiBookingId: booking.id },
-      success_url: `${appUrl}/kammi/kiitos`,
-      cancel_url: `${appUrl}/kammi`,
-      locale: 'fi',
-      expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
-    });
+        ],
+        customer_email: email,
+        metadata: { kammiBookingId: booking.id },
+        success_url: `${appUrl}/kammi/kiitos`,
+        cancel_url: `${appUrl}/kammi`,
+        locale: 'fi',
+        expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
+      },
+      { idempotencyKey: requestKey ?? `kammi-checkout:${booking.id}` },
+    );
 
     await prisma.kammiBooking.update({
       where: { id: booking.id },

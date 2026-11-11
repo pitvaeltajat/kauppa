@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import type Stripe from 'stripe';
 import { prisma } from '@/lib/prisma';
 import { getStripe } from '@/lib/stripe';
-import { applyQuantityToStock } from '@/lib/orders';
 import {
   trySendEmail,
   sendOrderReceiptEmail,
@@ -125,7 +124,7 @@ async function markOrderPaid(
       where: { id: orderId },
       include: { lines: true },
     });
-    if (!order || order.status === 'PAID' || order.status === 'COMPLETED') return false;
+    if (!order || ['PAID', 'COMPLETED', 'CANCELLED'].includes(order.status)) return false;
 
     const itemRows = await tx.item.findMany({
       where: { id: { in: order.lines.map((line) => line.itemId) } },
@@ -133,18 +132,14 @@ async function markOrderPaid(
     });
     const stockById = new Map(itemRows.map((item) => [item.id, item.stock]));
 
-    for (const result of applyQuantityToStock(
-      order.lines.map((line) => ({
-        itemId: line.itemId,
-        stock: stockById.get(line.itemId) ?? null,
-        quantity: line.quantity,
-      })),
-    )) {
-      if (result.newStock !== null) {
-        await tx.item.updateMany({
-          where: { id: result.itemId, stock: { not: null } },
-          data: { stock: result.newStock },
-        });
+    for (const line of order.lines) {
+      if (stockById.get(line.itemId) === null) continue;
+      const updated = await tx.item.updateMany({
+        where: { id: line.itemId, stock: { gte: line.quantity } },
+        data: { stock: { decrement: line.quantity } },
+      });
+      if (updated.count !== 1) {
+        throw new Error(`Varasto muuttui maksun aikana tuotteelle ${line.itemId}`);
       }
     }
 
@@ -153,8 +148,7 @@ async function markOrderPaid(
       data: {
         status: 'PAID',
         paidAt: new Date(),
-        stripeSessionId:
-          payment.object === 'checkout.session' ? payment.id : order.stripeSessionId,
+        stripeSessionId: payment.object === 'checkout.session' ? payment.id : order.stripeSessionId,
         stripePaymentIntent:
           payment.object === 'payment_intent'
             ? payment.id

@@ -49,11 +49,7 @@ const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
   ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
   : null;
 
-export function CartShell({
-  initialUser,
-}: {
-  initialUser: { name: string; email: string };
-}) {
+export function CartShell({ initialUser }: { initialUser: { name: string; email: string } }) {
   const router = useRouter();
   const { items } = useCart();
   const [catalog, setCatalog] = useState<Map<string, FetchedItem>>(new Map());
@@ -68,6 +64,7 @@ export function CartShell({
   const [codeChecking, setCodeChecking] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
+  const checkoutRequestKey = useRef<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'deferred'>('card');
   const participantNamesPrefilled = useRef(false);
 
@@ -227,6 +224,7 @@ export function CartShell({
     }
     setLoading(true);
     try {
+      checkoutRequestKey.current ??= crypto.randomUUID();
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -239,6 +237,7 @@ export function CartShell({
           email: deferredCheckout ? undefined : email.trim() || undefined,
           discountCode: discount?.code,
           paymentMethod: deferredCheckout ? 'deferred_event' : 'card',
+          requestKey: checkoutRequestKey.current,
         }),
       });
       const data = (await res.json()) as {
@@ -252,6 +251,7 @@ export function CartShell({
         error?: string;
       };
       if (!res.ok) {
+        checkoutRequestKey.current = null;
         setError(data.error ?? 'Maksua ei voitu aloittaa. Yritä uudelleen.');
         return;
       }
@@ -550,7 +550,9 @@ export function CartShell({
         <div className="space-y-3 border-t pt-4">
           <div className="space-y-1.5">
             <Label htmlFor="email">
-              {deferredCheckout ? 'Sähköposti (valinnainen, kuitti lähetetään tähän)' : 'Sähköposti (kuitti lähetetään tähän)'}
+              {deferredCheckout
+                ? 'Sähköposti (valinnainen, kuitti lähetetään tähän)'
+                : 'Sähköposti (kuitti lähetetään tähän)'}
             </Label>
             <Input
               id="email"

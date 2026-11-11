@@ -67,6 +67,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     });
     return NextResponse.json({ url, fields, publicUrl: `${publicBase.replace(/\/$/, '')}/${key}` });
   } catch (error) {
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+    console.error('Kuvan presigned uploadin luonti epäonnistui:', error);
+    return NextResponse.json({ error: 'Kuvan latausta ei voitu aloittaa.' }, { status: 500 });
   }
 }

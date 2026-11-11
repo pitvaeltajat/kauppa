@@ -47,7 +47,9 @@ export async function expireStaleHolds(): Promise<void> {
 }
 
 /** A booking's date range as ISO strings, labelled with who booked it. */
-function bookingRange(b: Pick<KammiBooking, 'startDate' | 'endDate' | 'name' | 'organization'>): DateRange {
+function bookingRange(
+  b: Pick<KammiBooking, 'startDate' | 'endDate' | 'name' | 'organization'>,
+): DateRange {
   return {
     start: toISODate(b.startDate),
     end: toISODate(b.endDate),
@@ -87,11 +89,10 @@ export type CreateHoldInput = {
   eventInfo: string | null;
   hostQuestions: string | null;
   billingEmail: string | null;
+  requestKey?: string | null;
 };
 
-export type CreateHoldResult =
-  | { ok: true; booking: KammiBooking }
-  | { ok: false; error: string };
+export type CreateHoldResult = { ok: true; booking: KammiBooking } | { ok: false; error: string };
 
 /**
  * Validate and reserve a stay. The database exclusion constraint is the
@@ -107,7 +108,8 @@ export async function createKammiHold(
   { free = false, holdMinutes = HOLD_MINUTES }: { free?: boolean; holdMinutes?: number } = {},
 ): Promise<CreateHoldResult> {
   const settings = await getKammiSettings();
-  if (!settings.active) return { ok: false, error: 'Kammin verkkovaraus ei ole tällä hetkellä käytössä.' };
+  if (!settings.active)
+    return { ok: false, error: 'Kammin verkkovaraus ei ole tällä hetkellä käytössä.' };
 
   const validation = validateBookingDates({
     startISO: input.startISO,
@@ -141,6 +143,7 @@ export async function createKammiHold(
         eventInfo: input.eventInfo,
         hostQuestions: input.hostQuestions,
         billingEmail: input.billingEmail,
+        requestKey: input.requestKey ?? undefined,
         totalCents: free ? 0 : price.totalCents,
         holdExpiresAt: free ? null : new Date(Date.now() + holdMinutes * 60_000),
         paidAt: free ? new Date() : null,
@@ -205,7 +208,10 @@ export async function confirmKammiBooking(
     endISO: toISODate(booking.endDate),
   });
   if (eventId) {
-    await prisma.kammiBooking.update({ where: { id: bookingId }, data: { googleEventId: eventId } });
+    await prisma.kammiBooking.update({
+      where: { id: bookingId },
+      data: { googleEventId: eventId },
+    });
   }
   return true;
 }

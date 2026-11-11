@@ -82,6 +82,7 @@ export function KammiBooking({
   const [error, setError] = useState<string | null>(null);
   const [selectionError, setSelectionError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const bookingRequestKey = useRef<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const formRef = useRef<HTMLDivElement>(null);
 
@@ -158,6 +159,7 @@ export function KammiBooking({
     if (!email.includes('@')) return setError('Anna sähköposti.');
     setLoading(true);
     try {
+      bookingRequestKey.current ??= crypto.randomUUID();
       const res = await fetch('/api/kammi/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -173,10 +175,12 @@ export function KammiBooking({
           hostQuestions,
           billingEmail,
           paymentMode,
+          requestKey: bookingRequestKey.current,
         }),
       });
       const data = (await res.json()) as { url?: string; error?: string };
       if (!res.ok || !data.url) {
+        bookingRequestKey.current = null;
         setError(data.error ?? 'Varauksen aloitus epäonnistui.');
         return;
       }
@@ -338,11 +342,7 @@ export function KammiBooking({
 
         <div className="mt-6 flex justify-center">
           <Button variant="outline" onClick={loadMore} disabled={loadingMore}>
-            {loadingMore ? (
-              <LoadingPill />
-            ) : (
-              'Näytä lisää kuukausia'
-            )}
+            {loadingMore ? <LoadingPill /> : 'Näytä lisää kuukausia'}
           </Button>
         </div>
       </div>
@@ -493,12 +493,30 @@ export function KammiBooking({
             <fieldset className="space-y-2 border-t pt-3">
               <legend className="text-sm font-medium">Maksu</legend>
               <label className="flex cursor-pointer items-start gap-2 text-sm">
-                <input type="radio" className="mt-0.5 size-4" checked={paymentMode === 'now'} onChange={() => setPaymentMode('now')} />
-                <span><span className="font-medium">Maksa nyt itse</span><span className="block text-xs text-muted-foreground">Maksu avautuu heti.</span></span>
+                <input
+                  type="radio"
+                  className="mt-0.5 size-4"
+                  checked={paymentMode === 'now'}
+                  onChange={() => setPaymentMode('now')}
+                />
+                <span>
+                  <span className="font-medium">Maksa nyt itse</span>
+                  <span className="block text-xs text-muted-foreground">Maksu avautuu heti.</span>
+                </span>
               </label>
               <label className="flex cursor-pointer items-start gap-2 text-sm">
-                <input type="radio" className="mt-0.5 size-4" checked={paymentMode === 'request'} onChange={() => setPaymentMode('request')} />
-                <span><span className="font-medium">Jaa maksuohje maksajalle</span><span className="block text-xs text-muted-foreground">Saat linkin, jonka voi jakaa sähköpostilla tai puhelimen jakovalikosta.</span></span>
+                <input
+                  type="radio"
+                  className="mt-0.5 size-4"
+                  checked={paymentMode === 'request'}
+                  onChange={() => setPaymentMode('request')}
+                />
+                <span>
+                  <span className="font-medium">Jaa maksuohje maksajalle</span>
+                  <span className="block text-xs text-muted-foreground">
+                    Saat linkin, jonka voi jakaa sähköpostilla tai puhelimen jakovalikosta.
+                  </span>
+                </span>
               </label>
             </fieldset>
           )}
@@ -519,8 +537,10 @@ export function KammiBooking({
             <LoadingPill className="bg-current/25" />
           ) : isFree ? (
             'Varaa (maksuton)'
+          ) : paymentMode === 'request' ? (
+            'Varaa ja jaa maksuohje'
           ) : (
-            paymentMode === 'request' ? 'Varaa ja jaa maksuohje' : 'Varaa ja maksa'
+            'Varaa ja maksa'
           )}
         </Button>
         <p className="text-center text-xs text-muted-foreground">

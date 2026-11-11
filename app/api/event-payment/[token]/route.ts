@@ -3,10 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { getStripe } from '@/lib/stripe';
 
 /** Opens the Stripe payment form for a child-created event registration. */
-export async function POST(
-  req: Request,
-  { params }: { params: Promise<{ token: string }> },
-) {
+export async function POST(req: Request, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   if (!token || token.length > 100) {
     return NextResponse.json({ error: 'Maksulinkki ei kelpaa.' }, { status: 400 });
@@ -43,14 +40,17 @@ export async function POST(
     return NextResponse.json({ clientSecret: intent.client_secret, paymentIntentId: intent.id });
   }
 
-  const intent = await stripe.paymentIntents.create({
-    amount: order.totalCents,
-    currency: 'eur',
-    automatic_payment_methods: { enabled: true },
-    receipt_email: email ?? undefined,
-    description: `Pitkäjärven Vaeltajat -tapahtumailmoittautuminen ${order.id.slice(-8).toUpperCase()}`,
-    metadata: { orderId: order.id },
-  });
+  const intent = await stripe.paymentIntents.create(
+    {
+      amount: order.totalCents,
+      currency: 'eur',
+      automatic_payment_methods: { enabled: true },
+      receipt_email: email ?? undefined,
+      description: `Pitkäjärven Vaeltajat -tapahtumailmoittautuminen ${order.id.slice(-8).toUpperCase()}`,
+      metadata: { orderId: order.id },
+    },
+    { idempotencyKey: `event-payment:${order.id}` },
+  );
   await prisma.order.update({
     where: { id: order.id },
     data: { stripePaymentIntent: intent.id, email: email ?? undefined },

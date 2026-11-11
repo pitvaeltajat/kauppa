@@ -2,10 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getStripe } from '@/lib/stripe';
 
-export async function POST(
-  _req: Request,
-  { params }: { params: Promise<{ token: string }> },
-) {
+export async function POST(_req: Request, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   const order = await prisma.order.findUnique({
     where: { paymentToken: token },
@@ -19,9 +16,12 @@ export async function POST(
   if (order.stripePaymentIntent) {
     const intent = await getStripe().paymentIntents.retrieve(order.stripePaymentIntent);
     if (['succeeded', 'processing'].includes(intent.status)) {
-      return NextResponse.json({ error: 'Maksu on jo aloitettu. Ota yhteyttä järjestäjään.' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Maksu on jo aloitettu. Ota yhteyttä järjestäjään.' },
+        { status: 400 },
+      );
     }
-    if (!['canceled', 'requires_payment_method'].includes(intent.status)) {
+    if (intent.status !== 'canceled') {
       await getStripe().paymentIntents.cancel(intent.id);
     }
   }

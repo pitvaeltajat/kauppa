@@ -139,10 +139,10 @@ export async function POST(req: Request) {
 
   try {
     const stripe = getStripe();
-    const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? req.headers.get('origin') ?? '').replace(
-      /\/$/,
-      '',
-    );
+    const appUrl = (
+      process.env.NEXT_PUBLIC_APP_URL ??
+      (process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : '')
+    ).replace(/\/$/, '');
     if (!appUrl) throw new Error('NEXT_PUBLIC_APP_URL puuttuu.');
 
     const label = `Kammi ${toISODate(booking.startDate)} – ${toISODate(booking.endDate)} (${booking.nights} yötä)`;

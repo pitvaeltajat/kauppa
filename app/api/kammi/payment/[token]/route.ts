@@ -19,10 +19,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ token: 
     return NextResponse.json({ error: 'Varaus ei ole enää maksettavissa.' }, { status: 400 });
   }
   const stripe = getStripe();
-  const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? req.headers.get('origin') ?? '').replace(
-    /\/$/,
-    '',
-  );
+  const appUrl = (
+    process.env.NEXT_PUBLIC_APP_URL ??
+    (process.env.NODE_ENV === 'development' ? 'http://localhost:3000' : '')
+  ).replace(/\/$/, '');
   if (!appUrl)
     return NextResponse.json({ error: 'Maksupalvelu ei ole konfiguroitu.' }, { status: 500 });
   const session = await stripe.checkout.sessions.create(

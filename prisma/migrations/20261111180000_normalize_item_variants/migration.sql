@@ -1,3 +1,5 @@
+ALTER TABLE "ItemVariant" ALTER COLUMN "name" DROP NOT NULL;
+
 -- Every item gets one unnamed price option when it has no variants yet.
 INSERT INTO "ItemVariant" ("id", "itemId", "name", "priceCents", "sortOrder", "active")
 SELECT 'legacy-' || "id", "id", NULL, "priceCents", 0, true

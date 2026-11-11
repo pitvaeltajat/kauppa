@@ -314,6 +314,7 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
     if (
       !catalogLoaded ||
       deferredCheckout ||
+      freeEventRegistration ||
       clientSecret ||
       loading ||
       autoCheckoutStarted.current
@@ -334,6 +335,7 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
     discount,
     email,
     clientSecret,
+    freeEventRegistration,
     goToCheckout,
     lines,
     loading,
@@ -705,11 +707,7 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
           >
             <PaymentForm loading={loading} onError={setError} onLoading={setLoading} />
           </CheckoutElementsProvider>
-        ) : !deferredCheckout && freeEventRegistration && cardCheckoutReady && !error ? (
-          <div className="flex min-h-11 items-center justify-center gap-2 rounded-md bg-muted px-4 py-2 text-sm text-muted-foreground">
-            <LoadingPill /> Vahvistetaan maksutonta ilmoittautumista…
-          </div>
-        ) : !deferredCheckout && cardCheckoutReady && !error ? (
+        ) : !deferredCheckout && !freeEventRegistration && cardCheckoutReady && !error ? (
           <div className="flex min-h-11 items-center justify-center gap-2 rounded-md bg-muted px-4 py-2 text-sm text-muted-foreground">
             <LoadingPill /> Valmistellaan maksutapoja…
           </div>

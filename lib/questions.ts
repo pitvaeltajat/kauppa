@@ -33,7 +33,7 @@ export const PARTICIPANT_NAME_QUESTION: ItemQuestionLike = {
 /** Every event also asks for dietary restrictions and allergies. */
 export const DIETARY_REQUIREMENTS_QUESTION: ItemQuestionLike = {
   id: 'erityisruokavaliot-ja-allergiat',
-  prompt: 'Erityisruokavaliot ja allergiat (kirjoita "ei", jos niitä ei ole)',
+  prompt: 'Erityisruokavaliot ja allergiat',
   type: 'TEXT',
   required: false,
   options: [],

@@ -65,13 +65,18 @@ async function ensureUser(email: string | null | undefined, name: string | null 
   if (existing) {
     const role = deriveRole(normalized, existing.role as Role);
     const nextName = name ?? existing.name ?? null;
-    if (role !== existing.role || nextName !== existing.name) {
-      return prisma.user.update({ where: { email: normalized }, data: { role, name: nextName } });
-    }
-    return existing;
+    return prisma.user.update({
+      where: { email: normalized },
+      data: { role, name: nextName, lastLoginAt: new Date() },
+    });
   }
   return prisma.user.create({
-    data: { email: normalized, name: name ?? email.split('@')[0], role: deriveRole(normalized, null) },
+    data: {
+      email: normalized,
+      name: name ?? email.split('@')[0],
+      role: deriveRole(normalized, null),
+      lastLoginAt: new Date(),
+    },
   });
 }
 

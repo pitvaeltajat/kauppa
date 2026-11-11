@@ -319,7 +319,6 @@ export async function POST(req: Request) {
         customer_email: email ?? undefined,
         metadata: { orderId: order.id },
         return_url: `${appUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
-        redirect_on_completion: 'if_required',
         locale: 'fi',
       },
       { idempotencyKey: checkoutKey ?? `checkout:${order.id}` },

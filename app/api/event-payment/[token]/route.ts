@@ -57,7 +57,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ token: 
       customer_email: email ?? order.email ?? undefined,
       metadata: { orderId: order.id },
       return_url: `${appUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
-      redirect_on_completion: 'if_required',
       locale: 'fi',
     },
     { idempotencyKey: `event-payment:${order.id}` },

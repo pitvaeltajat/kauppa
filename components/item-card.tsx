@@ -54,15 +54,9 @@ export function ItemCard({
           </p>
         )}
         <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{item.description}</p>
-        <p className="mt-2 text-xs">
-          {soldOut ? (
-            <span className="font-medium text-destructive">Loppu varastosta</span>
-          ) : item.stock !== null ? (
-            <span className="text-muted-foreground">{item.stock} varastossa</span>
-          ) : (
-            <span className="text-muted-foreground">Saatavilla</span>
-          )}
-        </p>
+        {soldOut && (
+          <p className="mt-2 text-xs font-medium text-destructive">Loppu varastosta</p>
+        )}
       </div>
     </Link>
   );

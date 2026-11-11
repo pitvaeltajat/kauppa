@@ -91,15 +91,7 @@ export default async function ItemPage({ params }: { params: Promise<{ slug: str
             </p>
           )}
 
-          <div className="mt-3">
-            {soldOut ? (
-              <Badge variant="destructive">Loppu varastosta</Badge>
-            ) : item.stock !== null ? (
-              <Badge variant="success">{item.stock} varastossa</Badge>
-            ) : (
-              <Badge variant="secondary">Saatavilla</Badge>
-            )}
-          </div>
+          {soldOut && <Badge className="mt-3" variant="destructive">Loppu varastosta</Badge>}
 
           {item.description && (
             <p className="mt-5 whitespace-pre-line text-sm leading-relaxed text-muted-foreground">

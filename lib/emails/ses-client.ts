@@ -22,7 +22,7 @@ const ses = new SESClient({
 });
 
 /** Every kontti mail subject carries this tag, applied in one place. */
-export const SUBJECT_PREFIX = '[PitVa-kontti] ';
+export const SUBJECT_PREFIX = '[PitVa] ';
 
 export async function sendEmail(to: string | string[], subject: string, html: string) {
   const toAddresses = (Array.isArray(to) ? to : [to]).filter(Boolean);

@@ -158,7 +158,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: answerResult.error }, { status: 400 });
   }
 
-  // Events require one participant name per unit — validated against the real
+  // Events require one participant name per unit - validated against the real
   // quantity and prepended to that line's answer snapshot.
   for (const line of result.lines) {
     const raw = answers?.[line.itemId]?.[PARTICIPANT_NAME_QUESTION.id];

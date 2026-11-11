@@ -2,12 +2,12 @@ import { getGoogleAccessToken } from '@/lib/googleAuth';
 import { toISODate, addDays, type DateRange } from '@/lib/kammi';
 
 /**
- * Read/write the kammi (cabin) Google Calendar — the master record of what is
+ * Read/write the kammi (cabin) Google Calendar - the master record of what is
  * booked. Authenticates with the same service account as the Workspace sync
  * (`lib/googleAuth`), impersonating the calendar's owner so it can both read
  * busy days and write a confirmed booking back.
  *
- * Config (all optional — unset = disabled, and the app falls back to its own
+ * Config (all optional - unset = disabled, and the app falls back to its own
  * bookings as the only availability source, logging a warning):
  *   KAMMI_CALENDAR_ID       the calendar to read/write (owned by admin@pitva.fi)
  *   KAMMI_CALENDAR_WRITE_ENABLED  set to "true" to create booking events
@@ -63,7 +63,7 @@ function endpointDate(point: { date?: string; dateTime?: string } | undefined): 
  * One Google event → a booking date range [start, end), where `end` is the
  * CHECKOUT day (half-open: that day's night is free for the next arrival).
  *
- * The subtlety: an all-day event uses an EXCLUSIVE `end.date` — a Fri–Sun block
+ * The subtlety: an all-day event uses an EXCLUSIVE `end.date` - a Fri–Sun block
  * (leave Sunday) is stored as end=Monday. So its last covered day (end-1) is the
  * departure/checkout day, not an occupied night: nights run to Saturday, Sunday
  * is the changeover, Monday is free. A single-day block keeps its one night.
@@ -87,7 +87,7 @@ export function eventToRange(event: GoogleEvent): DateRange | null {
 
 /**
  * Busy ranges on the kammi calendar between two ISO dates. Returns [] (and logs)
- * when the calendar isn't configured or the read fails — availability then rests
+ * when the calendar isn't configured or the read fails - availability then rests
  * on kauppa's own bookings alone, which is safe (it can only over-report free
  * days to the extent the calendar isn't reachable, and the DB still blocks a
  * real double-book at payment time).
@@ -120,10 +120,10 @@ export async function fetchKammiBusyRanges(fromISO: string, toISO: string): Prom
 /**
  * Write a confirmed booking to the calendar as an all-day event. `endISO` is the
  * checkout day; Google's all-day end is exclusive, so the event is written to
- * cover THROUGH the checkout day (end = checkout + 1) — the same convention the
+ * cover THROUGH the checkout day (end = checkout + 1) - the same convention the
  * kämppäisäntä uses by hand, so it round-trips with `eventToRange`. Returns the
  * event id, or null if the calendar isn't configured / the write failed (the
- * booking is still confirmed and the keycode still sent — re-addable by hand).
+ * booking is still confirmed and the keycode still sent - re-addable by hand).
  */
 export async function createKammiEvent(input: {
   summary: string;

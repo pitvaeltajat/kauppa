@@ -42,7 +42,7 @@ export default async function KammiPage() {
   const statuses: Record<string, { m: boolean; n: boolean }> = {};
   for (const [iso, s] of statusMap) statuses[iso] = { m: s.morningBusy, n: s.nightBusy };
 
-  // Who holds each booked night — shown only to logged-in viewers.
+  // Who holds each booked night - shown only to logged-in viewers.
   const labels = session?.user?.email ? labelsByDay(busy, fromISO, toISO) : {};
 
   return (

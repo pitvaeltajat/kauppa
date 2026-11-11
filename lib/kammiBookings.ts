@@ -17,7 +17,7 @@ import { fetchKammiBusyRanges, createKammiEvent, deleteKammiEvent } from '@/lib/
 const HOLD_MINUTES = 20;
 
 export const KAMMI_ACCOUNTING_CLASS_ID = 'income-3500';
-export const KAMMI_ACCOUNTING_CLASS_NAME = '3500 — Kammin vuokratuotot';
+export const KAMMI_ACCOUNTING_CLASS_NAME = '3500 - Kammin vuokratuotot';
 
 /** Keep the fixed Kammi accounting class available in every environment. */
 export async function ensureKammiAccountingClass(): Promise<string> {
@@ -101,7 +101,7 @@ export type CreateHoldResult = { ok: true; booking: KammiBooking } | { ok: false
  * case and avoids creating a doomed Stripe session.
  *
  * With `free`, the booking is created already CONFIRMED at price 0 and written
- * to the calendar — used for a logged-in pitva member's scout booking, which
+ * to the calendar - used for a logged-in pitva member's scout booking, which
  * skips payment. The caller must have verified that eligibility server-side.
  */
 export async function createKammiHold(
@@ -154,7 +154,7 @@ export async function createKammiHold(
     if (free) {
       // No webhook will fire, so write the calendar entry here (best-effort).
       const eventId = await createKammiEvent({
-        summary: `Kammi varattu — ${booking.name ?? booking.email ?? 'varaus'}`,
+        summary: `Kammi varattu - ${booking.name ?? booking.email ?? 'varaus'}`,
         description: `Partiovaraus (maksuton) kauppa.pitva.fi:n kautta.${booking.email ? ` ${booking.email}` : ''}`,
         startISO: toISODate(booking.startDate),
         endISO: toISODate(booking.endDate),

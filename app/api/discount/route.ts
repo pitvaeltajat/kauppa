@@ -4,7 +4,7 @@ import { loadValidDiscount } from '@/lib/discountCodes';
 /**
  * Validate a discount code for the cart preview. Returns the code's terms so
  * the cart can show the discounted total before checkout. Checkout re-validates
- * authoritatively — this is UX only.
+ * authoritatively - this is UX only.
  */
 export async function GET(req: Request) {
   const code = new URL(req.url).searchParams.get('code') ?? '';

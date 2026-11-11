@@ -17,7 +17,7 @@ if (!typed || !typed.includes('@')) {
 }
 
 // Google hands back the primary address at login, so the grant must land on the
-// primary — not an alias someone happened to type. Resolve it; if Workspace
+// primary - not an alias someone happened to type. Resolve it; if Workspace
 // creds are missing locally, warn and fall back to the typed address.
 let email = typed;
 try {
@@ -26,7 +26,7 @@ try {
 } catch (error) {
   console.warn(
     `VAROITUS: aliaksen tarkistus Workspacesta epäonnistui (${(error as Error).message}). ` +
-      `Käytetään annettua osoitetta sellaisenaan — varmista että se on ensisijainen osoite.`,
+      `Käytetään annettua osoitetta sellaisenaan - varmista että se on ensisijainen osoite.`,
   );
 }
 

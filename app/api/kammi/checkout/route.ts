@@ -54,7 +54,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Anna sähköpostiosoite kuittia varten.' }, { status: 400 });
   if (!name) return NextResponse.json({ error: 'Anna nimesi.' }, { status: 400 });
 
-  // A logged-in pitva member's scout booking is free — decided here from the
+  // A logged-in pitva member's scout booking is free - decided here from the
   // session, never from anything the browser sent.
   const session = await auth();
   const pitvaMember = isEventAdmin(await getUserRole(session?.user?.email ?? null));
@@ -111,7 +111,7 @@ export async function POST(req: Request) {
   if (free) {
     const result = await createKammiHold(holdInput, { free: true });
     if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 });
-    // Confirmed immediately — send the keycode and notify the host.
+    // Confirmed immediately - send the keycode and notify the host.
     await trySendEmail(`kammi confirmation ${result.booking.id}`, () =>
       sendKammiConfirmationEmail(result.booking.id),
     );

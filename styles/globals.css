@@ -134,30 +134,30 @@
 
     /* Brand dark blue. `primary` is the brand *ink*: every link, icon, spinner
        and `bg-primary/10` chip, plus the small solid indicators (checked
-       Checkbox, active FilterChip, tooltip). It is not the filled button —
+       Checkbox, active FilterChip, tooltip). It is not the filled button -
        that's --cta. */
     --primary: 244 51% 24%;
     --primary-foreground: 219 89% 97%;
 
     /* Brand light blue, exactly: the filled call-to-action button. Its own pair
        rather than `primary`, because primary has to stay dark enough to be
-       readable as text on white — #BBD1FB is a 1.5:1 whisper there. */
+       readable as text on white - #BBD1FB is a 1.5:1 whisper there. */
     --cta: 219 89% 86%;
     --cta-foreground: 244 51% 24%;
     /* Hover goes a step *deeper*, not translucent: `bg-cta/80` over a white
        card would lighten the button, which reads as the press doing less.
-       Shared by both themes — `.dark` doesn't override it. */
+       Shared by both themes - `.dark` doesn't override it. */
     --cta-hover: 219 85% 80%;
 
     /* Brand gray. The quieter button beside a --cta one (a dialog's "Peruuta")
        and the neutral chip. It was the light blue until the filled button took
-       that over — two light-blue buttons side by side in a dialog read as two
+       that over - two light-blue buttons side by side in a dialog read as two
        confirms. */
     --secondary: 20 6% 87%;
     --secondary-foreground: 244 51% 24%;
 
     /* The quiet surface: EmptyState, Skeleton, the kaman kuva box, every
-       hover:bg-muted. This one is NOT the sheet's gray, deliberately — that
+       hover:bg-muted. This one is NOT the sheet's gray, deliberately - that
        gray is warm (#C9C5C3), and a block of it next to the light-blue page
        reads pink. The gray keeps its warmth where it is only a line
        (--border/--input); at full-block size it goes cool instead. */
@@ -185,7 +185,7 @@
        brand surface that stays dark-on-light in both themes.
 
        Opaque. It used to carry an alpha, which let 8% of the page through and
-       composited to #322F6A rather than the #221E5D it names — the brand navy
+       composited to #322F6A rather than the #221E5D it names - the brand navy
        everywhere else, Budu's top bar included, is the flat colour. */
     --header: 244 51% 24%;
     --header-foreground: 219 89% 97%;
@@ -241,7 +241,7 @@
     cursor: not-allowed;
   }
   /* A tap or double-click on something clickable must not paint a text
-     selection — on the kiosk touchscreen a long press did exactly that.
+     selection - on the kiosk touchscreen a long press did exactly that.
      `.cursor-pointer` catches the `<div onClick>` cards and rows. Fields keep
      selection explicitly: Safari lets a `none` ancestor lock an input inside a
      `<label>`. */
@@ -368,7 +368,7 @@
 }
 
 /* react-datepicker sizes its day cells in fixed rem (1.7rem ≈ 27px), which on a
-   phone leaves the app's primary interaction — picking the loan window — well
+   phone leaves the app's primary interaction - picking the loan window - well
    under the ~44px touch target everyone else designs for. Below `sm` the
    calendar spans the panel instead and the days share that width evenly. Both
    themes; un-layered like the rest of this block so it beats the bundled

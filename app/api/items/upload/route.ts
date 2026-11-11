@@ -8,7 +8,7 @@ import { isEventAdmin } from '@/lib/admin';
 /**
  * Presigned-POST endpoint for product/event images (S3), same shape as klapi's
  * `/api/item/uploadImage`. The admin form asks here for a short-lived presigned
- * POST, then uploads the file straight to the public bucket — going direct to
+ * POST, then uploads the file straight to the public bucket - going direct to
  * S3 sidesteps the 4.5 MB function body limit, so a phone photo uploads fine.
  * We only gate who may get one (event admins and superadmins) and hand back the
  * final public URL for the form to store in `Item.imageUrl`.

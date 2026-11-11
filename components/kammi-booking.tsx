@@ -124,6 +124,13 @@ export function KammiBooking({
     }
   }
 
+  function resetSelection() {
+    setStart(null);
+    setEnd(null);
+    setSelectionError(null);
+    setError(null);
+  }
+
   function selectSingleNight(iso: string) {
     setError(null);
     setSelectionError(null);
@@ -279,13 +286,20 @@ export function KammiBooking({
         </div>
 
         {selectionError && (
-          <p
+          <div
             role="alert"
             aria-live="polite"
-            className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+            className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
           >
-            {selectionError}
-          </p>
+            <span>{selectionError}</span>
+            <button
+              type="button"
+              onClick={resetSelection}
+              className="shrink-0 rounded-md border border-destructive/30 px-2.5 py-1.5 font-medium text-destructive transition-colors hover:bg-destructive/10"
+            >
+              Aloita valinta alusta
+            </button>
+          </div>
         )}
 
         <div className="grid gap-6 sm:grid-cols-2">
@@ -354,7 +368,7 @@ export function KammiBooking({
         </div>
       </div>
 
-      {/* Booking panel — floats alongside the calendar on desktop as you scroll. */}
+      {/* Booking panel - floats alongside the calendar on desktop as you scroll. */}
       <div
         ref={formRef}
         className="h-fit scroll-mt-4 space-y-4 rounded-lg border bg-card p-5 shadow-sm lg:sticky lg:top-[calc(3.5rem+1rem)] lg:self-start"

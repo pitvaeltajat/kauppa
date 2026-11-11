@@ -19,7 +19,7 @@ export type ItemQuestionLike = {
 
 /**
  * Every event (isEvent) asks for the participant's name at checkout, always
- * required and always first — injected server-side (not a DB row) so it can't
+ * required and always first - injected server-side (not a DB row) so it can't
  * be deleted and needs no backfill. The reserved id never collides with a cuid.
  */
 export const PARTICIPANT_NAME_QUESTION: ItemQuestionLike = {

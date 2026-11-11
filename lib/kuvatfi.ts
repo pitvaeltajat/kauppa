@@ -97,7 +97,7 @@ export async function getKuvatFolders(): Promise<KuvatFolder[]> {
       if (!isRecord(value)) continue;
       const count = Number(value.fc ?? 0);
       if (count > 0 && !value.h && !value.hh && !value.salasana) {
-        result.push({ host, path, name: `${host} — ${folderName(path)}`, count });
+        result.push({ host, path, name: `${host} - ${folderName(path)}`, count });
       }
     }
   }

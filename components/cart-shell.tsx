@@ -127,7 +127,7 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
     0,
   );
 
-  // Discount preview (UX only — checkout re-validates against the database).
+  // Discount preview (UX only - checkout re-validates against the database).
   const discountCents = discount
     ? lines.reduce((sum, { cartItem, item }) => {
         if (!item || !discountApplies(discount, item)) return sum;

@@ -6,7 +6,12 @@ import Link from 'next/link';
 import { Plus, Trash2, Upload } from 'lucide-react';
 import type { Category } from '@prisma/client';
 import { saveItem } from '@/lib/actions/admin';
-import { QUESTION_TYPES, type QuestionType } from '@/lib/questions';
+import {
+  DIETARY_REQUIREMENTS_QUESTION,
+  PARTICIPANT_NAME_QUESTION,
+  QUESTION_TYPES,
+  type QuestionType,
+} from '@/lib/questions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,6 +21,8 @@ import { Select } from '@/components/ui/select';
 import { ItemImage } from '@/components/item-image';
 import { KuvatPicker } from '@/components/admin/kuvat-picker';
 import { DEFAULT_EVENT_ACCOUNTING_CLASS_NAME } from '@/lib/accounting';
+import { slugify } from '@/lib/slug';
+import { EventDateFields } from '@/components/admin/event-date-fields';
 
 export type ItemFormValues = {
   id?: string;
@@ -86,13 +93,14 @@ export function ItemForm({
   const [questions, setQuestions] = useState<QuestionDraft[]>(
     item?.questions?.map(draftFromQuestion) ?? [],
   );
+  const [name, setName] = useState(item?.name ?? '');
+  const [slug, setSlug] = useState(item?.slug ?? '');
+  const [slugManuallyEdited, setSlugManuallyEdited] = useState(Boolean(item?.id));
   const isEvent = eventMode;
   const [imageUrl, setImageUrl] = useState(item?.imageUrl ?? '');
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const [startsAt, setStartsAt] = useState(item?.startsAt ?? '');
-  const [endsAt, setEndsAt] = useState(item?.endsAt ?? '');
 
   function updateQuestion(key: string, patch: Partial<QuestionDraft>) {
     setQuestions((prev) => prev.map((q) => (q.key === key ? { ...q, ...patch } : q)));
@@ -165,14 +173,28 @@ export function ItemForm({
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label htmlFor="name">Nimi *</Label>
-          <Input id="name" name="name" required defaultValue={item?.name ?? ''} />
+          <Input
+            id="name"
+            name="name"
+            required
+            value={name}
+            onChange={(e) => {
+              const next = e.target.value;
+              setName(next);
+              if (!slugManuallyEdited) setSlug(slugify(next));
+            }}
+          />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="slug">Tunnus URL-osoitteessa</Label>
           <Input
             id="slug"
             name="slug"
-            defaultValue={item?.slug ?? ''}
+            value={slug}
+            onChange={(e) => {
+              setSlugManuallyEdited(true);
+              setSlug(e.target.value);
+            }}
             placeholder="muodostetaan-nimesta"
             spellCheck={false}
             autoCapitalize="none"
@@ -196,35 +218,7 @@ export function ItemForm({
               Päättymispäivä voi olla sama kuin alkamispäivä.
             </p>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="startsAt">Alkaa *</Label>
-              <Input
-                id="startsAt"
-                name="startsAt"
-                type="date"
-                required
-                value={startsAt}
-                onChange={(e) => {
-                  const next = e.target.value;
-                  setStartsAt(next);
-                  if (endsAt && next > endsAt) setEndsAt(next);
-                }}
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="endsAt">Päättyy *</Label>
-              <Input
-                id="endsAt"
-                name="endsAt"
-                type="date"
-                required
-                min={startsAt || undefined}
-                value={endsAt}
-                onChange={(e) => setEndsAt(e.target.value)}
-              />
-            </div>
-          </div>
+          <EventDateFields startsAt={item?.startsAt ?? null} endsAt={item?.endsAt ?? null} />
           <label className="flex items-center gap-2 text-sm sm:col-span-2">
             <input
               type="checkbox"
@@ -232,7 +226,7 @@ export function ItemForm({
               defaultChecked={item?.hidden ?? false}
               className="size-4 accent-[hsl(244,51%,24%)]"
             />
-            Piilota etusivulta — näkyy vain suoralla linkillä
+            Piilota etusivulta - näkyy vain suoralla linkillä
           </label>
           <label className="flex items-start gap-2 text-sm sm:col-span-2">
             <input
@@ -447,9 +441,26 @@ export function ItemForm({
           Ostaja vastaa näihin ostoskorissa ennen maksua (esim. hupparin koko tai nimikyltin
           teksti). Vastaukset tallentuvat tilaukselle.
         </p>
+        {isEvent && (
+          <div className="space-y-2 rounded-md border border-primary/30 bg-primary/5 p-3">
+            <p className="text-sm font-semibold">Tapahtuman pakolliset kysymykset</p>
+            <p className="text-xs text-muted-foreground">
+              Nämä kysytään aina ilmoittautumisen yhteydessä. Niitä ei tarvitse lisätä itse.
+            </p>
+            {[PARTICIPANT_NAME_QUESTION, DIETARY_REQUIREMENTS_QUESTION].map((question, index) => (
+              <div key={question.id} className="rounded-md border bg-card p-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium text-muted-foreground">{index + 1}.</span>
+                  <span className="text-sm font-medium">{question.prompt}</span>
+                  <span className="ml-auto text-xs text-muted-foreground">Pakollinen</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
         {questions.length === 0 && (
           <p className="rounded-md border border-dashed px-3 py-4 text-center text-xs text-muted-foreground">
-            Ei kysymyksiä — tuote ostetaan suoraan ilman lisätietoja.
+            Ei kysymyksiä - tuote ostetaan suoraan ilman lisätietoja.
           </p>
         )}
         {questions.map((q, index) => (

@@ -45,7 +45,7 @@ console.log(' -', admin.subject);
 
 const testEmail = process.env.TEST_EMAIL;
 if (testEmail) {
-  const from = process.env.KAUPPA_SES_FROM_EMAIL ?? 'kauppa-noreply@pitkajarvenvaeltajat.fi';
+  const from = process.env.KAUPPA_SES_FROM_EMAIL ?? 'kontti-noreply@pitkajarvenvaeltajat.fi';
   const payload = {
     FromEmailAddress: from,
     Destination: { ToAddresses: [testEmail] },

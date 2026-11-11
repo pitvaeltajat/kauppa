@@ -29,6 +29,8 @@
     "@aws-sdk/client-ses": "^3.1164.0",
     "@aws-sdk/s3-presigned-post": "^3.1164.0",
     "@prisma/client": "6.19.3",
+    "@stripe/react-stripe-js": "^7.0.1",
+    "@stripe/stripe-js": "^10.2.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",

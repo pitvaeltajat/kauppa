@@ -39,11 +39,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ token: 
   const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? new URL(req.url).origin).replace(/\/$/, '');
   if (order.stripeSessionId) {
     const session = await stripe.checkout.sessions.retrieve(order.stripeSessionId);
-    if (session.url) return NextResponse.json({ checkoutUrl: session.url });
+    if (session.client_secret)
+      return NextResponse.json({ clientSecret: session.client_secret, checkoutSessionId: session.id });
   }
   const session = await stripe.checkout.sessions.create(
     {
       mode: 'payment',
+      ui_mode: 'elements',
       line_items: order.lines.map((line) => ({
         quantity: line.quantity,
         price_data: {
@@ -54,16 +56,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ token: 
       })),
       customer_email: email ?? order.email ?? undefined,
       metadata: { orderId: order.id },
-      success_url: `${appUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${appUrl}/event-payment/${encodeURIComponent(token)}`,
+      return_url: `${appUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
+      redirect_on_completion: 'if_required',
       locale: 'fi',
     },
     { idempotencyKey: `event-payment:${order.id}` },
   );
-  if (!session.url) throw new Error('Stripe ei palauttanut checkout-osoitetta.');
+  if (!session.client_secret) throw new Error('Stripe ei palauttanut checkout-avainta.');
   await prisma.order.update({
     where: { id: order.id },
     data: { stripeSessionId: session.id, email: email ?? undefined },
   });
-  return NextResponse.json({ checkoutUrl: session.url });
+  return NextResponse.json({ clientSecret: session.client_secret, checkoutSessionId: session.id });
 }

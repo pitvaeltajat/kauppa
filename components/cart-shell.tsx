@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { CheckoutElementsProvider, PaymentElement, useCheckoutElements } from '@stripe/react-stripe-js/checkout';
+import { loadStripe } from '@stripe/stripe-js';
 import { Minus, Plus, Trash2, ShoppingCart } from 'lucide-react';
 import { cartStore, useCart } from '@/lib/cart';
 import { formatCents } from '@/lib/money';
@@ -43,6 +45,10 @@ type FetchedItem = {
 type AnswerValue = string | string[];
 type Answers = Record<string, Record<string, AnswerValue[]>>;
 
+const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+  ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
+  : null;
+
 export function CartShell({ initialUser }: { initialUser: { name: string; email: string } }) {
   const router = useRouter();
   const { items } = useCart();
@@ -56,6 +62,7 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
   const [discount, setDiscount] = useState<DiscountCodeLike | null>(null);
   const [codeError, setCodeError] = useState<string | null>(null);
   const [codeChecking, setCodeChecking] = useState(false);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
   const checkoutRequestKey = useRef<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'deferred'>('card');
   const participantNamesPrefilled = useRef(false);
@@ -235,8 +242,8 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
         }),
       });
       const data = (await res.json()) as {
-        paymentMethod?: 'checkout' | 'invoice' | 'deferred_event';
-        checkoutUrl?: string | null;
+        paymentMethod?: 'elements' | 'invoice' | 'deferred_event';
+        clientSecret?: string | null;
         invoiceAccessToken?: string | null;
         paymentToken?: string | null;
         invoiceUrl?: string | null;
@@ -258,12 +265,11 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
         router.push(`/invoice/success?token=${encodeURIComponent(data.invoiceAccessToken)}`);
         return;
       }
-      if (data.paymentMethod === 'checkout' && data.checkoutUrl) {
-        cartStore.clear();
-        window.location.assign(data.checkoutUrl);
+      if (data.paymentMethod === 'elements' && data.clientSecret) {
+        setClientSecret(data.clientSecret);
         return;
       }
-      if (!data.checkoutUrl) {
+      if (!data.clientSecret) {
         setError('Maksua ei voitu aloittaa. Yritä uudelleen.');
         return;
       }
@@ -611,21 +617,38 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
           <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
         )}
 
-        <Button
-          variant="cta"
-          size="lg"
-          className="w-full"
-          disabled={loading || lines.length === 0}
-          onClick={goToCheckout}
-        >
-          {loading ? (
-            <LoadingPill className="bg-current/25" />
-          ) : deferredCheckout ? (
-            'Ilmoittaudu ja pyydä vanhempaa maksamaan'
-          ) : (
-            'Jatka maksamiseen'
-          )}
-        </Button>
+        {clientSecret && stripePromise && !deferredCheckout ? (
+          <CheckoutElementsProvider
+            stripe={stripePromise}
+            options={{
+              clientSecret,
+              elementsOptions: {
+                appearance: {
+                  theme: 'stripe',
+                  variables: { colorPrimary: 'hsl(244, 51%, 24%)', borderRadius: '6px' },
+                },
+              },
+            }}
+          >
+            <PaymentForm loading={loading} onError={setError} onLoading={setLoading} />
+          </CheckoutElementsProvider>
+        ) : (
+          <Button
+            variant="cta"
+            size="lg"
+            className="w-full"
+            disabled={loading || lines.length === 0}
+            onClick={goToCheckout}
+          >
+            {loading ? (
+              <LoadingPill className="bg-current/25" />
+            ) : deferredCheckout ? (
+              'Ilmoittaudu ja pyydä vanhempaa maksamaan'
+            ) : (
+              'Jatka maksamiseen'
+            )}
+          </Button>
+        )}
         <p className="text-center text-xs text-muted-foreground">
           {deferredCheckout
             ? 'Ilmoittautuminen vahvistuu, kun vanhempi maksaa jaettavan maksuohjeen kautta.'
@@ -634,6 +657,52 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
               : 'Maksat tuotteen verkossa ja noudat sen kokouksessa ryhmänjohtajalta tai erikseen sovittuna aikana kololta. Saat kuitin sähköpostiisi.'}
         </p>
       </div>
+    </div>
+  );
+}
+
+function PaymentForm({
+  loading,
+  onError,
+  onLoading,
+}: {
+  loading: boolean;
+  onError: (message: string | null) => void;
+  onLoading: (loading: boolean) => void;
+}) {
+  const router = useRouter();
+  const checkoutState = useCheckoutElements();
+
+  async function submitPayment() {
+    if (checkoutState.type !== 'success') return;
+    const { checkout } = checkoutState;
+    onError(null);
+    onLoading(true);
+    const result = await checkout.confirm({
+      returnUrl: `${window.location.origin}/success`,
+      redirect: 'if_required',
+    });
+    if (result.type === 'error') {
+      onError(result.error.message ?? 'Maksu epäonnistui. Tarkista maksutiedot.');
+    } else {
+      cartStore.clear();
+      router.push(`/success?session_id=${encodeURIComponent(result.session.id)}`);
+    }
+    onLoading(false);
+  }
+
+  return (
+    <div className="space-y-4">
+      <PaymentElement />
+      <Button
+        variant="cta"
+        size="lg"
+        className="w-full"
+        disabled={loading || checkoutState.type !== 'success'}
+        onClick={submitPayment}
+      >
+        {loading ? <LoadingPill className="bg-current/25" /> : 'Maksa turvallisesti'}
+      </Button>
     </div>
   );
 }

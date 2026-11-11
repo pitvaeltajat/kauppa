@@ -54,8 +54,9 @@ export async function POST(req: Request) {
       if (existing.stripeSessionId) {
         const session = await getStripe().checkout.sessions.retrieve(existing.stripeSessionId);
         return NextResponse.json({
-          paymentMethod: 'checkout',
-          checkoutUrl: session.url,
+          paymentMethod: 'elements',
+          clientSecret: session.client_secret,
+          checkoutSessionId: session.id,
         });
       }
       if (existing.invoiceUrl) {
@@ -306,6 +307,7 @@ export async function POST(req: Request) {
     const session = await stripe.checkout.sessions.create(
       {
         mode: 'payment',
+        ui_mode: 'elements',
         line_items: result.lines.map((line) => ({
           quantity: line.quantity,
           price_data: {
@@ -316,21 +318,22 @@ export async function POST(req: Request) {
         })),
         customer_email: email ?? undefined,
         metadata: { orderId: order.id },
-        success_url: `${appUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${appUrl}/cancel`,
+        return_url: `${appUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
+        redirect_on_completion: 'if_required',
         locale: 'fi',
       },
       { idempotencyKey: checkoutKey ?? `checkout:${order.id}` },
     );
-    if (!session.url) throw new Error('Stripe ei palauttanut checkout-osoitetta.');
+    if (!session.client_secret) throw new Error('Stripe ei palauttanut checkout-avainta.');
 
     await prisma.order.update({
       where: { id: order.id },
       data: { stripeSessionId: session.id },
     });
     return NextResponse.json({
-      paymentMethod: 'checkout',
-      checkoutUrl: session.url,
+      paymentMethod: 'elements',
+      clientSecret: session.client_secret,
+      checkoutSessionId: session.id,
     });
   } catch (err) {
     // Roll the order back so an unconfigured/errored Stripe does not litter

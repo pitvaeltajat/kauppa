@@ -18,6 +18,7 @@ export type KammiSettingsValues = {
   maxNights: number;
   keycode: string;
   instructions: string;
+  accountingClassId: string;
 };
 
 const euro = (cents: number) => (cents / 100).toFixed(2).replace('.', ',');
@@ -31,7 +32,13 @@ function PriceField({ id, label, cents }: { id: string; label: string; cents: nu
   );
 }
 
-export function KammiSettingsForm({ settings }: { settings: KammiSettingsValues }) {
+export function KammiSettingsForm({
+  settings,
+  accountingClasses,
+}: {
+  settings: KammiSettingsValues;
+  accountingClasses: { id: string; name: string }[];
+}) {
   const [state, action, pending] = useActionState(saveKammiSettings, undefined);
 
   return (
@@ -75,6 +82,26 @@ export function KammiSettingsForm({ settings }: { settings: KammiSettingsValues 
           <Label htmlFor="maxNights">Enimmäisyöt</Label>
           <Input id="maxNights" name="maxNights" type="number" min="1" step="1" defaultValue={settings.maxNights} />
         </div>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="accountingClassId">Kammin kirjanpitoluokka</Label>
+        <select
+          id="accountingClassId"
+          name="accountingClassId"
+          defaultValue={settings.accountingClassId}
+          className="h-10 w-full rounded-md border bg-background px-3 text-sm"
+          required
+        >
+          {accountingClasses.map((accountingClass) => (
+            <option key={accountingClass.id} value={accountingClass.id}>
+              {accountingClass.name}
+            </option>
+          ))}
+        </select>
+        <p className="text-xs text-muted-foreground">
+          Sama luokka asetetaan kaikille Kammi-varauksille, myös historiassa.
+        </p>
       </div>
 
       <div className="space-y-1.5">

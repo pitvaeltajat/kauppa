@@ -31,10 +31,11 @@ export async function ensureKammiAccountingClass(): Promise<string> {
 
 /** The single settings row, created on first read. */
 export async function getKammiSettings(): Promise<KammiSettings> {
+  await ensureKammiAccountingClass();
   return prisma.kammiSettings.upsert({
     where: { id: 'singleton' },
     update: {},
-    create: { id: 'singleton' },
+    create: { id: 'singleton', accountingClassId: KAMMI_ACCOUNTING_CLASS_ID },
   });
 }
 
@@ -128,7 +129,7 @@ export async function createKammiHold(
   const price = computeKammiPrice(input.startISO, input.endISO, input.tier, settings);
 
   try {
-    const accountingClassId = await ensureKammiAccountingClass();
+    const accountingClassId = settings.accountingClassId;
     const booking = await prisma.kammiBooking.create({
       data: {
         startDate: parseISODate(input.startISO),

@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { formatCents } from '@/lib/money';
 import { toISODate } from '@/lib/kammi';
 import { requireSuperAdmin } from '@/lib/admin-guard';
-import { getKammiSettings, KAMMI_ACCOUNTING_CLASS_NAME } from '@/lib/kammiBookings';
+import { getKammiSettings } from '@/lib/kammiBookings';
 import { cancelKammiBookingAction } from '@/lib/actions/kammi';
 import { Badge } from '@/components/ui/badge';
 import { FormButton } from '@/components/admin/form-button';
@@ -18,13 +18,14 @@ function fi(d: Date): string {
 
 export default async function AdminKammiPage() {
   await requireSuperAdmin();
-  const [settings, bookings] = await Promise.all([
+  const [settings, bookings, accountingClasses] = await Promise.all([
     getKammiSettings(),
     prisma.kammiBooking.findMany({
       where: { status: { not: 'CANCELLED' } },
       orderBy: { startDate: 'desc' },
       take: 100,
     }),
+    prisma.accountingClass.findMany({ orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }] }),
   ]);
 
   return (
@@ -61,7 +62,6 @@ export default async function AdminKammiPage() {
                   )}
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-xs text-muted-foreground">{KAMMI_ACCOUNTING_CLASS_NAME}</span>
                   {b.status === 'CONFIRMED' ? (
                     <Badge variant="success">Vahvistettu</Badge>
                   ) : (
@@ -87,7 +87,7 @@ export default async function AdminKammiPage() {
 
       <div>
         <h2 className="mb-4 text-xl font-bold">Asetukset</h2>
-        <KammiSettingsForm settings={settings} />
+        <KammiSettingsForm settings={settings} accountingClasses={accountingClasses} />
       </div>
     </div>
   );

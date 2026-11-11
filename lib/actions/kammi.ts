@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { getUserRole, isSuperAdmin } from '@/lib/admin';
 import { parseEurosInput } from '@/lib/money';
-import { cancelKammiBooking } from '@/lib/kammiBookings';
+import { cancelKammiBooking, KAMMI_ACCOUNTING_CLASS_ID } from '@/lib/kammiBookings';
 import type { ActionResult } from '@/lib/actions/admin';
 
 async function requireSuper(): Promise<boolean> {
@@ -38,33 +38,45 @@ export async function saveKammiSettings(
   const keycode = ((formData.get('keycode') as string) ?? '').trim();
   const instructions = ((formData.get('instructions') as string) ?? '').trim();
   const active = formData.get('active') === 'on';
-
-  await prisma.kammiSettings.upsert({
-    where: { id: 'singleton' },
-    create: {
-      id: 'singleton',
-      active,
-      weekendScoutCents,
-      weekendOtherCents,
-      weekdayScoutCents,
-      weekdayOtherCents,
-      minNights,
-      maxNights,
-      keycode,
-      instructions,
-    },
-    update: {
-      active,
-      weekendScoutCents,
-      weekendOtherCents,
-      weekdayScoutCents,
-      weekdayOtherCents,
-      minNights,
-      maxNights,
-      keycode,
-      instructions,
-    },
+  const accountingClassId =
+    ((formData.get('accountingClassId') as string) ?? '').trim() || KAMMI_ACCOUNTING_CLASS_ID;
+  const accountingClass = await prisma.accountingClass.findUnique({
+    where: { id: accountingClassId },
+    select: { id: true },
   });
+  if (!accountingClass) return { error: 'Valittu kirjanpitoluokka ei ole käytettävissä.' };
+
+  await prisma.$transaction([
+    prisma.kammiSettings.upsert({
+      where: { id: 'singleton' },
+      create: {
+        id: 'singleton',
+        active,
+        weekendScoutCents,
+        weekendOtherCents,
+        weekdayScoutCents,
+        weekdayOtherCents,
+        minNights,
+        maxNights,
+        keycode,
+        instructions,
+        accountingClassId,
+      },
+      update: {
+        active,
+        weekendScoutCents,
+        weekendOtherCents,
+        weekdayScoutCents,
+        weekdayOtherCents,
+        minNights,
+        maxNights,
+        keycode,
+        instructions,
+        accountingClassId,
+      },
+    }),
+    prisma.kammiBooking.updateMany({ data: { accountingClassId } }),
+  ]);
 
   revalidatePath('/admin/kammi');
   revalidatePath('/kammi');

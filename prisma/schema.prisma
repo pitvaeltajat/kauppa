@@ -58,6 +58,7 @@ model AccountingClass {
   updatedAt DateTime @updatedAt
   items     Item[]
   kammiBookings KammiBooking[]
+  kammiSettings KammiSettings[]
 
   @@index([sortOrder, name])
 }
@@ -312,6 +313,8 @@ model KammiSettings {
   weekdayOtherCents Int      @default(10000)
   minNights         Int      @default(1)
   maxNights         Int      @default(14)
+  accountingClassId String
+  accountingClass   AccountingClass @relation(fields: [accountingClassId], references: [id], onDelete: Restrict)
   /// Door keycode — only the paid confirmation email carries it, never a public page.
   keycode           String   @default("")
   /// Free-text instructions appended to the confirmation email.

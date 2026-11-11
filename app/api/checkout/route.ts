@@ -16,7 +16,7 @@ import { loadValidDiscount } from '@/lib/discountCodes';
 import { normalizeCode } from '@/lib/discount';
 
 /**
- * Creates an Order row and a Stripe PaymentIntent for the cart. Prices,
+ * Creates an Order row and a Stripe Checkout Session for the cart. Prices,
  * stock and any item question answers are re-validated against the database.
  * nothing the browser sent is trusted. In test mode this needs
  * STRIPE_SECRET_KEY (sk_test_) set.
@@ -51,12 +51,11 @@ export async function POST(req: Request) {
           paymentToken: existing.paymentToken,
         });
       }
-      if (existing.stripePaymentIntent) {
-        const intent = await getStripe().paymentIntents.retrieve(existing.stripePaymentIntent);
+      if (existing.stripeSessionId) {
+        const session = await getStripe().checkout.sessions.retrieve(existing.stripeSessionId);
         return NextResponse.json({
-          paymentMethod: 'card',
-          clientSecret: intent.client_secret,
-          paymentIntentId: intent.id,
+          paymentMethod: 'checkout',
+          checkoutUrl: session.url,
         });
       }
       if (existing.invoiceUrl) {
@@ -303,26 +302,35 @@ export async function POST(req: Request) {
       });
     }
 
-    const paymentIntent = await stripe.paymentIntents.create(
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? new URL(req.url).origin).replace(/\/$/, '');
+    const session = await stripe.checkout.sessions.create(
       {
-        amount: result.totalCents,
-        currency: 'eur',
-        automatic_payment_methods: { enabled: true },
-        receipt_email: email ?? undefined,
-        description: `Pitkäjärven Vaeltajat -tilaus ${order.id.slice(-8).toUpperCase()}`,
+        mode: 'payment',
+        line_items: result.lines.map((line) => ({
+          quantity: line.quantity,
+          price_data: {
+            currency: 'eur',
+            unit_amount: line.priceCents,
+            product_data: { name: line.name },
+          },
+        })),
+        customer_email: email ?? undefined,
         metadata: { orderId: order.id },
+        success_url: `${appUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${appUrl}/cancel`,
+        locale: 'fi',
       },
       { idempotencyKey: checkoutKey ?? `checkout:${order.id}` },
     );
+    if (!session.url) throw new Error('Stripe ei palauttanut checkout-osoitetta.');
 
     await prisma.order.update({
       where: { id: order.id },
-      data: { stripePaymentIntent: paymentIntent.id },
+      data: { stripeSessionId: session.id },
     });
     return NextResponse.json({
-      paymentMethod: 'card',
-      clientSecret: paymentIntent.client_secret,
-      paymentIntentId: paymentIntent.id,
+      paymentMethod: 'checkout',
+      checkoutUrl: session.url,
     });
   } catch (err) {
     // Roll the order back so an unconfigured/errored Stripe does not litter

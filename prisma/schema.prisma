@@ -190,7 +190,6 @@ model Order {
   name                String?
   totalCents          Int
   stripeSessionId     String?     @unique
-  stripePaymentIntent String?
   /// Random bearer token for a child-created event registration payment link.
   paymentToken        String?     @unique
   paymentLinkEmailSentAt DateTime?

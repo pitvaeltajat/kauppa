@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getStripe } from '@/lib/stripe';
 
-/** Opens the Stripe payment form for a child-created event registration. */
+/** Opens a Stripe Checkout Session for a child-created event registration. */
 export async function POST(req: Request, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
   if (!token || token.length > 100) {
@@ -22,7 +22,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ token: 
 
   const order = await prisma.order.findUnique({
     where: { paymentToken: token },
-    include: { lines: { include: { item: { select: { isEvent: true } } } } },
+    include: {
+      lines: {
+        include: { item: { select: { isEvent: true } } },
+      },
+    },
   });
   if (!order || !order.lines.length || order.lines.some((line) => !line.item.isEvent)) {
     return NextResponse.json({ error: 'Maksulinkkiä ei löydy.' }, { status: 404 });
@@ -32,28 +36,34 @@ export async function POST(req: Request, { params }: { params: Promise<{ token: 
   }
 
   const stripe = getStripe();
-  if (order.stripePaymentIntent) {
-    const intent = await stripe.paymentIntents.retrieve(order.stripePaymentIntent);
-    if (email && !order.email) {
-      await prisma.order.update({ where: { id: order.id }, data: { email } });
-    }
-    return NextResponse.json({ clientSecret: intent.client_secret, paymentIntentId: intent.id });
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? new URL(req.url).origin).replace(/\/$/, '');
+  if (order.stripeSessionId) {
+    const session = await stripe.checkout.sessions.retrieve(order.stripeSessionId);
+    if (session.url) return NextResponse.json({ checkoutUrl: session.url });
   }
-
-  const intent = await stripe.paymentIntents.create(
+  const session = await stripe.checkout.sessions.create(
     {
-      amount: order.totalCents,
-      currency: 'eur',
-      automatic_payment_methods: { enabled: true },
-      receipt_email: email ?? undefined,
-      description: `Pitkäjärven Vaeltajat -tapahtumailmoittautuminen ${order.id.slice(-8).toUpperCase()}`,
+      mode: 'payment',
+      line_items: order.lines.map((line) => ({
+        quantity: line.quantity,
+        price_data: {
+          currency: 'eur',
+          unit_amount: line.priceCents,
+          product_data: { name: line.name },
+        },
+      })),
+      customer_email: email ?? order.email ?? undefined,
       metadata: { orderId: order.id },
+      success_url: `${appUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${appUrl}/event-payment/${encodeURIComponent(token)}`,
+      locale: 'fi',
     },
     { idempotencyKey: `event-payment:${order.id}` },
   );
+  if (!session.url) throw new Error('Stripe ei palauttanut checkout-osoitetta.');
   await prisma.order.update({
     where: { id: order.id },
-    data: { stripePaymentIntent: intent.id, email: email ?? undefined },
+    data: { stripeSessionId: session.id, email: email ?? undefined },
   });
-  return NextResponse.json({ clientSecret: intent.client_secret, paymentIntentId: intent.id });
+  return NextResponse.json({ checkoutUrl: session.url });
 }

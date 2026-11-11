@@ -79,20 +79,6 @@ export async function POST(req: Request) {
       }
       break;
     }
-    case 'payment_intent.succeeded': {
-      const paymentIntent = event.data.object;
-      const orderId = paymentIntent.metadata?.orderId;
-      if (orderId) {
-        const newlyPaid = await markOrderPaid(orderId, paymentIntent);
-        if (newlyPaid) {
-          await trySendEmail(`order receipt ${orderId}`, () => sendOrderReceiptEmail(orderId));
-          await trySendEmail(`new-order notice ${orderId}`, () => sendNewOrderAdminEmail(orderId));
-        }
-      } else {
-        console.warn('payment_intent.succeeded ilman orderId:ta', paymentIntent.id);
-      }
-      break;
-    }
     case 'invoice.paid': {
       const invoice = event.data.object;
       const orderId = invoice.metadata?.orderId;
@@ -117,7 +103,7 @@ export async function POST(req: Request) {
 /** Returns true only when this call performed the RECEIVED→PAID transition. */
 async function markOrderPaid(
   orderId: string,
-  payment: Stripe.Checkout.Session | Stripe.PaymentIntent | Stripe.Invoice,
+  payment: Stripe.Checkout.Session | Stripe.Invoice,
 ): Promise<boolean> {
   return prisma.$transaction(async (tx) => {
     const order = await tx.order.findUnique({
@@ -149,12 +135,6 @@ async function markOrderPaid(
         status: 'PAID',
         paidAt: new Date(),
         stripeSessionId: payment.object === 'checkout.session' ? payment.id : order.stripeSessionId,
-        stripePaymentIntent:
-          payment.object === 'payment_intent'
-            ? payment.id
-            : payment.object === 'checkout.session' && typeof payment.payment_intent === 'string'
-              ? payment.payment_intent
-              : order.stripePaymentIntent,
         stripeInvoiceId: payment.object === 'invoice' ? payment.id : order.stripeInvoiceId,
         email:
           order.email ??

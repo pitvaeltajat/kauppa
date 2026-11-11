@@ -12,20 +12,14 @@ export default async function SuccessPage({
 }: {
   searchParams: Promise<{
     session_id?: string | string[];
-    payment_intent?: string | string[];
   }>;
 }) {
   const params = await searchParams;
   const sessionId = Array.isArray(params.session_id) ? params.session_id[0] : params.session_id;
-  const paymentIntent = Array.isArray(params.payment_intent)
-    ? params.payment_intent[0]
-    : params.payment_intent;
   const order =
-    sessionId || paymentIntent
+    sessionId
       ? await prisma.order.findFirst({
-          where: sessionId
-            ? { stripeSessionId: sessionId }
-            : { stripePaymentIntent: paymentIntent },
+          where: { stripeSessionId: sessionId },
           include: { lines: { include: { item: true } } },
         })
       : null;

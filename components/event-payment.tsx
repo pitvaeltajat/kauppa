@@ -1,24 +1,12 @@
 'use client';
 
 import { useMemo, useState, useSyncExternalStore } from 'react';
-import {
-  Elements,
-  ExpressCheckoutElement,
-  PaymentElement,
-  useElements,
-  useStripe,
-} from '@stripe/react-stripe-js';
-import { loadStripe } from '@stripe/stripe-js';
 import { CheckCircle2, Copy, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { LoadingPill } from '@/components/ui/loading-pill';
-
-const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
-  ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
-  : null;
 
 export function EventPayment({
   token,
@@ -36,7 +24,6 @@ export function EventPayment({
   status: string;
 }) {
   const [parentEmail, setParentEmail] = useState('');
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -103,11 +90,11 @@ export function EventPayment({
         body: JSON.stringify({}),
       });
       const data = (await response.json()) as {
-        clientSecret?: string;
+        checkoutUrl?: string;
         error?: string;
         alreadyPaid?: boolean;
       };
-      if (!response.ok || !data.clientSecret) {
+      if (!response.ok || !data.checkoutUrl) {
         setError(
           data.alreadyPaid
             ? 'Tämä ilmoittautuminen on jo maksettu.'
@@ -115,7 +102,7 @@ export function EventPayment({
         );
         return;
       }
-      setClientSecret(data.clientSecret);
+      window.location.assign(data.checkoutUrl);
     } catch {
       setError('Maksua ei voitu aloittaa. Tarkista yhteys ja yritä uudelleen.');
     } finally {
@@ -220,24 +207,17 @@ export function EventPayment({
                     Avaa maksuohje ja maksa ilmoittautuminen. Maksu vahvistaa osallistumisen.
                   </p>
                 </div>
-                {!clientSecret && (
-                  <div className="space-y-3">
-                    <Button
-                      type="button"
-                      variant="cta"
-                      className="w-full"
-                      onClick={openPayment}
-                      disabled={loading || !stripePromise}
-                    >
-                      {loading ? <LoadingPill className="bg-current/25" /> : 'Maksa nyt'}
-                    </Button>
-                  </div>
-                )}
-                {clientSecret && stripePromise && (
-                  <Elements stripe={stripePromise} options={{ clientSecret, locale: 'fi' }}>
-                    <PaymentForm token={token} />
-                  </Elements>
-                )}
+                <div className="space-y-3">
+                  <Button
+                    type="button"
+                    variant="cta"
+                    className="w-full"
+                    onClick={openPayment}
+                    disabled={loading}
+                  >
+                    {loading ? <LoadingPill className="bg-current/25" /> : 'Maksa nyt'}
+                  </Button>
+                </div>
                 <Button
                   type="button"
                   variant="ghost"
@@ -267,49 +247,6 @@ export function EventPayment({
           )}
         </CardContent>
       </Card>
-    </div>
-  );
-}
-
-function PaymentForm({ token }: { token: string }) {
-  const stripe = useStripe();
-  const elements = useElements();
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  async function submit() {
-    if (!stripe || !elements) return;
-    setError(null);
-    setLoading(true);
-    const result = await stripe.confirmPayment({
-      elements,
-      confirmParams: {
-        return_url: `${window.location.origin}/event-payment/${encodeURIComponent(token)}`,
-      },
-    });
-    if (result.error) setError(result.error.message ?? 'Maksu epäonnistui.');
-    setLoading(false);
-  }
-
-  return (
-    <div className="space-y-4 border-t pt-4">
-      <ExpressCheckoutElement
-        options={{
-          paymentMethods: { applePay: 'always', googlePay: 'always' },
-        }}
-        onConfirm={submit}
-      />
-      <PaymentElement />
-      {error && <p className="text-sm text-destructive">{error}</p>}
-      <Button
-        type="button"
-        variant="cta"
-        className="w-full"
-        onClick={submit}
-        disabled={loading || !stripe || !elements}
-      >
-        {loading ? <LoadingPill className="bg-current/25" /> : 'Maksa turvallisesti'}
-      </Button>
     </div>
   );
 }

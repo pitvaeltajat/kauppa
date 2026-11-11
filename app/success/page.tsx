@@ -10,17 +10,25 @@ export const metadata: Metadata = { title: 'Kiitos tilauksesta' };
 export default async function SuccessPage({
   searchParams,
 }: {
-  searchParams: Promise<{ session_id?: string; payment_intent?: string }>;
+  searchParams: Promise<{
+    session_id?: string | string[];
+    payment_intent?: string | string[];
+  }>;
 }) {
-  const { session_id, payment_intent } = await searchParams;
-  const order = session_id || payment_intent
-    ? await prisma.order.findFirst({
-        where: session_id
-          ? { stripeSessionId: session_id }
-          : { stripePaymentIntent: payment_intent },
-        include: { lines: { include: { item: true } } },
-      })
-    : null;
+  const params = await searchParams;
+  const sessionId = Array.isArray(params.session_id) ? params.session_id[0] : params.session_id;
+  const paymentIntent = Array.isArray(params.payment_intent)
+    ? params.payment_intent[0]
+    : params.payment_intent;
+  const order =
+    sessionId || paymentIntent
+      ? await prisma.order.findFirst({
+          where: sessionId
+            ? { stripeSessionId: sessionId }
+            : { stripePaymentIntent: paymentIntent },
+          include: { lines: { include: { item: true } } },
+        })
+      : null;
   const isEventOrder = order?.lines.some((line) => line.item.isEvent) ?? false;
 
   return (
@@ -35,8 +43,11 @@ export default async function SuccessPage({
             <>
               <p className="text-sm text-muted-foreground">
                 Tilaus{' '}
-                <span className="font-medium text-foreground">#{order.id.slice(-8).toUpperCase()}</span>{' '}
-                on vastaanotettu. Maksu vahvistetaan hetken kuluttua ja kuitti lähetetään sähköpostiisi.
+                <span className="font-medium text-foreground">
+                  #{order.id.slice(-8).toUpperCase()}
+                </span>{' '}
+                on vastaanotettu. Maksu vahvistetaan hetken kuluttua ja kuitti lähetetään
+                sähköpostiisi.
               </p>
               <div className="divide-y rounded-md border">
                 {order.lines.map((line) => {
@@ -63,7 +74,9 @@ export default async function SuccessPage({
                           {answers.map((answer) => (
                             <li key={answer.questionId}>
                               {answer.prompt}:{' '}
-                              {Array.isArray(answer.answer) ? answer.answer.join(', ') : answer.answer}
+                              {Array.isArray(answer.answer)
+                                ? answer.answer.join(', ')
+                                : answer.answer}
                             </li>
                           ))}
                         </ul>

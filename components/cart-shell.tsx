@@ -692,7 +692,7 @@ function PaymentForm({
     const { error } = await stripe.confirmPayment({
       elements,
       confirmParams: {
-        return_url: `${window.location.origin}/success?payment_intent=${encodeURIComponent(paymentIntentId)}`,
+        return_url: `${window.location.origin}/success`,
       },
     });
     if (error) {

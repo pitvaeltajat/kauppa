@@ -3,7 +3,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { CheckoutElementsProvider, PaymentElement, useCheckoutElements } from '@stripe/react-stripe-js/checkout';
+import {
+  CheckoutElementsProvider,
+  PaymentElement,
+  useCheckoutElements,
+} from '@stripe/react-stripe-js/checkout';
 import { loadStripe } from '@stripe/stripe-js';
 import { Minus, Plus, Trash2, ShoppingCart } from 'lucide-react';
 import { cartStore, useCart } from '@/lib/cart';
@@ -317,7 +321,7 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
                   </Link>
                   <p className="text-sm text-muted-foreground">
                     {formatCents(variant?.priceCents ?? 0)} / kpl
-                    {variant ? ` - ${variant.name}` : ''}
+                    {variant?.name ? ` - ${variant.name}` : ''}
                   </p>
                 </>
               ) : catalogLoaded ? (

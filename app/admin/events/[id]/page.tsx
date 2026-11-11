@@ -29,7 +29,6 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
     slug: item.slug,
     categoryId: item.categoryId,
     accountingClassId: item.accountingClassId,
-    priceCents: item.priceCents,
     stock: item.stock,
     imageUrl: item.imageUrl,
     description: item.description,

@@ -5,6 +5,7 @@ import { getStripe } from '@/lib/stripe';
 import { formatCents } from '@/lib/money';
 import { ButtonLink } from '@/components/ui/button-link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ClearCartOnSuccess } from '@/components/clear-cart-on-success';
 import { ReceiptEmailForm } from '@/components/receipt-email-form';
 
 export const metadata: Metadata = { title: 'Kiitos tilauksesta' };
@@ -38,6 +39,7 @@ export default async function SuccessPage({
     redirectStatus === 'canceled' ||
     stripeSession?.payment_status === 'unpaid' ||
     stripeSession?.status === 'expired';
+  const paymentSucceeded = !paymentFailed && stripeSession?.payment_status === 'paid';
   const isEventOrder = order?.lines.some((line) => line.item.isEvent) ?? false;
 
   return (
@@ -57,6 +59,7 @@ export default async function SuccessPage({
           )}
         </CardHeader>
         <CardContent className="space-y-4">
+          {paymentSucceeded && <ClearCartOnSuccess />}
           {paymentFailed ? (
             <>
               <p className="text-sm text-muted-foreground">

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import type { StripeExpressCheckoutElementConfirmEvent } from '@stripe/stripe-js';
 import {
   CheckoutElementsProvider,
   ExpressCheckoutElement,
@@ -735,22 +736,33 @@ function PaymentForm({
   const router = useRouter();
   const checkoutState = useCheckoutElements();
 
-  async function submitPayment() {
-    if (checkoutState.type !== 'success') return;
+  async function submitPayment(
+    expressCheckoutConfirmEvent?: StripeExpressCheckoutElementConfirmEvent,
+  ) {
+    if (checkoutState.type !== 'success' || !checkoutState.checkout.canConfirm) return;
     const { checkout } = checkoutState;
     onError(null);
     onLoading(true);
-    const result = await checkout.confirm({
-      returnUrl: `${window.location.origin}/success`,
-      redirect: 'if_required',
-    });
-    if (result.type === 'error') {
-      onError(result.error.message ?? 'Maksu epäonnistui. Tarkista maksutiedot.');
-    } else {
-      cartStore.clear();
-      router.push(`/success?session_id=${encodeURIComponent(result.session.id)}`);
+    try {
+      const result = await checkout.confirm({
+        returnUrl: `${window.location.origin}/success`,
+        redirect: 'if_required',
+        ...(expressCheckoutConfirmEvent ? { expressCheckoutConfirmEvent } : {}),
+      });
+      if (result.type === 'error') {
+        expressCheckoutConfirmEvent?.paymentFailed({ message: result.error.message });
+        onError(result.error.message ?? 'Maksu epäonnistui. Tarkista maksutiedot.');
+      } else {
+        cartStore.clear();
+        router.push(`/success?session_id=${encodeURIComponent(result.session.id)}`);
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Maksu epäonnistui.';
+      expressCheckoutConfirmEvent?.paymentFailed({ message });
+      onError(message);
+    } finally {
+      onLoading(false);
     }
-    onLoading(false);
   }
 
   return (
@@ -772,7 +784,7 @@ function PaymentForm({
         size="lg"
         className="w-full"
         disabled={loading || checkoutState.type !== 'success'}
-        onClick={submitPayment}
+        onClick={() => void submitPayment()}
       >
         {loading ? <LoadingPill className="bg-current/25" /> : 'Maksa turvallisesti'}
       </Button>

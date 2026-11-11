@@ -299,36 +299,38 @@ export function ItemForm({
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-1.5">
-          <Label htmlFor="stock">Varastossa (kpl)</Label>
-          <Input
-            id="stock"
-            name="stock"
-            type="number"
-            min="0"
-            step="1"
-            inputMode="numeric"
-            defaultValue={item?.stock?.toString() ?? ''}
-            placeholder="Tyhjä = rajoittamaton"
-            aria-describedby="stock-help"
-          />
-          <p id="stock-help" className="text-xs text-muted-foreground">
-            Jätä tyhjäksi, jos määrä on rajaton.
-          </p>
+      {!isEvent && (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="stock">Varastossa (kpl)</Label>
+            <Input
+              id="stock"
+              name="stock"
+              type="number"
+              min="0"
+              step="1"
+              inputMode="numeric"
+              defaultValue={item?.stock?.toString() ?? ''}
+              placeholder="Tyhjä = rajoittamaton"
+              aria-describedby="stock-help"
+            />
+            <p id="stock-help" className="text-xs text-muted-foreground">
+              Jätä tyhjäksi, jos määrä on rajaton.
+            </p>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="sortOrder">Järjestysnumero</Label>
+            <Input
+              id="sortOrder"
+              name="sortOrder"
+              type="number"
+              step="1"
+              inputMode="numeric"
+              defaultValue={item?.sortOrder ?? 0}
+            />
+          </div>
         </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="sortOrder">Järjestysnumero</Label>
-          <Input
-            id="sortOrder"
-            name="sortOrder"
-            type="number"
-            step="1"
-            inputMode="numeric"
-            defaultValue={item?.sortOrder ?? 0}
-          />
-        </div>
-      </div>
+      )}
 
       <div className="space-y-1.5">
         <Label htmlFor="imageUrl">Kuva</Label>

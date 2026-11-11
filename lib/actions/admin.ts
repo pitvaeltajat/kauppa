@@ -80,10 +80,11 @@ export async function saveItem(
   const isEvent = !isSuperAdmin(role) || formData.get('eventMode') === 'on';
 
   let oldSlug: string | null = null;
+  let existingSortOrder = 0;
   if (id) {
     const current = await prisma.item.findUnique({
       where: { id },
-      select: { slug: true, isEvent: true },
+      select: { slug: true, isEvent: true, sortOrder: true },
     });
     if (!current) return { error: 'Tuotetta ei löytynyt.' };
     if (current.isEvent !== isEvent) {
@@ -93,6 +94,7 @@ export async function saveItem(
       return { error: 'Sinulla ei ole oikeutta muokata tätä tuotetta.' };
     }
     oldSlug = current.slug;
+    existingSortOrder = current.sortOrder;
   }
 
   let startsAt: Date | null = null;
@@ -175,9 +177,9 @@ export async function saveItem(
     categoryId,
     accountingClassId,
     priceCents,
-    stock,
+    stock: isEvent ? null : stock,
     imageUrl,
-    sortOrder,
+    sortOrder: isEvent ? existingSortOrder : sortOrder,
     active,
     featured,
     description,
@@ -263,6 +265,46 @@ export async function setEventHidden(formData: FormData): Promise<void> {
   if (!target?.isEvent) return;
   await prisma.item.update({ where: { id }, data: { hidden } });
   revalidatePath('/', 'layout');
+  revalidatePath('/admin/events');
+}
+
+/** Persist the visual order of one homepage category after an admin drag. */
+export async function reorderHomepageItems(formData: FormData): Promise<void> {
+  const role = await currentRole();
+  if (!isEventAdmin(role)) return;
+
+  const categoryId = ((formData.get('categoryId') as string) ?? '').trim();
+  let ids: unknown;
+  try {
+    ids = JSON.parse((formData.get('itemIds') as string) ?? '[]');
+  } catch {
+    return;
+  }
+  if (
+    !categoryId ||
+    !Array.isArray(ids) ||
+    ids.length === 0 ||
+    ids.some((id) => typeof id !== 'string')
+  ) {
+    return;
+  }
+  const itemIds = ids as string[];
+  if (new Set(itemIds).size !== itemIds.length) return;
+
+  const items = await prisma.item.findMany({
+    where: { id: { in: itemIds }, categoryId },
+    select: { id: true, isEvent: true },
+  });
+  if (items.length !== itemIds.length) return;
+  if (role !== 'SUPERADMIN' && items.some((item) => !item.isEvent)) return;
+
+  await prisma.$transaction(
+    itemIds.map((itemId, index) =>
+      prisma.item.update({ where: { id: itemId }, data: { sortOrder: index } }),
+    ),
+  );
+  revalidatePath('/');
+  revalidatePath('/admin/items');
   revalidatePath('/admin/events');
 }
 

@@ -2,18 +2,20 @@ import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 import { ArrowRight, Plus } from 'lucide-react';
 import { auth } from '@/lib/auth';
-import { getUserRole, isEventAdmin } from '@/lib/admin';
+import { getUserRole, isEventAdmin, isSuperAdmin } from '@/lib/admin';
 import { ItemCard } from '@/components/item-card';
 import { SiteBanner } from '@/components/site-banner';
 import { ButtonLink } from '@/components/ui/button-link';
 import { listedItemWhere } from '@/lib/catalog';
 import { isSystemCategorySlug } from '@/lib/categories';
 import { getSiteSettings } from '@/lib/siteSettings';
+import { HomepageSortList } from '@/components/admin/homepage-sort-list';
 
 export default async function HomePage() {
   const session = await auth();
   const role = await getUserRole(session?.user?.email ?? null);
   const eventAdmin = isEventAdmin(role);
+  const canReorderProducts = isSuperAdmin(role);
   const listed = listedItemWhere();
   const [categories, items, settings] = await Promise.all([
     prisma.category.findMany({
@@ -21,20 +23,22 @@ export default async function HomePage() {
     }),
     prisma.item.findMany({
       where: listed,
-      orderBy: [{ featured: 'desc' }, { sortOrder: 'asc' }, { name: 'asc' }],
+      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
       include: { category: true },
     }),
     getSiteSettings(),
   ]);
 
-  const grouped = [...categories].sort((a, b) => {
-    if (a.slug === 'tapahtumat') return -1;
-    if (b.slug === 'tapahtumat') return 1;
-    return 0;
-  }).map((category) => ({
-    ...category,
-    items: items.filter((item) => item.categoryId === category.id),
-  }));
+  const grouped = [...categories]
+    .sort((a, b) => {
+      if (a.slug === 'tapahtumat') return -1;
+      if (b.slug === 'tapahtumat') return 1;
+      return 0;
+    })
+    .map((category) => ({
+      ...category,
+      items: items.filter((item) => item.categoryId === category.id),
+    }));
 
   return (
     <div>
@@ -47,7 +51,9 @@ export default async function HomePage() {
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {items
                 .filter((item) => item.featured)
-                .map((item) => <ItemCard key={item.id} item={item} featured />)}
+                .map((item) => (
+                  <ItemCard key={item.id} item={item} featured />
+                ))}
             </div>
           </section>
         )}
@@ -73,11 +79,15 @@ export default async function HomePage() {
                   </Link>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-                {category.items.map((item) => (
-                  <ItemCard key={item.id} item={item} />
-                ))}
-              </div>
+              {eventAdmin && (canReorderProducts || category.slug === 'tapahtumat') ? (
+                <HomepageSortList categoryId={category.id} items={category.items} />
+              ) : (
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+                  {category.items.map((item) => (
+                    <ItemCard key={item.id} item={item} />
+                  ))}
+                </div>
+              )}
             </div>
           ))}
         </section>

@@ -3,8 +3,8 @@ import { prisma } from '@/lib/prisma';
 import { formatCents } from '@/lib/money';
 import { toISODate } from '@/lib/kammi';
 import { requireSuperAdmin } from '@/lib/admin-guard';
-import { getKammiSettings } from '@/lib/kammiBookings';
-import { cancelKammiBookingAction, setKammiAccountingClass } from '@/lib/actions/kammi';
+import { getKammiSettings, KAMMI_ACCOUNTING_CLASS_NAME } from '@/lib/kammiBookings';
+import { cancelKammiBookingAction } from '@/lib/actions/kammi';
 import { Badge } from '@/components/ui/badge';
 import { FormButton } from '@/components/admin/form-button';
 import { KammiSettingsForm } from '@/components/admin/kammi-settings-form';
@@ -18,14 +18,13 @@ function fi(d: Date): string {
 
 export default async function AdminKammiPage() {
   await requireSuperAdmin();
-  const [settings, bookings, accountingClasses] = await Promise.all([
+  const [settings, bookings] = await Promise.all([
     getKammiSettings(),
     prisma.kammiBooking.findMany({
       where: { status: { not: 'CANCELLED' } },
       orderBy: { startDate: 'desc' },
       take: 100,
     }),
-    prisma.accountingClass.findMany({ orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }] }),
   ]);
 
   return (
@@ -62,14 +61,7 @@ export default async function AdminKammiPage() {
                   )}
                 </div>
                 <div className="flex items-center gap-3">
-                  <form action={setKammiAccountingClass}>
-                    <input type="hidden" name="id" value={b.id} />
-                    <select name="accountingClassId" defaultValue={b.accountingClassId ?? ''} className="h-9 rounded-md border bg-background px-2 text-xs">
-                      <option value="">Kirjanpitoluokka</option>
-                      {accountingClasses.map((accountingClass) => <option key={accountingClass.id} value={accountingClass.id}>{accountingClass.name}</option>)}
-                    </select>
-                    <button type="submit" className="ml-1 text-xs text-primary underline">Tallenna</button>
-                  </form>
+                  <span className="text-xs text-muted-foreground">{KAMMI_ACCOUNTING_CLASS_NAME}</span>
                   {b.status === 'CONFIRMED' ? (
                     <Badge variant="success">Vahvistettu</Badge>
                   ) : (

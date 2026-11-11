@@ -16,6 +16,19 @@ import { fetchKammiBusyRanges, createKammiEvent, deleteKammiEvent } from '@/lib/
 /** How long a Stripe checkout hold keeps the dates reserved before it lapses. */
 const HOLD_MINUTES = 20;
 
+export const KAMMI_ACCOUNTING_CLASS_ID = 'income-3500';
+export const KAMMI_ACCOUNTING_CLASS_NAME = '3500 — Kammin vuokratuotot';
+
+/** Keep the fixed Kammi accounting class available in every environment. */
+export async function ensureKammiAccountingClass(): Promise<string> {
+  await prisma.accountingClass.upsert({
+    where: { id: KAMMI_ACCOUNTING_CLASS_ID },
+    update: { name: KAMMI_ACCOUNTING_CLASS_NAME, sortOrder: 50 },
+    create: { id: KAMMI_ACCOUNTING_CLASS_ID, name: KAMMI_ACCOUNTING_CLASS_NAME, sortOrder: 50 },
+  });
+  return KAMMI_ACCOUNTING_CLASS_ID;
+}
+
 /** The single settings row, created on first read. */
 export async function getKammiSettings(): Promise<KammiSettings> {
   return prisma.kammiSettings.upsert({
@@ -113,6 +126,7 @@ export async function createKammiHold(
   const price = computeKammiPrice(input.startISO, input.endISO, input.tier, settings);
 
   try {
+    const accountingClassId = await ensureKammiAccountingClass();
     const booking = await prisma.kammiBooking.create({
       data: {
         startDate: parseISODate(input.startISO),
@@ -130,6 +144,7 @@ export async function createKammiHold(
         totalCents: free ? 0 : price.totalCents,
         holdExpiresAt: free ? null : new Date(Date.now() + holdMinutes * 60_000),
         paidAt: free ? new Date() : null,
+        accountingClassId,
       },
     });
     if (free) {

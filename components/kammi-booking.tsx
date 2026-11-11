@@ -150,6 +150,7 @@ export function KammiBooking({
   const nights = start && end ? nightsBetween(start, end) : 0;
   // A logged-in pitva member's scout stay is free (the server enforces this too).
   const isFree = pitvaMember && tier === 'SCOUT';
+  const forcedOrganization = pitvaMember && tier === 'SCOUT';
 
   async function book() {
     setError(null);
@@ -170,7 +171,7 @@ export function KammiBooking({
           name,
           email,
           phone,
-          organization,
+          organization: forcedOrganization ? 'PitVa' : organization,
           eventInfo,
           hostQuestions,
           billingEmail,
@@ -393,7 +394,10 @@ export function KammiBooking({
               <button
                 key={t}
                 type="button"
-                onClick={() => setTier(t)}
+                onClick={() => {
+                  setTier(t);
+                  if (t === 'SCOUT' && pitvaMember) setOrganization('PitVa');
+                }}
                 className={`flex-1 rounded-md border px-3 py-2 text-sm font-medium transition-colors ${
                   tier === t
                     ? 'border-primary bg-primary text-primary-foreground'
@@ -455,10 +459,16 @@ export function KammiBooking({
             <Label htmlFor="k-org">Edustamasi taho</Label>
             <Input
               id="k-org"
-              value={organization}
+              value={forcedOrganization ? 'PitVa' : organization}
               onChange={(e) => setOrganization(e.target.value)}
+              readOnly={forcedOrganization}
               placeholder="esim. lippukunta tai yksityinen"
             />
+            {forcedOrganization && (
+              <p className="text-xs text-muted-foreground">
+                Partiohinnalla kirjautuneen PitVa-jäsenen edustama taho on PitVa.
+              </p>
+            )}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="k-info">Tapahtuman tiedot</Label>

@@ -37,7 +37,7 @@ export async function POST(req: Request) {
       : null;
   const name = str(payload.name, 200);
   const phone = str(payload.phone, 60);
-  const organization = str(payload.organization, 200);
+  const submittedOrganization = str(payload.organization, 200);
   const eventInfo = str(payload.eventInfo, 2000);
   const hostQuestions = str(payload.hostQuestions, 2000);
   const billingEmail =
@@ -59,6 +59,7 @@ export async function POST(req: Request) {
   const session = await auth();
   const pitvaMember = isEventAdmin(await getUserRole(session?.user?.email ?? null));
   const free = pitvaMember && tier === 'SCOUT';
+  const organization = pitvaMember && tier === 'SCOUT' ? 'PitVa' : submittedOrganization;
 
   if (requestKey) {
     const existing = await prisma.kammiBooking.findUnique({ where: { requestKey } });

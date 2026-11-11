@@ -1,15 +1,11 @@
-import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
-import { ArrowRight, Plus } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { getUserRole, isEventAdmin, isSuperAdmin } from '@/lib/admin';
 import { ItemCard } from '@/components/item-card';
 import { SiteBanner } from '@/components/site-banner';
-import { ButtonLink } from '@/components/ui/button-link';
 import { listedItemWhere } from '@/lib/catalog';
-import { isSystemCategorySlug } from '@/lib/categories';
 import { getSiteSettings } from '@/lib/siteSettings';
-import { HomepageSortList } from '@/components/admin/homepage-sort-list';
+import { HomepageOrganizer } from '@/components/admin/homepage-organizer';
 
 export default async function HomePage() {
   const session = await auth();
@@ -45,52 +41,36 @@ export default async function HomePage() {
       <SiteBanner imageUrl={settings?.bannerImageUrl} imagePosition={settings?.bannerPosition} />
 
       <div className="container">
-        {/* Featured items */}
-        {items.some((item) => item.featured) && (
-          <section className="border-t py-8">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              {items
-                .filter((item) => item.featured)
-                .map((item) => (
-                  <ItemCard key={item.id} item={item} featured />
-                ))}
-            </div>
-          </section>
+        {eventAdmin ? (
+          <HomepageOrganizer categories={grouped} canReorderProducts={canReorderProducts} />
+        ) : (
+          <>
+            {items.some((item) => item.featured) && (
+              <section className="border-t py-8">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  {items
+                    .filter((item) => item.featured)
+                    .sort((a, b) => a.featuredOrder - b.featuredOrder)
+                    .map((item) => (
+                      <ItemCard key={item.id} item={item} featured />
+                    ))}
+                </div>
+              </section>
+            )}
+            <section className="space-y-10 pb-8">
+              {grouped.map((category) => (
+                <div key={category.id}>
+                  <h2 className="mb-4 text-xl font-bold">{category.name}</h2>
+                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+                    {category.items.map((item) => (
+                      <ItemCard key={item.id} item={item} />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </section>
+          </>
         )}
-
-        {/* All items, grouped by category */}
-        <section className="space-y-10 pb-8">
-          {grouped.map((category) => (
-            <div key={category.id}>
-              <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-                <h2 className="text-xl font-bold">{category.name}</h2>
-                <div className="flex flex-wrap items-center gap-3">
-                  {eventAdmin && isSystemCategorySlug(category.slug) && (
-                    <ButtonLink href="/admin/events/new" variant="outline" size="sm">
-                      <Plus /> Lisää tapahtuma
-                    </ButtonLink>
-                  )}
-                  <Link
-                    href={`/category/${category.slug}`}
-                    className="flex items-center gap-1 text-sm font-medium text-primary hover:underline"
-                  >
-                    Kaikki tuotteet
-                    <ArrowRight className="size-4" />
-                  </Link>
-                </div>
-              </div>
-              {eventAdmin && (canReorderProducts || category.slug === 'tapahtumat') ? (
-                <HomepageSortList categoryId={category.id} items={category.items} />
-              ) : (
-                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-                  {category.items.map((item) => (
-                    <ItemCard key={item.id} item={item} />
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </section>
       </div>
     </div>
   );

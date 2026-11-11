@@ -275,34 +275,59 @@ export async function reorderHomepageItems(formData: FormData): Promise<void> {
 
   const categoryId = ((formData.get('categoryId') as string) ?? '').trim();
   let ids: unknown;
+  let featuredIds: unknown;
   try {
     ids = JSON.parse((formData.get('itemIds') as string) ?? '[]');
+    featuredIds = JSON.parse((formData.get('featuredItemIds') as string) ?? '[]');
   } catch {
     return;
   }
   if (
     !categoryId ||
     !Array.isArray(ids) ||
-    ids.length === 0 ||
-    ids.some((id) => typeof id !== 'string')
+    ids.some((id) => typeof id !== 'string') ||
+    !Array.isArray(featuredIds) ||
+    featuredIds.some((id) => typeof id !== 'string')
   ) {
     return;
   }
   const itemIds = ids as string[];
+  const featuredItemIds = featuredIds as string[];
   if (new Set(itemIds).size !== itemIds.length) return;
+  if (new Set(featuredItemIds).size !== featuredItemIds.length) return;
 
   const items = await prisma.item.findMany({
-    where: { id: { in: itemIds }, categoryId },
-    select: { id: true, isEvent: true },
+    where: { id: { in: [...new Set([...itemIds, ...featuredItemIds])] } },
+    select: { id: true, isEvent: true, featured: true },
   });
-  if (items.length !== itemIds.length) return;
-  if (role !== 'SUPERADMIN' && items.some((item) => !item.isEvent)) return;
+  if (items.length !== new Set([...itemIds, ...featuredItemIds]).size) return;
+  if (
+    role !== 'SUPERADMIN' &&
+    items.some((item) => !item.isEvent && (!item.featured || !featuredItemIds.includes(item.id)))
+  ) {
+    return;
+  }
 
-  await prisma.$transaction(
-    itemIds.map((itemId, index) =>
+  const categoryItems = await prisma.item.findMany({
+    where: { id: { in: itemIds }, categoryId },
+    select: { id: true },
+  });
+  if (categoryItems.length !== itemIds.length) return;
+
+  await prisma.$transaction([
+    ...itemIds.map((itemId, index) =>
       prisma.item.update({ where: { id: itemId }, data: { sortOrder: index } }),
     ),
-  );
+    ...featuredItemIds.map((itemId, index) =>
+      prisma.item.update({
+        where: { id: itemId },
+        data: { featured: true, featuredOrder: index },
+      }),
+    ),
+    ...items
+      .filter((item) => !featuredItemIds.includes(item.id))
+      .map((item) => prisma.item.update({ where: { id: item.id }, data: { featured: false } })),
+  ]);
   revalidatePath('/');
   revalidatePath('/admin/items');
   revalidatePath('/admin/events');

@@ -92,6 +92,7 @@ model Item {
   leaderDiscount Boolean        @default(false)
   /// Shown in the front-page "Nostot" section and first within its category.
   featured       Boolean        @default(false)
+  featuredOrder  Int            @default(0)
   sortOrder      Int            @default(0)
   categoryId     String
   category       Category       @relation(fields: [categoryId], references: [id], onDelete: Cascade)

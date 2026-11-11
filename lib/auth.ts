@@ -19,9 +19,9 @@ function buildProviders(): Provider[] {
       Google({
         clientId: googleClientId,
         clientSecret: googleClientSecret,
-        authorization: process.env.GOOGLE_WORKSPACE_DOMAIN
-          ? { params: { hd: process.env.GOOGLE_WORKSPACE_DOMAIN } }
-          : undefined,
+      // Do not restrict Google's account chooser with `hd`: a standing
+      // SUPERADMIN may use an account outside the Workspace domain. The
+      // signIn callback below remains the actual production allowlist.
       }),
     );
   }

@@ -284,7 +284,6 @@ function EventPaymentForm() {
     setError(null);
     setLoading(true);
     const result = await checkout.confirm({
-      returnUrl: `${window.location.origin}/success?session_id={CHECKOUT_SESSION_ID}`,
       redirect: 'if_required',
     });
     if (result.type === 'error') setError(result.error.message ?? 'Maksu epäonnistui.');

@@ -745,7 +745,6 @@ function PaymentForm({
     onLoading(true);
     try {
       const result = await checkout.confirm({
-        returnUrl: `${window.location.origin}/success`,
         redirect: 'if_required',
         ...(expressCheckoutConfirmEvent ? { expressCheckoutConfirmEvent } : {}),
       });

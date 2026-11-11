@@ -3,7 +3,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Elements, PaymentElement, useElements, useStripe } from '@stripe/react-stripe-js';
+import {
+  Elements,
+  ExpressCheckoutElement,
+  PaymentElement,
+  useElements,
+  useStripe,
+} from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 import { Minus, Plus, Trash2, ShoppingCart } from 'lucide-react';
 import { cartStore, useCart } from '@/lib/cart';
@@ -705,6 +711,12 @@ function PaymentForm({
 
   return (
     <div className="space-y-4">
+      <ExpressCheckoutElement
+        options={{
+          paymentMethods: { applePay: 'always', googlePay: 'always' },
+        }}
+        onConfirm={submitPayment}
+      />
       <PaymentElement />
       <Button
         variant="cta"

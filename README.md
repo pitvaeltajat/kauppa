@@ -110,6 +110,9 @@ project:
   `https://kontti.pitva.fi/api/webhooks/stripe`, events
   `checkout.session.completed`, `checkout.session.expired`,
   `payment_intent.succeeded`, and `invoice.paid`)
+- `KAMMI_CALENDAR_ID`: optional Google Calendar ID used for Kammi availability
+- `KAMMI_CALENDAR_WRITE_ENABLED="true"`: explicitly enable writing new Kammi
+  bookings to that calendar; leave unset or `false` while testing
 - `NEXT_PUBLIC_APP_URL="https://kontti.pitva.fi"`: the app's public URL
 
 DNS: `kontti.pitva.fi` CNAME to the Vercel deployment, in the same Route 53

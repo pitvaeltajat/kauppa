@@ -10,6 +10,7 @@ import { toISODate, addDays, type DateRange } from '@/lib/kammi';
  * Config (all optional — unset = disabled, and the app falls back to its own
  * bookings as the only availability source, logging a warning):
  *   KAMMI_CALENDAR_ID       the calendar to read/write (owned by admin@pitva.fi)
+ *   KAMMI_CALENDAR_WRITE_ENABLED  set to "true" to create booking events
  *   KAMMI_CALENDAR_SUBJECT  a user to impersonate who can edit it (default admin@pitva.fi)
  *
  * The service account's domain-wide delegation must include the Calendar scope
@@ -22,6 +23,11 @@ const SCOPES = ['https://www.googleapis.com/auth/calendar.events'];
 
 export function kammiCalendarConfigured(): boolean {
   return !!process.env.KAMMI_CALENDAR_ID;
+}
+
+/** Calendar reads stay enabled when configured; writes require an explicit opt-in. */
+export function kammiCalendarWritesEnabled(): boolean {
+  return kammiCalendarConfigured() && process.env.KAMMI_CALENDAR_WRITE_ENABLED === 'true';
 }
 
 function calendarId(): string {
@@ -125,7 +131,7 @@ export async function createKammiEvent(input: {
   startISO: string;
   endISO: string;
 }): Promise<string | null> {
-  if (!kammiCalendarConfigured()) return null;
+  if (!kammiCalendarWritesEnabled()) return null;
   try {
     const res = await fetch(
       `${CALENDAR_API}/calendars/${encodeURIComponent(calendarId())}/events`,

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   nightsBetween,
   addDays,
@@ -11,7 +11,7 @@ import {
   rangeIsFree,
   type KammiPrices,
 } from '@/lib/kammi';
-import { eventToRange } from '@/lib/googleCalendar';
+import { createKammiEvent, eventToRange } from '@/lib/googleCalendar';
 
 const prices: KammiPrices = {
   weekendScoutCents: 20000,
@@ -96,6 +96,32 @@ describe('eventToRange (Google calendar → booking range)', () => {
   });
   it('skips cancelled events', () => {
     expect(eventToRange({ status: 'cancelled', start: { date: '2026-12-11' }, end: { date: '2026-12-14' } })).toBeNull();
+  });
+});
+
+describe('Google calendar writes', () => {
+  it('does not create booking events without explicit opt-in', async () => {
+    const previousId = process.env.KAMMI_CALENDAR_ID;
+    const previousWriteEnabled = process.env.KAMMI_CALENDAR_WRITE_ENABLED;
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+
+    process.env.KAMMI_CALENDAR_ID = 'kammi@example.com';
+    delete process.env.KAMMI_CALENDAR_WRITE_ENABLED;
+
+    await expect(
+      createKammiEvent({
+        summary: 'Testivaraus',
+        startISO: '2026-12-20',
+        endISO: '2026-12-21',
+      }),
+    ).resolves.toBeNull();
+    expect(fetchSpy).not.toHaveBeenCalled();
+
+    fetchSpy.mockRestore();
+    if (previousId === undefined) delete process.env.KAMMI_CALENDAR_ID;
+    else process.env.KAMMI_CALENDAR_ID = previousId;
+    if (previousWriteEnabled === undefined) delete process.env.KAMMI_CALENDAR_WRITE_ENABLED;
+    else process.env.KAMMI_CALENDAR_WRITE_ENABLED = previousWriteEnabled;
   });
 });
 

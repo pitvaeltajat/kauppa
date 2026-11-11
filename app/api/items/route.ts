@@ -32,6 +32,11 @@ export async function GET(req: Request) {
       stock: true,
       isEvent: true,
       leaderDiscount: true,
+      variants: {
+        where: { active: true },
+        orderBy: { sortOrder: 'asc' },
+        select: { id: true, name: true, priceCents: true },
+      },
       questions: { orderBy: { sortOrder: 'asc' } },
     },
   });
@@ -46,6 +51,7 @@ export async function GET(req: Request) {
       stock: item.stock,
       isEvent: item.isEvent,
       leaderDiscount: item.leaderDiscount,
+      variants: item.variants,
       questions: withEventQuestions(
         item.isEvent,
         item.questions.map((q) => ({
@@ -59,4 +65,3 @@ export async function GET(req: Request) {
     })),
   });
 }
-

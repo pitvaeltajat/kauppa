@@ -11,10 +11,16 @@ export const metadata: Metadata = { title: 'Muokkaa tapahtumaa' };
 export default async function EditEventPage({ params }: { params: Promise<{ id: string }> }) {
   await requireEventAdmin();
   const { id } = await params;
-  const [item, accountingClasses] = await Promise.all([prisma.item.findUnique({
-    where: { id },
-    include: { questions: { orderBy: { sortOrder: 'asc' } } },
-  }), prisma.accountingClass.findMany({ orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }] })]);
+  const [item, accountingClasses] = await Promise.all([
+    prisma.item.findUnique({
+      where: { id },
+      include: {
+        questions: { orderBy: { sortOrder: 'asc' } },
+        variants: { orderBy: { sortOrder: 'asc' } },
+      },
+    }),
+    prisma.accountingClass.findMany({ orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }] }),
+  ]);
   if (!item || !item.isEvent) notFound();
 
   const formValues: ItemFormValues = {
@@ -41,6 +47,11 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
       type: q.type,
       required: q.required,
       options: q.options as string[],
+    })),
+    variants: item.variants.map((variant) => ({
+      id: variant.id,
+      name: variant.name,
+      priceCents: variant.priceCents,
     })),
   };
 

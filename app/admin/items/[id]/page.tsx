@@ -12,7 +12,10 @@ export default async function EditItemPage({ params }: { params: Promise<{ id: s
   const [item, categories, accountingClasses] = await Promise.all([
     prisma.item.findUnique({
       where: { id },
-      include: { questions: { orderBy: { sortOrder: 'asc' } } },
+      include: {
+        questions: { orderBy: { sortOrder: 'asc' } },
+        variants: { orderBy: { sortOrder: 'asc' } },
+      },
     }),
     prisma.category.findMany({
       where: { slug: { not: 'tapahtumat' } },
@@ -47,6 +50,11 @@ export default async function EditItemPage({ params }: { params: Promise<{ id: s
       type: q.type,
       required: q.required,
       options: q.options as string[],
+    })),
+    variants: item.variants.map((variant) => ({
+      id: variant.id,
+      name: variant.name,
+      priceCents: variant.priceCents,
     })),
   };
 

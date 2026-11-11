@@ -29,8 +29,22 @@ describe('buildCheckout', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.lines).toEqual([
-      { itemId: 'a', name: 'PitVa-pipo', priceCents: 1600, quantity: 2 },
-      { itemId: 'b', name: 'Setin hinta', priceCents: 1200, quantity: 1 },
+      {
+        itemId: 'a',
+        variantId: null,
+        variantName: null,
+        name: 'PitVa-pipo',
+        priceCents: 1600,
+        quantity: 2,
+      },
+      {
+        itemId: 'b',
+        variantId: null,
+        variantName: null,
+        name: 'Setin hinta',
+        priceCents: 1200,
+        quantity: 1,
+      },
     ]);
     expect(result.totalCents).toBe(4400);
   });
@@ -46,7 +60,16 @@ describe('buildCheckout', () => {
     );
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.lines).toEqual([{ itemId: 'a', name: 'PitVa-pipo', priceCents: 1600, quantity: 3 }]);
+      expect(result.lines).toEqual([
+        {
+          itemId: 'a',
+          variantId: null,
+          variantName: null,
+          name: 'PitVa-pipo',
+          priceCents: 1600,
+          quantity: 3,
+        },
+      ]);
       expect(result.totalCents).toBe(4800);
     }
   });
@@ -79,5 +102,38 @@ describe('buildCheckout', () => {
   it('allows unlimited stock items in any quantity', () => {
     const result = buildCheckout([{ id: 'b', quantity: 50 }], [unlimited]);
     expect(result.ok).toBe(true);
+  });
+
+  it('uses the selected variant price and snapshots its name', () => {
+    const item: BuildableItem = {
+      ...pipo,
+      variants: [
+        { id: 'short', name: 'Lyhyt leiri', priceCents: 2500, active: true },
+        { id: 'long', name: 'Pitkä leiri', priceCents: 4000, active: true },
+      ],
+    };
+    const result = buildCheckout([{ id: 'a', variantId: 'long', quantity: 2 }], [item]);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.lines).toEqual([
+      {
+        itemId: 'a',
+        variantId: 'long',
+        variantName: 'Pitkä leiri',
+        name: 'PitVa-pipo - Pitkä leiri',
+        priceCents: 4000,
+        quantity: 2,
+      },
+    ]);
+    expect(result.totalCents).toBe(8000);
+  });
+
+  it('requires a valid variant when an item has variants', () => {
+    const item: BuildableItem = {
+      ...pipo,
+      variants: [{ id: 'short', name: 'Lyhyt leiri', priceCents: 2500, active: true }],
+    };
+    expect(buildCheckout([{ id: 'a', quantity: 1 }], [item]).ok).toBe(false);
+    expect(buildCheckout([{ id: 'a', variantId: 'missing', quantity: 1 }], [item]).ok).toBe(false);
   });
 });

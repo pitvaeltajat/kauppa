@@ -39,6 +39,7 @@ type FetchedItem = {
   stock: number | null;
   isEvent: boolean;
   leaderDiscount: boolean;
+  variants: { id: string; name: string; priceCents: number }[];
   questions: CheckoutQuestion[];
 };
 
@@ -94,7 +95,8 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
 
   const lines = items.flatMap((cartItem) => {
     const item = catalog.get(cartItem.id);
-    return [{ cartItem, item }];
+    const variant = item?.variants.find((candidate) => candidate.id === cartItem.variantId);
+    return [{ cartItem, item, variant }];
   });
   const eventOnly = lines.length > 0 && lines.every(({ item }) => item?.isEvent === true);
   const deferredCheckout = eventOnly && paymentMethod === 'deferred';
@@ -122,16 +124,16 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
     participantNamesPrefilled.current = true;
   }, [catalog, catalogLoaded, initialUser.name, lines]);
 
-  const totalCents = lines.reduce(
-    (sum, { cartItem, item }) => sum + (item?.priceCents ?? 0) * cartItem.quantity,
-    0,
-  );
+  const totalCents = lines.reduce((sum, { cartItem, item, variant }) => {
+    return sum + (variant?.priceCents ?? item?.priceCents ?? 0) * cartItem.quantity;
+  }, 0);
 
   // Discount preview (UX only - checkout re-validates against the database).
   const discountCents = discount
-    ? lines.reduce((sum, { cartItem, item }) => {
+    ? lines.reduce((sum, { cartItem, item, variant }) => {
         if (!item || !discountApplies(discount, item)) return sum;
-        const saved = item.priceCents - discountedUnitCents(item.priceCents, discount.percentOff);
+        const priceCents = variant?.priceCents ?? item.priceCents;
+        const saved = priceCents - discountedUnitCents(priceCents, discount.percentOff);
         return sum + saved * cartItem.quantity;
       }, 0)
     : 0;
@@ -230,7 +232,11 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          items: items.map((i) => ({ id: i.id, quantity: i.quantity })),
+          items: items.map((i) => ({
+            id: i.id,
+            variantId: i.variantId,
+            quantity: i.quantity,
+          })),
           answers,
           name: initialUser.name.trim() || undefined,
           // A child’s account email must not become the parent’s receipt
@@ -300,9 +306,9 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_400px]">
       {/* Lines */}
       <div className="space-y-3">
-        {lines.map(({ cartItem, item }) => (
+        {lines.map(({ cartItem, item, variant }) => (
           <div
-            key={cartItem.id}
+            key={`${cartItem.id}:${cartItem.variantId ?? ''}`}
             className="flex items-start gap-4 rounded-lg border bg-card p-4 shadow-sm"
           >
             <Link href={item ? `/item/${item.slug}` : '#'} className="w-20 shrink-0">
@@ -315,7 +321,8 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
                     {item.name}
                   </Link>
                   <p className="text-sm text-muted-foreground">
-                    {formatCents(item.priceCents)} / kpl
+                    {formatCents(variant?.priceCents ?? item.priceCents)} / kpl
+                    {variant ? ` - ${variant.name}` : ''}
                   </p>
                 </>
               ) : catalogLoaded ? (
@@ -337,7 +344,9 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
                     type="button"
                     aria-label="Vähennä"
                     className="flex h-full w-8 items-center justify-center text-muted-foreground hover:text-foreground"
-                    onClick={() => cartStore.setQuantity(cartItem.id, cartItem.quantity - 1)}
+                    onClick={() =>
+                      cartStore.setQuantity(cartItem.id, cartItem.quantity - 1, cartItem.variantId)
+                    }
                   >
                     <Minus className="size-3.5" />
                   </button>
@@ -346,21 +355,23 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
                     type="button"
                     aria-label="Lisää"
                     className="flex h-full w-8 items-center justify-center text-muted-foreground hover:text-foreground"
-                    onClick={() => cartStore.setQuantity(cartItem.id, cartItem.quantity + 1)}
+                    onClick={() =>
+                      cartStore.setQuantity(cartItem.id, cartItem.quantity + 1, cartItem.variantId)
+                    }
                   >
                     <Plus className="size-3.5" />
                   </button>
                 </div>
                 {item && (
                   <span className="text-sm font-semibold">
-                    {formatCents(item.priceCents * cartItem.quantity)}
+                    {formatCents((variant?.priceCents ?? item.priceCents) * cartItem.quantity)}
                   </span>
                 )}
                 <button
                   type="button"
                   aria-label="Poista korista"
                   className="ml-auto text-muted-foreground transition-colors hover:text-destructive"
-                  onClick={() => cartStore.remove(cartItem.id)}
+                  onClick={() => cartStore.remove(cartItem.id, cartItem.variantId)}
                 >
                   <Trash2 className="size-4" />
                 </button>

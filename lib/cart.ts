@@ -6,12 +6,13 @@ import { useSyncExternalStore } from 'react';
 // read with useSyncExternalStore so any component (header badge, item buttons,
 // the cart page) sees changes without a React context provider at the root.
 //
-// Only ids and quantities that change are kept. Name, price and image come
+// Only ids, variant ids and quantities that change are kept. Name, price and image come
 // from the server at render time. The checkout route re-reads prices from the
 // database, so a stale client copy can never charge the wrong amount.
 
 export type CartItem = {
   id: string;
+  variantId?: string;
   quantity: number;
 };
 
@@ -29,7 +30,11 @@ function load(): CartItem[] {
         (x): x is CartItem =>
           typeof x === 'object' && x !== null && typeof (x as CartItem).id === 'string',
       )
-      .map((x) => ({ id: x.id, quantity: Math.max(1, Math.trunc(x.quantity || 1)) }));
+      .map((x) => ({
+        id: x.id,
+        ...(typeof x.variantId === 'string' ? { variantId: x.variantId } : {}),
+        quantity: Math.max(1, Math.trunc(x.quantity || 1)),
+      }));
   } catch {
     return [];
   }
@@ -59,23 +64,27 @@ export const cartStore = {
     listeners.add(listener);
     return () => listeners.delete(listener);
   },
-  add(id: string, quantity = 1) {
-    const existing = items.find((i) => i.id === id);
+  add(id: string, quantity = 1, variantId?: string) {
+    const existing = items.find((i) => i.id === id && i.variantId === variantId);
     if (existing) {
       // Always produce a new array so useSyncExternalStore re-renders.
-      items = items.map((i) => (i.id === id ? { ...i, quantity: i.quantity + quantity } : i));
+      items = items.map((i) =>
+        i.id === id && i.variantId === variantId ? { ...i, quantity: i.quantity + quantity } : i,
+      );
     } else {
-      items = [...items, { id, quantity }];
+      items = [...items, { id, ...(variantId ? { variantId } : {}), quantity }];
     }
     emit();
   },
-  setQuantity(id: string, quantity: number) {
+  setQuantity(id: string, quantity: number, variantId?: string) {
     const q = Math.max(1, Math.trunc(quantity));
-    items = items.map((i) => (i.id === id ? { ...i, quantity: q } : i));
+    items = items.map((i) =>
+      i.id === id && i.variantId === variantId ? { ...i, quantity: q } : i,
+    );
     emit();
   },
-  remove(id: string) {
-    items = items.filter((i) => i.id !== id);
+  remove(id: string, variantId?: string) {
+    items = items.filter((i) => !(i.id === id && i.variantId === variantId));
     emit();
   },
   clear() {
@@ -90,4 +99,3 @@ export function useCart(): { items: CartItem[]; count: number } {
   const snapshot = useSyncExternalStore(cartStore.subscribe, cartStore.getItems, () => EMPTY_CART);
   return { items: snapshot, count: snapshot.reduce((sum, i) => sum + i.quantity, 0) };
 }
-

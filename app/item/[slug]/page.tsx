@@ -27,7 +27,14 @@ export default async function ItemPage({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const item = await prisma.item.findUnique({
     where: { slug },
-    include: { category: true },
+    include: {
+      category: true,
+      variants: {
+        where: { active: true },
+        orderBy: { sortOrder: 'asc' },
+        select: { id: true, name: true, priceCents: true },
+      },
+    },
   });
 
   if (!item) {
@@ -83,7 +90,14 @@ export default async function ItemPage({ params }: { params: Promise<{ slug: str
               <CalendarDays className="size-4" /> {eventDates}
             </p>
           )}
-          <p className="mt-3 text-3xl font-bold">{formatCents(item.priceCents)}</p>
+          <p className="mt-3 text-3xl font-bold">
+            {item.variants.length > 0 ? 'Alkaen ' : ''}
+            {formatCents(
+              item.variants.length > 0
+                ? Math.min(...item.variants.map((variant) => variant.priceCents))
+                : item.priceCents,
+            )}
+          </p>
 
           {eventOver && (
             <p className="mt-3 rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-sm text-warning">
@@ -110,11 +124,18 @@ export default async function ItemPage({ params }: { params: Promise<{ slug: str
           )}
 
           <div className="mt-6">
-            <AddToCartForm itemId={item.id} withQuantity disabled={soldOut} />
+            <AddToCartForm
+              itemId={item.id}
+              variants={item.variants}
+              withQuantity
+              disabled={soldOut}
+            />
           </div>
 
           <Card className="mt-8 p-5 text-xs text-muted-foreground">
-            <p className="font-medium text-foreground">{item.isEvent ? 'Ilmoittautuminen' : 'Nouto'}</p>
+            <p className="font-medium text-foreground">
+              {item.isEvent ? 'Ilmoittautuminen' : 'Nouto'}
+            </p>
             <p className="mt-2">
               {item.isEvent
                 ? 'Maksat tapahtuman verkossa. Tapahtumatuotteen ostaminen toimii samalla ilmoittautumisena. Saat kuitin sähköpostiisi.'

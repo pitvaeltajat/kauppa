@@ -179,6 +179,29 @@ export async function saveItem(
     questionRows = parsed.questions;
   }
 
+  const variantRows: { name: string; priceCents: number; sortOrder: number }[] = [];
+  const variantsRaw = ((formData.get('variants') as string) ?? '').trim();
+  if (variantsRaw) {
+    let parsedVariants: unknown;
+    try {
+      parsedVariants = JSON.parse(variantsRaw);
+    } catch {
+      return { error: 'Variaatioiden tiedot ovat virheelliset.' };
+    }
+    if (!Array.isArray(parsedVariants)) return { error: 'Variaatioiden tiedot ovat virheelliset.' };
+    for (const [index, row] of parsedVariants.entries()) {
+      const candidate = row as { name?: unknown; price?: unknown };
+      const variantName =
+        typeof candidate.name === 'string' ? candidate.name.trim().slice(0, 120) : '';
+      if (!variantName) return { error: `Anna nimi variaatiolle ${index + 1}.` };
+      const variantPrice = parseEurosInput(
+        typeof candidate.price === 'string' ? candidate.price : '',
+      );
+      if (variantPrice === null) return { error: `Anna hinta variaatiolle "${variantName}".` };
+      variantRows.push({ name: variantName, priceCents: variantPrice, sortOrder: index });
+    }
+  }
+
   const data = {
     name,
     slug,
@@ -217,6 +240,7 @@ export async function saveItem(
       prisma.item.update({ where: { id }, data }),
       ...aliasOps,
       prisma.itemQuestion.deleteMany({ where: { itemId: id } }),
+      prisma.itemVariant.deleteMany({ where: { itemId: id } }),
       ...(questionRows.length === 0
         ? []
         : [
@@ -229,6 +253,13 @@ export async function saveItem(
                 options: q.options,
                 sortOrder: index,
               })),
+            }),
+          ]),
+      ...(variantRows.length === 0
+        ? []
+        : [
+            prisma.itemVariant.createMany({
+              data: variantRows.map((variant) => ({ ...variant, itemId: id })),
             }),
           ]),
     ]);
@@ -245,6 +276,7 @@ export async function saveItem(
             sortOrder: index,
           })),
         },
+        variants: { create: variantRows },
       },
     });
     void item;

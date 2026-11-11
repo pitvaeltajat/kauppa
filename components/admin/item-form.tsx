@@ -50,6 +50,7 @@ export type ItemFormValues = {
     required: boolean;
     options: string[];
   }[];
+  variants: { id: string; name: string; priceCents: number }[];
 };
 
 type QuestionDraft = {
@@ -59,6 +60,8 @@ type QuestionDraft = {
   required: boolean;
   optionsText: string;
 };
+
+type VariantDraft = { key: string; name: string; price: string };
 
 function draftFromQuestion(question: ItemFormValues['questions'][number]): QuestionDraft {
   return {
@@ -72,6 +75,14 @@ function draftFromQuestion(question: ItemFormValues['questions'][number]): Quest
 
 function emptyDraft(): QuestionDraft {
   return { key: crypto.randomUUID(), prompt: '', type: 'TEXT', required: true, optionsText: '' };
+}
+
+function draftFromVariant(variant: ItemFormValues['variants'][number]): VariantDraft {
+  return {
+    key: variant.id,
+    name: variant.name,
+    price: (variant.priceCents / 100).toFixed(2).replace('.', ','),
+  };
 }
 
 export function ItemForm({
@@ -92,6 +103,9 @@ export function ItemForm({
   const [state, action, pending] = useActionState(saveItem, undefined);
   const [questions, setQuestions] = useState<QuestionDraft[]>(
     item?.questions?.map(draftFromQuestion) ?? [],
+  );
+  const [variants, setVariants] = useState<VariantDraft[]>(
+    item?.variants?.map(draftFromVariant) ?? [],
   );
   const [name, setName] = useState(item?.name ?? '');
   const [slug, setSlug] = useState(item?.slug ?? '');
@@ -167,6 +181,13 @@ export function ItemForm({
             required: q.required,
             optionsText: q.optionsText,
           })),
+        )}
+      />
+      <input
+        type="hidden"
+        name="variants"
+        value={JSON.stringify(
+          variants.map(({ name: variantName, price }) => ({ name: variantName, price })),
         )}
       />
 
@@ -287,7 +308,7 @@ export function ItemForm({
           <p className="text-xs text-muted-foreground">Vain sisäiseen kirjanpitoon.</p>
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="price">Hinta (€) *</Label>
+          <Label htmlFor="price">Perushinta (€) *</Label>
           <Input
             id="price"
             name="price"
@@ -298,6 +319,9 @@ export function ItemForm({
             defaultValue={item ? (item.priceCents / 100).toFixed(2).replace('.', ',') : ''}
             placeholder="16,00"
           />
+          <p className="text-xs text-muted-foreground">
+            Variaatioilla tämä toimii varahintana. Variaatiot määrittävät hinnan kassalla.
+          </p>
         </div>
       </div>
 
@@ -423,6 +447,85 @@ export function ItemForm({
         Nosta etusivulle{' '}
         <span className="text-xs text-muted-foreground">(näkyy Nostot-osiossa)</span>
       </label>
+
+      <div className="space-y-3 rounded-md border bg-background p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <Label className="text-sm font-semibold">Variaatiot ja hinnat</Label>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Lisää esimerkiksi lyhyt ja pitkä leiri omilla hinnoillaan. Kun variaatioita on, ostaja
+              valitsee yhden ennen koriin lisäämistä.
+            </p>
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            onClick={() =>
+              setVariants((prev) => [...prev, { key: crypto.randomUUID(), name: '', price: '' }])
+            }
+          >
+            <Plus /> Lisää variaatio
+          </Button>
+        </div>
+        {variants.length === 0 ? (
+          <p className="rounded-md border border-dashed px-3 py-4 text-center text-xs text-muted-foreground">
+            Ei variaatioita. Tuote käyttää yllä määritettyä perushintaa.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {variants.map((variant, index) => (
+              <div key={variant.key} className="flex items-end gap-2 rounded-md border bg-card p-3">
+                <div className="flex-1 space-y-1.5">
+                  <Label htmlFor={`variant-name-${variant.key}`}>Nimi {index + 1}</Label>
+                  <Input
+                    id={`variant-name-${variant.key}`}
+                    value={variant.name}
+                    onChange={(event) =>
+                      setVariants((prev) =>
+                        prev.map((current) =>
+                          current.key === variant.key
+                            ? { ...current, name: event.target.value }
+                            : current,
+                        ),
+                      )
+                    }
+                    placeholder="Esimerkiksi pitkä leiri"
+                  />
+                </div>
+                <div className="w-32 space-y-1.5">
+                  <Label htmlFor={`variant-price-${variant.key}`}>Hinta</Label>
+                  <Input
+                    id={`variant-price-${variant.key}`}
+                    value={variant.price}
+                    onChange={(event) =>
+                      setVariants((prev) =>
+                        prev.map((current) =>
+                          current.key === variant.key
+                            ? { ...current, price: event.target.value }
+                            : current,
+                        ),
+                      )
+                    }
+                    inputMode="decimal"
+                    placeholder="40,00"
+                  />
+                </div>
+                <button
+                  type="button"
+                  aria-label={`Poista variaatio ${index + 1}`}
+                  className="mb-2 text-muted-foreground transition-colors hover:text-destructive"
+                  onClick={() =>
+                    setVariants((prev) => prev.filter((current) => current.key !== variant.key))
+                  }
+                >
+                  <Trash2 className="size-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Checkout questions */}
       <div className="space-y-3 rounded-md border bg-background p-4">

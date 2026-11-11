@@ -4,30 +4,50 @@ import { useState } from 'react';
 import { Minus, Plus } from 'lucide-react';
 import { cartStore } from '@/lib/cart';
 import { cn } from '@/lib/cn';
+import { formatCents } from '@/lib/money';
 import { Button } from '@/components/ui/button';
 
 export function AddToCartForm({
   itemId,
+  variants = [],
   withQuantity = false,
   disabled = false,
   className,
 }: {
   itemId: string;
+  variants?: { id: string; name: string; priceCents: number }[];
   withQuantity?: boolean;
   disabled?: boolean;
   className?: string;
 }) {
   const [quantity, setQuantity] = useState(1);
+  const [variantId, setVariantId] = useState(variants[0]?.id ?? '');
   const [added, setAdded] = useState(false);
 
   function handleAdd() {
-    cartStore.add(itemId, quantity);
+    cartStore.add(itemId, quantity, variantId || undefined);
     setAdded(true);
     window.setTimeout(() => setAdded(false), 1500);
   }
 
   return (
     <div className={cn('flex flex-wrap items-center gap-3', className)}>
+      {variants.length > 0 && (
+        <label className="flex min-w-56 flex-col gap-1 text-sm">
+          <span className="font-medium">Vaihtoehto</span>
+          <select
+            value={variantId}
+            onChange={(event) => setVariantId(event.target.value)}
+            className="h-10 rounded-md border border-input bg-card px-3 text-sm"
+          >
+            {variants.map((variant) => (
+              <option key={variant.id} value={variant.id}>
+                {variant.name} - {formatCents(variant.priceCents)}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       {withQuantity && (
         <div className="flex h-10 items-center rounded-md border border-input bg-card">
           <button

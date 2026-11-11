@@ -87,6 +87,10 @@ export async function POST(req: Request) {
       requested.push({
         id: (entry as { id: string }).id,
         quantity: (entry as { quantity: number }).quantity,
+        variantId:
+          typeof (entry as { variantId?: unknown }).variantId === 'string'
+            ? (entry as { variantId: string }).variantId
+            : undefined,
       });
     }
   }
@@ -95,6 +99,7 @@ export async function POST(req: Request) {
     where: {
       id: { in: requested.map((r) => r.id).filter((id): id is string => typeof id === 'string') },
     },
+    include: { variants: true },
   });
   // Resolve the optional discount code. A typed-but-invalid code is rejected so
   // the buyer isn't silently charged full price; an empty field is fine.
@@ -207,6 +212,8 @@ export async function POST(req: Request) {
           const isEvent = eventItemIds.has(line.itemId);
           return {
             itemId: line.itemId,
+            variantId: line.variantId,
+            variantName: line.variantName,
             name: line.name,
             priceCents: line.priceCents,
             quantity: line.quantity,
@@ -254,7 +261,11 @@ export async function POST(req: Request) {
             amount: line.priceCents * line.quantity,
             currency: 'eur',
             description: `${line.name} × ${line.quantity}`,
-            metadata: { orderId: order.id, itemId: line.itemId },
+            metadata: {
+              orderId: order.id,
+              itemId: line.itemId,
+              ...(line.variantId ? { variantId: line.variantId } : {}),
+            },
           },
           { idempotencyKey: `${checkoutKey ?? order.id}:item:${line.itemId}` },
         );

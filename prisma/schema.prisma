@@ -104,9 +104,25 @@ model Item {
   updatedAt      DateTime       @updatedAt
   orderLines     OrderLine[]
   questions      ItemQuestion[]
+  variants       ItemVariant[]
   pastSlugs      ItemSlug[]
 
   @@index([categoryId, active])
+}
+
+/// A named purchasable option with its own price, for example a short or long
+/// camp. The parent item's price remains the fallback when no variants exist.
+model ItemVariant {
+  id         String      @id @default(cuid())
+  itemId     String
+  item       Item        @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  name       String
+  priceCents Int
+  sortOrder  Int         @default(0)
+  active     Boolean     @default(true)
+  orderLines OrderLine[]
+
+  @@index([itemId, sortOrder])
 }
 
 /// A slug this item used to have. When an admin edits an item's slug, the old
@@ -199,6 +215,9 @@ model OrderLine {
   order        Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
   itemId       String
   item         Item          @relation(fields: [itemId], references: [id])
+  variantId    String?
+  variant      ItemVariant?  @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  variantName  String?
   name         String
   priceCents   Int
   quantity     Int

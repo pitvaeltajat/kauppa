@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   CheckoutElementsProvider,
+  ExpressCheckoutElement,
   PaymentElement,
   useCheckoutElements,
 } from '@stripe/react-stripe-js/checkout';
@@ -697,6 +698,17 @@ function PaymentForm({
 
   return (
     <div className="space-y-4">
+      <ExpressCheckoutElement
+        options={{
+          buttonHeight: 48,
+          buttonType: { applePay: 'buy', googlePay: 'buy' },
+          buttonTheme: { applePay: 'black', googlePay: 'black' },
+          layout: { maxColumns: 2, maxRows: 1 },
+          paymentMethodOrder: ['apple_pay', 'google_pay'],
+          paymentMethods: { applePay: 'always', googlePay: 'always' },
+        }}
+        onConfirm={submitPayment}
+      />
       <PaymentElement />
       <Button
         variant="cta"

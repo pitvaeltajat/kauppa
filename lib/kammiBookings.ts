@@ -60,9 +60,10 @@ export async function expireStaleHolds(): Promise<void> {
 
 /** A booking's date range as ISO strings, labelled with who booked it. */
 function bookingRange(
-  b: Pick<KammiBooking, 'startDate' | 'endDate' | 'name' | 'organization'>,
+  b: Pick<KammiBooking, 'id' | 'startDate' | 'endDate' | 'name' | 'organization'>,
 ): DateRange {
   return {
+    bookingId: b.id,
     start: toISODate(b.startDate),
     end: toISODate(b.endDate),
     label: b.organization || b.name || 'Varaus',
@@ -83,7 +84,7 @@ export async function getBusyRanges(fromISO: string, toISO: string): Promise<Dat
         endDate: { gt: parseISODate(fromISO) },
         startDate: { lt: parseISODate(toISO) },
       },
-      select: { startDate: true, endDate: true, name: true, organization: true },
+      select: { id: true, startDate: true, endDate: true, name: true, organization: true },
     }),
     fetchKammiBusyRanges(fromISO, toISO),
   ]);

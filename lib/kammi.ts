@@ -29,7 +29,9 @@ export function addDays(iso: string, n: number): string {
 
 /** Whole nights between two ISO dates (end − start). Negative if end < start. */
 export function nightsBetween(startISO: string, endISO: string): number {
-  return Math.round((parseISODate(endISO).getTime() - parseISODate(startISO).getTime()) / MS_PER_DAY);
+  return Math.round(
+    (parseISODate(endISO).getTime() - parseISODate(startISO).getTime()) / MS_PER_DAY,
+  );
 }
 
 export type KammiTier = 'SCOUT' | 'OTHER';
@@ -76,7 +78,11 @@ export function computeKammiPrice(
     else weekdayNights += 1;
   }
   const weekendFlat =
-    weekendNights > 0 ? (tier === 'SCOUT' ? prices.weekendScoutCents : prices.weekendOtherCents) : 0;
+    weekendNights > 0
+      ? tier === 'SCOUT'
+        ? prices.weekendScoutCents
+        : prices.weekendOtherCents
+      : 0;
   const weekdayRate = tier === 'SCOUT' ? prices.weekdayScoutCents : prices.weekdayOtherCents;
   return {
     totalCents: weekendFlat + weekdayNights * weekdayRate,
@@ -99,9 +105,14 @@ export type DayStatus = {
  * reads as "still bookable from here", for example a Saturday whose Friday night is
  * taken but Saturday night is free.
  */
-export function dayStatuses(ranges: DateRange[], fromISO: string, toISO: string): Map<string, DayStatus> {
+export function dayStatuses(
+  ranges: DateRange[],
+  fromISO: string,
+  toISO: string,
+): Map<string, DayStatus> {
   const map = new Map<string, DayStatus>();
-  for (let d = fromISO; d < toISO; d = addDays(d, 1)) map.set(d, { morningBusy: false, nightBusy: false });
+  for (let d = fromISO; d < toISO; d = addDays(d, 1))
+    map.set(d, { morningBusy: false, nightBusy: false });
   for (const { start, end } of ranges) {
     // Every booked night makes its own evening and the next morning busy, so a
     // multi-night stay fills the days in between completely.
@@ -119,7 +130,11 @@ export function dayStatuses(ranges: DateRange[], fromISO: string, toISO: string)
  * Who holds each occupied night: a 'YYYY-MM-DD' → label map from the labelled
  * ranges, for the "who is who" tooltip shown to logged-in users.
  */
-export function labelsByDay(ranges: DateRange[], fromISO: string, toISO: string): Record<string, string> {
+export function labelsByDay(
+  ranges: DateRange[],
+  fromISO: string,
+  toISO: string,
+): Record<string, string> {
   const out: Record<string, string> = {};
   for (const { start, end, label } of ranges) {
     if (!label) continue;
@@ -130,12 +145,31 @@ export function labelsByDay(ranges: DateRange[], fromISO: string, toISO: string)
   return out;
 }
 
+export function bookingIdsByDay(
+  ranges: DateRange[],
+  fromISO: string,
+  toISO: string,
+): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const range of ranges) {
+    if (!range.bookingId) continue;
+    for (
+      let d = range.start < fromISO ? fromISO : range.start;
+      d < range.end && d < toISO;
+      d = addDays(d, 1)
+    ) {
+      if (!out[d]) out[d] = range.bookingId;
+    }
+  }
+  return out;
+}
+
 /** Half-open overlap: [aStart,aEnd) and [bStart,bEnd) share at least one night. */
 export function rangesOverlap(aStart: string, aEnd: string, bStart: string, bEnd: string): boolean {
   return aStart < bEnd && bStart < aEnd;
 }
 
-export type DateRange = { start: string; end: string; label?: string };
+export type DateRange = { start: string; end: string; label?: string; bookingId?: string };
 
 /**
  * Every occupied night across the given ranges as a Set of 'YYYY-MM-DD'. A
@@ -150,9 +184,7 @@ export function occupiedNights(ranges: DateRange[]): Set<string> {
   return days;
 }
 
-export type BookingValidation =
-  | { ok: true; nights: number }
-  | { ok: false; error: string };
+export type BookingValidation = { ok: true; nights: number } | { ok: false; error: string };
 
 /**
  * Validate a requested range against the settings and today. Does NOT check

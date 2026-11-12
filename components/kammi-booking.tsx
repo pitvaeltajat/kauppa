@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { formatCents } from '@/lib/money';
 import {
   addDays,
@@ -52,6 +53,8 @@ export function KammiBooking({
   maxNights,
   pitvaMember,
   labels: initialLabels,
+  bookingIds: initialBookingIds,
+  canManageBookings,
 }: {
   today: string;
   windowEnd: string;
@@ -62,11 +65,15 @@ export function KammiBooking({
   pitvaMember: boolean;
   /** iso → who holds that night (shown to logged-in viewers only). */
   labels: Record<string, string>;
+  bookingIds: Record<string, string>;
+  canManageBookings: boolean;
 }) {
+  const router = useRouter();
   // Availability grows as the visitor loads further months (see loadMore).
   const [windowEnd, setWindowEnd] = useState(initialWindowEnd);
   const [statuses, setStatuses] = useState(initialStatuses);
   const [labels, setLabels] = useState(initialLabels);
+  const [bookingIds, setBookingIds] = useState(initialBookingIds);
   const [loadingMore, setLoadingMore] = useState(false);
   const [start, setStart] = useState<string | null>(null);
   const [end, setEnd] = useState<string | null>(null);
@@ -209,10 +216,12 @@ export function KammiBooking({
       const data = (await res.json()) as {
         statuses?: Record<string, DayStatus>;
         labels?: Record<string, string>;
+        bookingIds?: Record<string, string>;
       };
       if (res.ok && data.statuses) {
         setStatuses((prev) => ({ ...prev, ...data.statuses }));
         setLabels((prev) => ({ ...prev, ...data.labels }));
+        setBookingIds((prev) => ({ ...prev, ...data.bookingIds }));
         setWindowEnd(to);
       }
     } catch {
@@ -331,7 +340,13 @@ export function KammiBooking({
                         key={iso}
                         type="button"
                         disabled={past}
-                        onClick={() => handleDay(iso)}
+                        onClick={() => {
+                          if (canManageBookings && bookingIds[iso]) {
+                            router.push(`/admin/kammi/${bookingIds[iso]}`);
+                            return;
+                          }
+                          handleDay(iso);
+                        }}
                         style={dayCellStyle(iso)}
                         className={`flex aspect-square flex-col items-center justify-center overflow-hidden rounded-md border text-sm leading-none transition-colors ${
                           past
@@ -348,7 +363,14 @@ export function KammiBooking({
                       >
                         <span>{day}</span>
                         {labels[iso] && (
-                          <span className="mt-0.5 w-full truncate px-0.5 text-[8px] font-medium leading-none opacity-80">
+                          <span
+                            className={`mt-0.5 w-full truncate px-0.5 text-[8px] font-medium leading-none opacity-80 ${canManageBookings && bookingIds[iso] ? 'cursor-pointer underline' : ''}`}
+                            onClick={(event) => {
+                              if (!canManageBookings || !bookingIds[iso]) return;
+                              event.stopPropagation();
+                              router.push(`/admin/kammi/${bookingIds[iso]}`);
+                            }}
+                          >
                             {labels[iso]}
                           </span>
                         )}

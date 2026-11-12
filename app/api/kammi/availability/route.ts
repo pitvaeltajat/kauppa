@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
+import { getUserRole, isSuperAdmin } from '@/lib/admin';
 import { getBusyRanges } from '@/lib/kammiBookings';
-import { dayStatuses, labelsByDay, nightsBetween } from '@/lib/kammi';
+import { bookingIdsByDay, dayStatuses, labelsByDay, nightsBetween } from '@/lib/kammi';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,10 +26,13 @@ export async function GET(req: Request) {
 
   const busy = await getBusyRanges(from, to);
   const statuses: Record<string, { m: boolean; n: boolean }> = {};
-  for (const [day, s] of dayStatuses(busy, from, to)) statuses[day] = { m: s.morningBusy, n: s.nightBusy };
+  for (const [day, s] of dayStatuses(busy, from, to))
+    statuses[day] = { m: s.morningBusy, n: s.nightBusy };
 
   const session = await auth();
   const labels = session?.user?.email ? labelsByDay(busy, from, to) : {};
+  const role = await getUserRole(session?.user?.email ?? null);
+  const bookingIds = isSuperAdmin(role) ? bookingIdsByDay(busy, from, to) : {};
 
-  return NextResponse.json({ statuses, labels });
+  return NextResponse.json({ statuses, labels, bookingIds });
 }

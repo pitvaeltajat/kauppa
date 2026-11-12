@@ -84,6 +84,8 @@ model Item {
   isEvent        Boolean        @default(false)
   startsAt       DateTime?
   endsAt         DateTime?
+  /// Last date when a registration can be cancelled. Registration remains open after this date.
+  registrationDeadline DateTime?
   /// Unlisted: kept off the front page and category listings but still
   /// reachable and buyable at its direct /item/<slug> link. Used for events
   /// shared by link only; also applied automatically once an event is over.

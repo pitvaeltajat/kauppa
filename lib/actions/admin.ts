@@ -12,6 +12,7 @@ import { parseQuestionDrafts } from '@/lib/questions';
 import { LEADER_DISCOUNT_CODE, normalizeCode } from '@/lib/discount';
 import { isSystemCategorySlug } from '@/lib/categories';
 import { DEFAULT_EVENT_ACCOUNTING_CLASS_NAME } from '@/lib/accounting';
+import { defaultRegistrationDeadline } from '@/lib/event-registration';
 
 export type ActionResult = { error?: string };
 
@@ -109,6 +110,13 @@ export async function saveItem(
     endsAt = parseDate((formData.get('endsAt') as string) ?? '');
     if (!startsAt || !endsAt) return { error: 'Anna tapahtumalle alku- ja päättymispäivä.' };
     if (endsAt < startsAt) return { error: 'Päättymispäivä ei voi olla ennen alkamispäivää.' };
+  }
+  const registrationDeadline = isEvent
+    ? (parseDate((formData.get('registrationDeadline') as string) ?? '') ??
+      (startsAt ? defaultRegistrationDeadline(startsAt) : null))
+    : null;
+  if (isEvent && registrationDeadline && startsAt && registrationDeadline > startsAt) {
+    return { error: 'IlmoDL ei voi olla tapahtuman alkamisen jälkeen.' };
   }
   const hidden = formData.get('hidden') === 'on';
   // Leaders' discount is an event-only opt-in (a leaderOnly code discounts it).
@@ -253,6 +261,7 @@ export async function saveItem(
     isEvent,
     startsAt,
     endsAt,
+    registrationDeadline,
     hidden,
     leaderDiscount,
   };

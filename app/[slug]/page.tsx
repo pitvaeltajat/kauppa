@@ -50,6 +50,7 @@ export default async function ItemPage({ params }: { params: Promise<{ slug: str
       isEvent: true,
       startsAt: true,
       endsAt: true,
+      registrationDeadline: true,
       description: true,
       active: true,
       category: { select: { id: true, name: true, slug: true } },
@@ -162,6 +163,13 @@ export default async function ItemPage({ params }: { params: Promise<{ slug: str
                 ? 'Maksat tapahtuman verkossa. Tapahtumatuotteen ostaminen toimii samalla ilmoittautumisena. Saat kuitin sähköpostiisi.'
                 : 'Maksat tuotteen verkossa ja noudat sen kokouksessa ryhmänjohtajalta tai erikseen sovittuna aikana kololta. Saat kuitin sähköpostiisi.'}
             </p>
+            {item.isEvent && item.registrationDeadline && (
+              <p className="mt-3 border-t pt-3">
+                Ilmoittautuminen tapahtumiin, retkille ja leireille on sitova. Ilmoittautumisen voi
+                peruuttaa {item.registrationDeadline.toLocaleDateString('fi-FI')} mennessä. Sen
+                jälkeen maksun saa takaisin vain lääkärintodistusta vastaan.
+              </p>
+            )}
           </Card>
         </div>
       </div>

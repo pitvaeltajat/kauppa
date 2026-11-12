@@ -24,19 +24,33 @@ function formatDate(value: Date | null): string {
   return `${year}-${month}-${day}`;
 }
 
+function defaultDeadline(value: Date | null): Date | null {
+  if (!value) return null;
+  const result = new Date(value);
+  result.setDate(result.getDate() - 5);
+  return result;
+}
+
 export function EventDateFields({
   startsAt,
   endsAt,
+  registrationDeadline,
 }: {
   startsAt: string | null;
   endsAt: string | null;
+  registrationDeadline: string | null;
 }) {
   const [start, setStart] = useState<Date | null>(() => parseDate(startsAt));
   const [end, setEnd] = useState<Date | null>(() => parseDate(endsAt));
+  const [deadline, setDeadline] = useState<Date | null>(
+    () => parseDate(registrationDeadline) ?? defaultDeadline(parseDate(startsAt)),
+  );
+  const [deadlineEdited, setDeadlineEdited] = useState(Boolean(registrationDeadline));
 
   function onStartChange(value: Date | null) {
     setStart(value);
     if (value && end && end < value) setEnd(value);
+    if (!deadlineEdited) setDeadline(defaultDeadline(value));
   }
 
   function onEndChange(value: Date | null) {
@@ -44,7 +58,7 @@ export function EventDateFields({
   }
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
+    <div className="grid gap-4 sm:grid-cols-3">
       <div className="space-y-1.5">
         <Label htmlFor="startsAt">Alkaa *</Label>
         <DatePicker
@@ -75,6 +89,25 @@ export function EventDateFields({
           className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
         />
         <input type="hidden" name="endsAt" value={formatDate(end)} />
+      </div>
+      <div className="space-y-1.5">
+        <Label htmlFor="registrationDeadline">IlmoDL *</Label>
+        <DatePicker
+          id="registrationDeadline"
+          selected={deadline}
+          onChange={(value: Date | null) => {
+            setDeadline(value);
+            setDeadlineEdited(true);
+          }}
+          locale="fi"
+          dateFormat="dd.MM.yyyy"
+          placeholderText="pp.kk.vvvv"
+          required
+          autoComplete="off"
+          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+        />
+        <input type="hidden" name="registrationDeadline" value={formatDate(deadline)} />
+        <p className="text-xs text-muted-foreground">Viimeinen päivä perua ilmoittautuminen.</p>
       </div>
     </div>
   );

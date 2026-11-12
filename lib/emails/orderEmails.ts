@@ -154,13 +154,14 @@ export async function sendOrderReceiptEmail(orderId: string): Promise<void> {
   await sendEmail(data.email, subject, html);
 }
 
-/** Tell a child/parent link recipient that an unpaid event registration was cancelled. */
+/** Tell a child/parent link recipient that an event registration was cancelled. */
 export async function sendEventCancellationEmail(orderId: string): Promise<void> {
   const data = await loadOrderEmailData(orderId);
   if (!data?.email) return;
   const html = renderEmail(`
     <h1>Ilmoittautuminen peruttu</h1>
-    <p>Ilmoittautuminen ${orderNumber(data.id)} on peruttu eikä sitä tarvitse enää maksaa.</p>
+    <p>Ilmoittautuminen ${orderNumber(data.id)} on peruttu.</p>
+    <p>Jos ilmoittautuminen oli maksettu, maksu palautetaan automaattisesti.</p>
     ${renderLinesTable(data)}
     ${renderButton(publicUrl(), 'Avaa PitVa-kontti')}
   `);

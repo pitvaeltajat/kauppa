@@ -42,6 +42,7 @@ export type ItemFormValues = {
   /** "YYYY-MM-DD" for the native date inputs, or null. */
   startsAt: string | null;
   endsAt: string | null;
+  registrationDeadline: string | null;
   hidden: boolean;
   leaderDiscount: boolean;
   questions: {
@@ -279,7 +280,11 @@ export function ItemForm({
               Päättymispäivä voi olla sama kuin alkamispäivä.
             </p>
           </div>
-          <EventDateFields startsAt={item?.startsAt ?? null} endsAt={item?.endsAt ?? null} />
+          <EventDateFields
+            startsAt={item?.startsAt ?? null}
+            endsAt={item?.endsAt ?? null}
+            registrationDeadline={item?.registrationDeadline ?? null}
+          />
         </section>
       )}
 

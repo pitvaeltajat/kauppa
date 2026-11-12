@@ -25,6 +25,8 @@ export function EventPayment({
   participants,
   total,
   status,
+  registrationDeadline,
+  canCancel,
 }: {
   token: string;
   eventName: string;
@@ -32,6 +34,8 @@ export function EventPayment({
   participants: string[];
   total: string;
   status: string;
+  registrationDeadline: string | null;
+  canCancel: boolean;
 }) {
   const [parentEmail, setParentEmail] = useState('');
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -240,15 +244,6 @@ export function EventPayment({
                     <EventPaymentForm />
                   </CheckoutElementsProvider>
                 )}
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="w-full text-destructive hover:text-destructive"
-                  onClick={cancelRegistration}
-                  disabled={loading}
-                >
-                  Peru ilmoittautuminen
-                </Button>
               </section>
               {error && (
                 <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
@@ -259,7 +254,30 @@ export function EventPayment({
           )}
           {paid && (
             <p className="text-center text-sm text-muted-foreground">
-              Maksu on vastaanotettu ja ilmoittautuminen vahvistettu.
+              Maksu on vastaanotettu ja ilmoittautuminen vahvistettu. Voit perua ilmoittautumisen
+              IlmoDL-päivään asti.
+            </p>
+          )}
+          {!cancelled && canCancel && (
+            <section className="space-y-3 border-t pt-4">
+              <p className="text-sm text-muted-foreground">
+                Ilmoittautumisen voi perua {registrationDeadline ?? 'IlmoDL-päivään'} mennessä.
+              </p>
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full text-destructive hover:text-destructive"
+                onClick={cancelRegistration}
+                disabled={loading}
+              >
+                Peru ilmoittautuminen
+              </Button>
+            </section>
+          )}
+          {!cancelled && !canCancel && (
+            <p className="border-t pt-4 text-center text-sm text-muted-foreground">
+              IlmoDL on päättynyt. Ilmoittautumista ei voi enää perua tämän linkin kautta. Maksun
+              saa takaisin vain lääkärintodistusta vastaan.
             </p>
           )}
           {cancelled && (

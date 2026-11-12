@@ -121,6 +121,7 @@ export function ItemForm({
     ]),
   ]);
   const [notificationSearch, setNotificationSearch] = useState('');
+  const [highlightedNotificationIndex, setHighlightedNotificationIndex] = useState(0);
   const [name, setName] = useState(item?.name ?? '');
   const [slug, setSlug] = useState(item?.slug ?? '');
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(Boolean(item?.id));
@@ -132,7 +133,10 @@ export function ItemForm({
 
   const filteredNotificationUsers = notificationUsers.filter((user) => {
     const needle = notificationSearch.trim().toLowerCase();
-    return !needle || `${user.name ?? ''} ${user.email}`.toLowerCase().includes(needle);
+    return (
+      !selectedNotificationEmails.includes(user.email) &&
+      (!needle || `${user.name ?? ''} ${user.email}`.toLowerCase().includes(needle))
+    );
   });
 
   function addNotificationUser(email: string) {
@@ -140,6 +144,7 @@ export function ItemForm({
       current.includes(email) ? current : [...current, email],
     );
     setNotificationSearch('');
+    setHighlightedNotificationIndex(0);
   }
 
   function updateQuestion(key: string, patch: Partial<QuestionDraft>) {
@@ -380,7 +385,10 @@ export function ItemForm({
                   key={email}
                   className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-sm text-foreground"
                 >
-                  {user?.name ?? email}
+                  <span>
+                    <span className="block font-medium">{user?.name ?? 'Nimetön käyttäjä'}</span>
+                    <span className="block text-xs text-muted-foreground">{email}</span>
+                  </span>
                   {!isCreator && (
                     <button
                       type="button"
@@ -411,24 +419,63 @@ export function ItemForm({
             className="flex h-10 w-full rounded-md border border-input bg-card px-3 py-2 text-base text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring sm:text-sm"
             type="search"
             value={notificationSearch}
-            onChange={(event) => setNotificationSearch(event.target.value)}
+            onChange={(event) => {
+              setNotificationSearch(event.target.value);
+              setHighlightedNotificationIndex(0);
+            }}
             onKeyDown={(event) => {
-              if (event.key !== 'Enter') return;
-              event.preventDefault();
-              const firstMatch = filteredNotificationUsers.find(
-                (user) => !selectedNotificationEmails.includes(user.email),
-              );
-              if (firstMatch) addNotificationUser(firstMatch.email);
+              if (event.key === 'ArrowDown' && filteredNotificationUsers.length > 0) {
+                event.preventDefault();
+                setHighlightedNotificationIndex((current) =>
+                  Math.min(current + 1, filteredNotificationUsers.length - 1),
+                );
+              } else if (event.key === 'ArrowUp' && filteredNotificationUsers.length > 0) {
+                event.preventDefault();
+                setHighlightedNotificationIndex((current) => Math.max(current - 1, 0));
+              } else if (event.key === 'Enter' && filteredNotificationUsers.length > 0) {
+                event.preventDefault();
+                addNotificationUser(filteredNotificationUsers[highlightedNotificationIndex].email);
+              } else if (event.key === 'Escape') {
+                setNotificationSearch('');
+                setHighlightedNotificationIndex(0);
+              }
             }}
             placeholder="Hae käyttäjää nimellä tai sähköpostilla"
             aria-label="Hae ilmoitusvastaanottajaa"
+            aria-controls="notification-user-options"
+            aria-activedescendant={
+              filteredNotificationUsers[highlightedNotificationIndex]
+                ? `notification-user-${filteredNotificationUsers[highlightedNotificationIndex].email}`
+                : undefined
+            }
           />
-          <div className="text-sm text-muted-foreground">
-            {notificationSearch && filteredNotificationUsers.length > 0
-              ? `Paina Enter lisätäksesi: ${filteredNotificationUsers[0]?.name ?? filteredNotificationUsers[0]?.email}`
-              : notificationUsers.length === 0
-                ? 'Käyttäjiä ei ole vielä.'
-                : 'Hae käyttäjää ja paina Enter lisätäksesi hänet.'}
+          <div
+            id="notification-user-options"
+            role="listbox"
+            className="max-h-64 overflow-y-auto rounded-md border bg-card"
+          >
+            {filteredNotificationUsers.map((user, index) => (
+              <button
+                key={user.email}
+                id={`notification-user-${user.email}`}
+                type="button"
+                role="option"
+                aria-selected={index === highlightedNotificationIndex}
+                className={`block w-full px-3 py-2 text-left ${index === highlightedNotificationIndex ? 'bg-primary/10' : 'hover:bg-muted/50'}`}
+                onMouseEnter={() => setHighlightedNotificationIndex(index)}
+                onClick={() => addNotificationUser(user.email)}
+              >
+                <span className="block font-medium">{user.name ?? 'Nimetön käyttäjä'}</span>
+                <span className="block text-sm text-muted-foreground">{user.email}</span>
+              </button>
+            ))}
+            {filteredNotificationUsers.length === 0 && (
+              <p className="px-3 py-2 text-sm text-muted-foreground">
+                {notificationUsers.length === 0
+                  ? 'Käyttäjiä ei ole vielä.'
+                  : 'Ei sopivia käyttäjiä.'}
+              </p>
+            )}
           </div>
           <p className="text-xs text-muted-foreground">
             Valituille käyttäjille lähetetään viesti uudesta ilmoittautumisesta. Vain ylläpidon

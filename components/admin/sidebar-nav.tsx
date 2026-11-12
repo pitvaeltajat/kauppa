@@ -33,9 +33,15 @@ export function AdminSidebarNav({ superadmin }: { superadmin: boolean }) {
             ],
           },
           {
+            label: 'Kammi',
+            links: [
+              { href: '/admin/kammi', label: 'Varaukset' },
+              { href: '/admin/kammi/asetukset', label: 'Asetukset' },
+            ],
+          },
+          {
             label: 'Ylläpito',
             links: [
-              { href: '/admin/kammi', label: 'Kammi' },
               { href: '/admin/accounting-classes', label: 'Kirjanpitoluokat' },
               { href: '/admin/asetukset', label: 'Asetukset' },
               { href: '/admin/users', label: 'Käyttäjät' },
@@ -46,7 +52,12 @@ export function AdminSidebarNav({ superadmin }: { superadmin: boolean }) {
   ];
 
   const isActive = (href: string) =>
-    href === '/admin' ? pathname === '/admin' : pathname.startsWith(href);
+    href === '/admin'
+      ? pathname === '/admin'
+      : href === '/admin/kammi'
+        ? pathname === href ||
+          (pathname.startsWith(`${href}/`) && !pathname.startsWith(`${href}/asetukset`))
+        : pathname.startsWith(href);
 
   return (
     <nav className="flex gap-4 overflow-x-auto pb-1 md:block md:overflow-visible md:pb-0">

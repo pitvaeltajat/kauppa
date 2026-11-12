@@ -3,11 +3,9 @@ import { prisma } from '@/lib/prisma';
 import { formatCents } from '@/lib/money';
 import { toISODate } from '@/lib/kammi';
 import { requireSuperAdmin } from '@/lib/admin-guard';
-import { getKammiSettings } from '@/lib/kammiBookings';
 import { cancelKammiBookingAction } from '@/lib/actions/kammi';
 import { Badge } from '@/components/ui/badge';
 import { FormButton } from '@/components/admin/form-button';
-import { KammiSettingsForm } from '@/components/admin/kammi-settings-form';
 
 export const metadata: Metadata = { title: 'Kammi' };
 
@@ -18,13 +16,9 @@ function fi(d: Date): string {
 
 export default async function AdminKammiPage() {
   await requireSuperAdmin();
-  const [settings, bookings, accountingClasses] = await Promise.all([
-    getKammiSettings(),
-    prisma.kammiBooking.findMany({
-      orderBy: [{ startDate: 'asc' }, { createdAt: 'desc' }],
-    }),
-    prisma.accountingClass.findMany({ orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }] }),
-  ]);
+  const bookings = await prisma.kammiBooking.findMany({
+    orderBy: [{ startDate: 'asc' }, { createdAt: 'desc' }],
+  });
 
   return (
     <div className="space-y-10">
@@ -94,11 +88,6 @@ export default async function AdminKammiPage() {
             ))}
           </div>
         )}
-      </div>
-
-      <div>
-        <h2 className="mb-4 text-xl font-bold">Asetukset</h2>
-        <KammiSettingsForm settings={settings} accountingClasses={accountingClasses} />
       </div>
     </div>
   );

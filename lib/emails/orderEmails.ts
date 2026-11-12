@@ -154,20 +154,6 @@ export async function sendOrderReceiptEmail(orderId: string): Promise<void> {
   await sendEmail(data.email, subject, html);
 }
 
-/** Tell the buyer that a payment attempt did not complete. */
-export async function sendOrderPaymentFailureEmail(orderId: string): Promise<void> {
-  const data = await loadOrderEmailData(orderId);
-  if (!data?.email) return;
-  const html = renderEmail(`
-    <h1>Maksu ei onnistunut</h1>
-    <p>Hei${data.name ? ` ${escapeHtml(data.name)}` : ''}!</p>
-    <p>Tilauksen <strong>${orderNumber(data.id)}</strong> maksua ei voitu vahvistaa. Maksua ei veloitettu, ja voit yrittää uudelleen.</p>
-    ${renderLinesTable(data)}
-    ${renderButton(`${publicUrl()}/cart`, 'Palaa ostoskoriin')}
-  `);
-  await sendEmail(data.email, `Maksu ei onnistunut ${orderNumber(data.id)}`, html);
-}
-
 /** Tell a child/parent link recipient that an unpaid event registration was cancelled. */
 export async function sendEventCancellationEmail(orderId: string): Promise<void> {
   const data = await loadOrderEmailData(orderId);

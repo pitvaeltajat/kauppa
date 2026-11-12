@@ -116,24 +116,6 @@ async function kammiRecipients(bookingId: string): Promise<{
   };
 }
 
-/** Notify the payer/booker that a payment failed or the payment session expired. */
-export async function sendKammiPaymentFailureEmail(bookingId: string): Promise<void> {
-  const data = await kammiRecipients(bookingId);
-  if (!data) return;
-  const recipients = [
-    ...new Set([data.booking.billingEmail, data.booking.email].filter(Boolean)),
-  ] as string[];
-  if (!recipients.length) return;
-  const html = renderEmail(`
-    <h1>Kammin maksu ei onnistunut</h1>
-    <p>Kammin maksua ei voitu vahvistaa. Varaus ei ole vielä vahvistettu.</p>
-    <div class="info-box"><strong>${data.booking.startISO} – ${data.booking.endISO}</strong> (${data.booking.nights} yötä)<br>Hinta: ${formatCents(data.booking.totalCents)}</div>
-    <p>Voit yrittää maksua uudelleen maksuohjesivulla.</p>
-    ${data.booking.paymentToken ? renderButton(`${publicUrl()}/kammi/pay/${encodeURIComponent(data.booking.paymentToken)}`, 'Avaa maksuohje') : ''}
-  `);
-  await sendEmail(recipients, `Kammin maksu ei onnistunut ${data.booking.startISO}`, html);
-}
-
 /** Notify recipients when a Kammi booking is cancelled. */
 export async function sendKammiCancellationEmail(bookingId: string): Promise<void> {
   const data = await kammiRecipients(bookingId);

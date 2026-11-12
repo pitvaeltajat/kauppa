@@ -95,6 +95,8 @@ model Item {
   featured       Boolean        @default(false)
   featuredOrder  Int            @default(0)
   sortOrder      Int            @default(0)
+  /// Internal recipients for new registrations on this event.
+  notificationEmails String[]    @default([])
   categoryId     String
   category       Category       @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   accountingClassId String?

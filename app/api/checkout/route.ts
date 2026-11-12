@@ -273,6 +273,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ paymentMethod: 'free', orderId: order.id });
     }
     if (deferredEventPayment) {
+      await trySendEmail(`deferred event notice ${order.id}`, () =>
+        sendNewOrderAdminEmail(order.id),
+      );
       return NextResponse.json({
         paymentMethod: 'deferred_event',
         orderId: order.id,

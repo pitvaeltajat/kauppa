@@ -36,6 +36,7 @@ export type ItemFormValues = {
   sortOrder: number;
   active: boolean;
   featured: boolean;
+  notificationEmails: string[];
   isEvent: boolean;
   /** "YYYY-MM-DD" for the native date inputs, or null. */
   startsAt: string | null;
@@ -340,6 +341,23 @@ export function ItemForm({
               defaultValue={item?.sortOrder ?? 0}
             />
           </div>
+        </div>
+      )}
+
+      {isEvent && (
+        <div className="space-y-1.5">
+          <Label htmlFor="notificationEmails">Ilmoitusosoitteet</Label>
+          <Textarea
+            id="notificationEmails"
+            name="notificationEmails"
+            rows={3}
+            defaultValue={item?.notificationEmails.join('\n')}
+            placeholder="esim. johtajat@pitva.fi\ntoinen@pitva.fi"
+          />
+          <p className="text-xs text-muted-foreground">
+            Näihin osoitteisiin lähetetään viesti uudesta ilmoittautumisesta. Yksi osoite per rivi
+            tai pilkulla eroteltuna. Vain ylläpidon käyttöön.
+          </p>
         </div>
       )}
 
@@ -655,9 +673,15 @@ export function ItemForm({
           {pending ? (
             <LoadingPill className="bg-current/25" />
           ) : item ? (
-            eventMode ? 'Tallenna tapahtuma' : 'Tallenna tuote'
+            eventMode ? (
+              'Tallenna tapahtuma'
+            ) : (
+              'Tallenna tuote'
+            )
+          ) : eventMode ? (
+            'Luo tapahtuma'
           ) : (
-            eventMode ? 'Luo tapahtuma' : 'Luo tuote'
+            'Luo tuote'
           )}
         </Button>
       </div>

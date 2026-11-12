@@ -1,0 +1,1 @@
+ALTER TABLE "Item" ADD COLUMN "notificationEmails" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[];

@@ -166,6 +166,19 @@ export async function saveItem(
   const active = formData.get('active') === 'on';
   const featured = formData.get('featured') === 'on';
   const description = ((formData.get('description') as string) ?? '').trim();
+  const notificationEmails = isEvent
+    ? [
+        ...new Set(
+          ((formData.get('notificationEmails') as string) ?? '')
+            .split(/[\n,;]+/)
+            .map((email) => email.trim().toLowerCase())
+            .filter(Boolean),
+        ),
+      ]
+    : [];
+  if (notificationEmails.some((email) => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))) {
+    return { error: 'Tarkista tapahtuman ilmoitusosoitteet.' };
+  }
 
   // Checkout questions come as a JSON string; an empty array clears them.
   let questionRows: { prompt: string; type: string; required: boolean; options: string[] }[] = [];
@@ -226,6 +239,7 @@ export async function saveItem(
     sortOrder: isEvent ? existingSortOrder : sortOrder,
     active,
     featured,
+    notificationEmails,
     description,
     isEvent,
     startsAt,

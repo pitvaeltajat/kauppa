@@ -11,6 +11,7 @@ export type OrderEmailData = {
   name: string | null;
   email: string | null;
   totalCents: number;
+  notificationEmails?: string[];
   lines: {
     name: string;
     quantity: number;
@@ -141,6 +142,7 @@ async function loadOrderEmailData(orderId: string): Promise<OrderEmailData | nul
         answers: Array.isArray(participant.answers) ? (participant.answers as Answer[]) : [],
       })),
     })),
+    notificationEmails: [],
   };
 }
 
@@ -181,13 +183,23 @@ export async function sendEventCancellationEmail(orderId: string): Promise<void>
 
 /** Notify the troop of a new order, if ORDER_NOTIFICATION_EMAILS is set. */
 export async function sendNewOrderAdminEmail(orderId: string): Promise<void> {
-  const recipients = (process.env.ORDER_NOTIFICATION_EMAILS ?? '')
+  const globalRecipients = (process.env.ORDER_NOTIFICATION_EMAILS ?? '')
     .split(',')
     .map((e) => e.trim())
     .filter(Boolean);
-  if (recipients.length === 0) return;
   const data = await loadOrderEmailData(orderId);
   if (!data) return;
+  const eventRecipients = await prisma.item.findMany({
+    where: { isEvent: true, orderLines: { some: { orderId } } },
+    select: { notificationEmails: true },
+  });
+  const recipients = [
+    ...new Set([
+      ...globalRecipients,
+      ...eventRecipients.flatMap((item) => item.notificationEmails),
+    ]),
+  ];
+  if (recipients.length === 0) return;
   const { subject, html } = renderNewOrderAdminEmail(data);
   await sendEmail(recipients, subject, html);
 }

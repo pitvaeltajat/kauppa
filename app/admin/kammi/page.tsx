@@ -21,9 +21,7 @@ export default async function AdminKammiPage() {
   const [settings, bookings, accountingClasses] = await Promise.all([
     getKammiSettings(),
     prisma.kammiBooking.findMany({
-      where: { status: { not: 'CANCELLED' } },
-      orderBy: { startDate: 'desc' },
-      take: 100,
+      orderBy: [{ startDate: 'asc' }, { createdAt: 'desc' }],
     }),
     prisma.accountingClass.findMany({ orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }] }),
   ]);
@@ -31,7 +29,10 @@ export default async function AdminKammiPage() {
   return (
     <div className="space-y-10">
       <div>
-        <h1 className="mb-4 text-2xl font-bold">Kammi-varaukset ({bookings.length})</h1>
+        <h1 className="mb-2 text-2xl font-bold">Kammin varauskalenteri ({bookings.length})</h1>
+        <p className="mb-4 text-sm text-muted-foreground">
+          Kaikki varaukset aikajärjestyksessä. Perutut varaukset näkyvät historiassa.
+        </p>
         {bookings.length === 0 ? (
           <p className="rounded-lg border border-dashed bg-card px-4 py-10 text-center text-sm text-muted-foreground">
             Ei varauksia vielä.
@@ -39,11 +40,16 @@ export default async function AdminKammiPage() {
         ) : (
           <div className="space-y-3">
             {bookings.map((b) => (
-              <div key={b.id} className="flex flex-wrap items-start justify-between gap-3 rounded-lg border bg-card p-4 shadow-sm">
+              <div
+                key={b.id}
+                className="flex flex-wrap items-start justify-between gap-3 rounded-lg border bg-card p-4 shadow-sm"
+              >
                 <div className="min-w-0 text-sm">
                   <p className="font-semibold">
                     {fi(b.startDate)} – {fi(b.endDate)}
-                      <span className="ml-2 font-normal text-muted-foreground">{b.nights} yötä · {b.tier === 'SCOUT' ? 'Partiolainen' : 'Muu varaaja'}</span>
+                    <span className="ml-2 font-normal text-muted-foreground">
+                      {b.nights} yötä · {b.tier === 'SCOUT' ? 'Partiolainen' : 'Muu varaaja'}
+                    </span>
                   </p>
                   <p className="mt-0.5 text-muted-foreground">
                     {b.name ?? 'Ei nimeä'}
@@ -54,7 +60,8 @@ export default async function AdminKammiPage() {
                   {b.eventInfo && <p className="mt-1 text-muted-foreground">{b.eventInfo}</p>}
                   {b.hostQuestions && (
                     <p className="mt-1 text-muted-foreground">
-                      <span className="font-medium text-foreground">Viesti kämppäisännälle:</span> {b.hostQuestions}
+                      <span className="font-medium text-foreground">Viesti kämppäisännälle:</span>{' '}
+                      {b.hostQuestions}
                     </p>
                   )}
                   {b.billingEmail && (
@@ -64,20 +71,24 @@ export default async function AdminKammiPage() {
                 <div className="flex items-center gap-3">
                   {b.status === 'CONFIRMED' ? (
                     <Badge variant="success">Vahvistettu</Badge>
+                  ) : b.status === 'CANCELLED' ? (
+                    <Badge variant="outline">Peruttu</Badge>
                   ) : (
                     <Badge variant="warning">Maksu odottaa</Badge>
                   )}
                   <span className="font-bold">{formatCents(b.totalCents)}</span>
-                  <form action={cancelKammiBookingAction}>
-                    <input type="hidden" name="id" value={b.id} />
-                    <FormButton
-                      size="sm"
-                      variant="ghost"
-                      confirm={`Perutaanko varaus ${fi(b.startDate)}–${fi(b.endDate)}? Päivät vapautuvat.`}
-                    >
-                      Peru
-                    </FormButton>
-                  </form>
+                  {b.status !== 'CANCELLED' && (
+                    <form action={cancelKammiBookingAction}>
+                      <input type="hidden" name="id" value={b.id} />
+                      <FormButton
+                        size="sm"
+                        variant="ghost"
+                        confirm={`Perutaanko varaus ${fi(b.startDate)}–${fi(b.endDate)}? Päivät vapautuvat.`}
+                      >
+                        Peru
+                      </FormButton>
+                    </form>
+                  )}
                 </div>
               </div>
             ))}

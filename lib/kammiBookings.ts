@@ -41,10 +41,21 @@ export async function getKammiSettings(): Promise<KammiSettings> {
 
 /** Lapse PENDING holds whose window has passed, so their dates free up. */
 export async function expireStaleHolds(): Promise<void> {
-  await prisma.kammiBooking.updateMany({
+  const stale = await prisma.kammiBooking.findMany({
     where: { status: 'PENDING', holdExpiresAt: { lt: new Date() } },
+    select: { id: true, googleEventId: true },
+  });
+  if (!stale.length) return;
+  await prisma.kammiBooking.updateMany({
+    where: { id: { in: stale.map((booking) => booking.id) }, status: 'PENDING' },
     data: { status: 'CANCELLED' },
   });
+  await Promise.all(
+    stale
+      .map((booking) => booking.googleEventId)
+      .filter((eventId): eventId is string => Boolean(eventId))
+      .map((eventId) => deleteKammiEvent(eventId)),
+  );
 }
 
 /** A booking's date range as ISO strings, labelled with who booked it. */
@@ -155,23 +166,22 @@ export async function createKammiHold(
         accountingClassId,
       },
     });
-    if (free) {
-      // No webhook will fire, so write the calendar entry here (best-effort).
-      const eventId = await createKammiEvent({
-        summary: `Kammi varattu - ${booking.name ?? booking.email ?? 'varaus'}`,
-        description: `Partiovaraus (maksuton) kauppa.pitva.fi:n kautta.${booking.email ? ` ${booking.email}` : ''}`,
-        startISO: toISODate(booking.startDate),
-        endISO: toISODate(booking.endDate),
-      });
-      if (eventId) {
-        return {
-          ok: true,
-          booking: await prisma.kammiBooking.update({
-            where: { id: booking.id },
-            data: { googleEventId: eventId },
-          }),
-        };
-      }
+    const eventId = await createKammiEvent({
+      summary: free
+        ? `Kammi varattu - ${booking.name ?? booking.email ?? 'varaus'}`
+        : `Kammi varaus odottaa maksua - ${booking.name ?? booking.email ?? 'varaus'}`,
+      description: `${free ? 'Partiovaraus (maksuton)' : 'Maksua odottava varaus'} kontti.pitva.fi:n kautta.${booking.email ? ` ${booking.email}` : ''}`,
+      startISO: toISODate(booking.startDate),
+      endISO: toISODate(booking.endDate),
+    });
+    if (eventId) {
+      return {
+        ok: true,
+        booking: await prisma.kammiBooking.update({
+          where: { id: booking.id },
+          data: { googleEventId: eventId },
+        }),
+      };
     }
     return { ok: true, booking };
   } catch (error) {
@@ -206,17 +216,19 @@ export async function confirmKammiBooking(
     },
   });
 
-  const eventId = await createKammiEvent({
-    summary: `Kammi varattu: ${booking.name ?? booking.email ?? 'varaus'}`,
-    description: `Varaus kontti.pitva.fi:n kautta.${booking.email ? ` ${booking.email}` : ''}`,
-    startISO: toISODate(booking.startDate),
-    endISO: toISODate(booking.endDate),
-  });
-  if (eventId) {
-    await prisma.kammiBooking.update({
-      where: { id: bookingId },
-      data: { googleEventId: eventId },
+  if (!booking.googleEventId) {
+    const eventId = await createKammiEvent({
+      summary: `Kammi varattu: ${booking.name ?? booking.email ?? 'varaus'}`,
+      description: `Varaus kontti.pitva.fi:n kautta.${booking.email ? ` ${booking.email}` : ''}`,
+      startISO: toISODate(booking.startDate),
+      endISO: toISODate(booking.endDate),
     });
+    if (eventId) {
+      await prisma.kammiBooking.update({
+        where: { id: bookingId },
+        data: { googleEventId: eventId },
+      });
+    }
   }
   return true;
 }

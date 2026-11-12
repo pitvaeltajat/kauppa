@@ -117,7 +117,7 @@ export function ItemForm({
   const [selectedNotificationEmails, setSelectedNotificationEmails] = useState<string[]>([
     ...new Set([
       ...(item?.notificationEmails ?? []),
-      ...(item?.createdByEmail ? [item.createdByEmail] : creatorEmail ? [creatorEmail] : []),
+      ...(!item && creatorEmail ? [creatorEmail] : []),
     ]),
   ]);
   const [notificationSearch, setNotificationSearch] = useState('');
@@ -279,30 +279,6 @@ export function ItemForm({
             </p>
           </div>
           <EventDateFields startsAt={item?.startsAt ?? null} endsAt={item?.endsAt ?? null} />
-          <label className="flex items-center gap-2 text-sm sm:col-span-2">
-            <input
-              type="checkbox"
-              name="hidden"
-              defaultChecked={item?.hidden ?? false}
-              className="size-4 accent-[hsl(244,51%,24%)]"
-            />
-            Piilota etusivulta - näkyy vain suoralla linkillä
-          </label>
-          <label className="flex items-start gap-2 text-sm sm:col-span-2">
-            <input
-              type="checkbox"
-              name="leaderDiscount"
-              defaultChecked={item?.leaderDiscount ?? false}
-              className="mt-0.5 size-4 accent-[hsl(244,51%,24%)]"
-            />
-            <span>
-              Tässä tapahtumassa on käytössä johtajien alennus
-              <span className="block text-xs text-muted-foreground">
-                Johtajien alennuskoodi (esim. JOHTAJA) toimii vain näin merkityissä tapahtumissa.
-                Koodit hallitaan kohdassa Alennuskoodit.
-              </span>
-            </span>
-          </label>
         </section>
       )}
 
@@ -355,6 +331,24 @@ export function ItemForm({
           </div>
         </div>
 
+        {isEvent && (
+          <label className="flex items-start gap-2 text-sm">
+            <input
+              type="checkbox"
+              name="leaderDiscount"
+              defaultChecked={item?.leaderDiscount ?? false}
+              className="mt-0.5 size-4 accent-[hsl(244,51%,24%)]"
+            />
+            <span>
+              Tässä tapahtumassa on käytössä johtajien alennus
+              <span className="block text-xs text-muted-foreground">
+                Johtajien alennuskoodi (esim. JOHTAJA) toimii vain näin merkityissä tapahtumissa.
+                Koodit hallitaan kohdassa Alennuskoodit.
+              </span>
+            </span>
+          </label>
+        )}
+
         {!isEvent && (
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
@@ -394,7 +388,6 @@ export function ItemForm({
             <div className="flex min-h-10 flex-wrap gap-2 rounded-md border border-input bg-card p-2">
               {selectedNotificationEmails.map((email) => {
                 const user = notificationUsers.find((candidate) => candidate.email === email);
-                const isCreator = email === (item?.createdByEmail ?? creatorEmail);
                 return (
                   <span
                     key={email}
@@ -404,20 +397,18 @@ export function ItemForm({
                       <span className="block font-medium">{user?.name ?? 'Nimetön käyttäjä'}</span>
                       <span className="block text-xs text-muted-foreground">{email}</span>
                     </span>
-                    {!isCreator && (
-                      <button
-                        type="button"
-                        className="rounded-full p-0.5 text-muted-foreground hover:bg-primary/15 hover:text-foreground"
-                        onClick={() =>
-                          setSelectedNotificationEmails((current) =>
-                            current.filter((selected) => selected !== email),
-                          )
-                        }
-                        aria-label={`Poista ${user?.name ?? email}`}
-                      >
-                        <X className="size-3.5" />
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      className="rounded-full p-0.5 text-muted-foreground hover:bg-primary/15 hover:text-foreground"
+                      onClick={() =>
+                        setSelectedNotificationEmails((current) =>
+                          current.filter((selected) => selected !== email),
+                        )
+                      }
+                      aria-label={`Poista ${user?.name ?? email}`}
+                    >
+                      <X className="size-3.5" />
+                    </button>
                   </span>
                 );
               })}
@@ -604,6 +595,18 @@ export function ItemForm({
           Nosta etusivulle{' '}
           <span className="text-xs text-muted-foreground">(näkyy Nostot-osiossa)</span>
         </label>
+
+        {isEvent && (
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              name="hidden"
+              defaultChecked={item?.hidden ?? false}
+              className="size-4 accent-[hsl(244,51%,24%)]"
+            />
+            Piilota etusivulta - näkyy vain suoralla linkillä
+          </label>
+        )}
       </section>
 
       <div className="space-y-3 rounded-md border bg-background p-4">

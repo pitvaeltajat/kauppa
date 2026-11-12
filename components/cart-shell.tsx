@@ -100,10 +100,13 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
 
   const lines = items.flatMap((cartItem) => {
     const item = catalog.get(cartItem.id);
-    const variant = item?.variants.find((candidate) => candidate.id === cartItem.variantId);
+    const variant =
+      item?.variants.find((candidate) => candidate.id === cartItem.variantId) ??
+      (item?.variants.length === 1 ? item.variants[0] : undefined);
     return [{ cartItem, item, variant }];
   });
   const eventOnly = lines.length > 0 && lines.every(({ item }) => item?.isEvent === true);
+  const hasInvalidVariant = lines.some(({ item, variant }) => item && !variant);
   const deferredCheckout = eventOnly && paymentMethod === 'deferred';
 
   // A signed-in user's details are the convenient default, but only fill empty
@@ -142,7 +145,8 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
         return sum + saved * cartItem.quantity;
       }, 0)
     : 0;
-  const freeEventRegistration = eventOnly && catalogLoaded && totalCents - discountCents === 0;
+  const freeEventRegistration =
+    eventOnly && catalogLoaded && !hasInvalidVariant && totalCents - discountCents === 0;
 
   async function applyCode() {
     const code = normalizeCode(codeInput);
@@ -219,6 +223,12 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
     setError(null);
     if (lines.length === 0 || lines.some(({ item }) => !item)) {
       setError('Jokin korin tuotteista ei ole enää myynnissä. Poista se korista.');
+      return;
+    }
+    if (hasInvalidVariant) {
+      setError(
+        'Jokin tuotteen vaihtoehto ei ole enää saatavilla. Poista tuote korista ja lisää se uudelleen.',
+      );
       return;
     }
     for (const { cartItem, item } of lines) {
@@ -306,6 +316,7 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
     initialUser.name,
     items,
     lines,
+    hasInvalidVariant,
     missingAnswerMessage,
     router,
   ]);
@@ -315,6 +326,7 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
       !catalogLoaded ||
       deferredCheckout ||
       freeEventRegistration ||
+      hasInvalidVariant ||
       clientSecret ||
       loading ||
       autoCheckoutStarted.current
@@ -336,6 +348,7 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
     email,
     clientSecret,
     freeEventRegistration,
+    hasInvalidVariant,
     goToCheckout,
     lines,
     loading,
@@ -384,9 +397,11 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
                     {item.name}
                   </Link>
                   <p className="text-sm text-muted-foreground">
-                    {item.isEvent && variant?.priceCents === 0
-                      ? 'Maksuton ilmoittautuminen'
-                      : `${formatCents(variant?.priceCents ?? 0)} / kpl`}
+                    {variant
+                      ? item.isEvent && variant.priceCents === 0
+                        ? 'Maksuton ilmoittautuminen'
+                        : `${formatCents(variant.priceCents)} / kpl`
+                      : 'Vaihtoehto ei ole enää saatavilla'}
                     {variant?.name ? ` - ${variant.name}` : ''}
                   </p>
                 </>
@@ -429,7 +444,7 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
                 </div>
                 {item && (
                   <span className="text-sm font-semibold">
-                    {formatCents((variant?.priceCents ?? 0) * cartItem.quantity)}
+                    {variant ? formatCents(variant.priceCents * cartItem.quantity) : '–'}
                   </span>
                 )}
                 <button

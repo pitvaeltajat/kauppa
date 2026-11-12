@@ -15,7 +15,20 @@ type Image = {
   height: number;
 };
 
-export function KuvatPicker({ onSelect }: { onSelect: (url: string) => void }) {
+function normalizeFolderPath(path: string) {
+  const trimmed = path.trim();
+  return `/${trimmed.replace(/^\/+|\/+$/g, '')}/`;
+}
+
+export function KuvatPicker({
+  onSelect,
+  folderPath,
+  buttonLabel = 'Valitse Kuvat.fi:stä',
+}: {
+  onSelect: (url: string) => void;
+  folderPath?: string;
+  buttonLabel?: string;
+}) {
   const [open, setOpen] = useState(false);
   const [folders, setFolders] = useState<Folder[]>([]);
   const [images, setImages] = useState<Image[]>([]);
@@ -36,24 +49,7 @@ export function KuvatPicker({ onSelect }: { onSelect: (url: string) => void }) {
     };
   }, [open]);
 
-  async function loadFolders() {
-    setOpen(true);
-    setError(null);
-    if (folders.length) return;
-    setLoading(true);
-    try {
-      const response = await fetch('/api/items/kuvat');
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Kuvakansioita ei voitu ladata.');
-      setFolders(data.folders);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Kuvat.fi-yhteys epäonnistui.');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function chooseFolder(value: string) {
+  async function loadFolderImages(value: string) {
     setFolderKey(value);
     setImages([]);
     if (!value) return;
@@ -74,6 +70,36 @@ export function KuvatPicker({ onSelect }: { onSelect: (url: string) => void }) {
     }
   }
 
+  async function loadFolders() {
+    setOpen(true);
+    setError(null);
+    if (folders.length) return;
+    setLoading(true);
+    try {
+      const response = await fetch('/api/items/kuvat');
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Kuvakansioita ei voitu ladata.');
+      const nextFolders = folderPath
+        ? data.folders.filter(
+            (folder: Folder) =>
+              normalizeFolderPath(folder.path) === normalizeFolderPath(folderPath),
+          )
+        : data.folders;
+      setFolders(nextFolders);
+      const firstFolder = nextFolders[0];
+      if (firstFolder) void loadFolderImages(`${firstFolder.host}|${firstFolder.path}`);
+      else if (folderPath) setError(`Kuvakansiota ${folderPath} ei löytynyt.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Kuvat.fi-yhteys epäonnistui.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function chooseFolder(value: string) {
+    await loadFolderImages(value);
+  }
+
   async function chooseImage(image: Image) {
     setImporting(true);
     setError(null);
@@ -84,7 +110,8 @@ export function KuvatPicker({ onSelect }: { onSelect: (url: string) => void }) {
         body: JSON.stringify({ url: image.url }),
       });
       const data = (await response.json()) as { publicUrl?: string; error?: string };
-      if (!response.ok || !data.publicUrl) throw new Error(data.error || 'Kuvan tuonti epäonnistui.');
+      if (!response.ok || !data.publicUrl)
+        throw new Error(data.error || 'Kuvan tuonti epäonnistui.');
       onSelect(data.publicUrl);
       setOpen(false);
     } catch (err) {
@@ -97,7 +124,7 @@ export function KuvatPicker({ onSelect }: { onSelect: (url: string) => void }) {
   return (
     <>
       <Button type="button" size="sm" variant="outline" onClick={() => void loadFolders()}>
-        <Images /> Valitse Kuvat.fi:stä
+        <Images /> {buttonLabel}
       </Button>
       {open && (
         <div
@@ -120,22 +147,24 @@ export function KuvatPicker({ onSelect }: { onSelect: (url: string) => void }) {
               </Button>
             </div>
             <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4 [touch-action:pan-y]">
-              <Select
-                value={folderKey}
-                onChange={(event) => void chooseFolder(event.target.value)}
-                disabled={loading || importing || !folders.length}
-                aria-label="Kuvakansio"
-              >
-                <option value="">Valitse kuvakansio ({folders.length})</option>
-                {folders.map((folder) => (
-                  <option
-                    key={`${folder.host}|${folder.path}`}
-                    value={`${folder.host}|${folder.path}`}
-                  >
-                    {folder.name} ({folder.count})
-                  </option>
-                ))}
-              </Select>
+              {!folderPath && (
+                <Select
+                  value={folderKey}
+                  onChange={(event) => void chooseFolder(event.target.value)}
+                  disabled={loading || importing || !folders.length}
+                  aria-label="Kuvakansio"
+                >
+                  <option value="">Valitse kuvakansio ({folders.length})</option>
+                  {folders.map((folder) => (
+                    <option
+                      key={`${folder.host}|${folder.path}`}
+                      value={`${folder.host}|${folder.path}`}
+                    >
+                      {folder.name} ({folder.count})
+                    </option>
+                  ))}
+                </Select>
+              )}
               {(loading || importing) && (
                 <p className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Loader2 className="size-4 animate-spin" />

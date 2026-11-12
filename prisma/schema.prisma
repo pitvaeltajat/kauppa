@@ -330,6 +330,8 @@ model SiteSettings {
 model KammiSettings {
   id                String   @id @default("singleton")
   updatedAt         DateTime @updatedAt
+  /// Optional hero photo shown at the top of the public Kammi booking page.
+  heroImageUrl      String?
   active            Boolean  @default(false)
   weekendScoutCents Int      @default(20000)
   weekendOtherCents Int      @default(30000)

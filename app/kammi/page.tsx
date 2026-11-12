@@ -9,7 +9,8 @@ import { KammiBooking } from '@/components/kammi-booking';
 
 export const metadata: Metadata = {
   title: 'Kammin varaus',
-  description: 'Tarkista Kammin vapaat päivät, varaa vuoro ja maksa verkossa. Saat ovikoodin sähköpostitse.',
+  description:
+    'Tarkista Kammin vapaat päivät, varaa vuoro ja maksa verkossa. Saat ovikoodin sähköpostitse.',
 };
 
 export const dynamic = 'force-dynamic';
@@ -49,14 +50,32 @@ export default async function KammiPage() {
     <div className="container py-8">
       {!settings.active && superAdmin && (
         <p className="mb-4 rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-sm text-warning">
-          Esikatselu: verkkovaraus ei ole vielä käytössä. Tämä näkymä näkyy vain
-          pääylläpitäjille. Voit ottaa varauksen käyttöön kohdassa Hallinta → Kammi.
+          Esikatselu: verkkovaraus ei ole vielä käytössä. Tämä näkymä näkyy vain pääylläpitäjille.
+          Voit ottaa varauksen käyttöön kohdassa Hallinta → Kammi.
         </p>
       )}
-      <h1 className="text-2xl font-bold">Kammin varaus</h1>
+      {settings.heroImageUrl && (
+        <div
+          className="relative mb-8 flex min-h-64 items-end overflow-hidden rounded-xl border bg-muted bg-cover bg-center shadow-sm sm:min-h-80"
+          style={{
+            backgroundImage: `linear-gradient(90deg, rgb(0 0 0 / 0.68), rgb(0 0 0 / 0.16)), url("${settings.heroImageUrl}")`,
+          }}
+        >
+          <div className="relative max-w-xl p-6 text-white sm:p-8">
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-white/80">
+              Pitkäjärven vaeltajat
+            </p>
+            <h1 className="mt-2 text-3xl font-bold sm:text-4xl">Kammin varaus</h1>
+            <p className="mt-3 text-sm leading-6 text-white/90 sm:text-base">
+              Varaa oma vuorosi luonnon rauhaan.
+            </p>
+          </div>
+        </div>
+      )}
+      {!settings.heroImageUrl && <h1 className="text-2xl font-bold">Kammin varaus</h1>}
       <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-        Tarkista kalenterista vapaat päivät ja valitse itsellesi sopiva vuoro. Varaus vahvistuu,
-        kun maksu on suoritettu. Saat ovikoodin ja ohjeet sähköpostitse maksun jälkeen.
+        Tarkista kalenterista vapaat päivät ja valitse itsellesi sopiva vuoro. Varaus vahvistuu, kun
+        maksu on suoritettu. Saat ovikoodin ja ohjeet sähköpostitse maksun jälkeen.
       </p>
 
       {/* Price list */}
@@ -64,18 +83,23 @@ export default async function KammiPage() {
         <div className="rounded-lg border bg-card p-4 text-sm shadow-sm">
           <p className="font-semibold">Viikonloppu (pe–su)</p>
           <p className="mt-1 text-muted-foreground">
-            Partiolainen {formatCents(settings.weekendScoutCents)} · Muu varaaja {formatCents(settings.weekendOtherCents)}
+            Partiolainen {formatCents(settings.weekendScoutCents)} · Muu varaaja{' '}
+            {formatCents(settings.weekendOtherCents)}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Viikonloppuhinta on sama, vaikka varaisit vain pe–la tai la–su. Toisen yön voi varata toinen seurue.
+            Viikonloppuhinta on sama, vaikka varaisit vain pe–la tai la–su. Toisen yön voi varata
+            toinen seurue.
           </p>
         </div>
         <div className="rounded-lg border bg-card p-4 text-sm shadow-sm">
           <p className="font-semibold">Arkivuorokausi</p>
           <p className="mt-1 text-muted-foreground">
-            Partiolainen {formatCents(settings.weekdayScoutCents)}/yö · Muu varaaja {formatCents(settings.weekdayOtherCents)}/yö
+            Partiolainen {formatCents(settings.weekdayScoutCents)}/yö · Muu varaaja{' '}
+            {formatCents(settings.weekdayOtherCents)}/yö
           </p>
-          <p className="mt-1 text-xs text-muted-foreground">Pidemmät varaukset sovitaan erikseen kämppäisännän kanssa.</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Pidemmät varaukset sovitaan erikseen kämppäisännän kanssa.
+          </p>
         </div>
       </div>
 

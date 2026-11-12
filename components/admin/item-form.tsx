@@ -121,6 +121,7 @@ export function ItemForm({
     ]),
   ]);
   const [notificationSearch, setNotificationSearch] = useState('');
+  const [notificationSearchFocused, setNotificationSearchFocused] = useState(false);
   const [highlightedNotificationIndex, setHighlightedNotificationIndex] = useState(0);
   const [name, setName] = useState(item?.name ?? '');
   const [slug, setSlug] = useState(item?.slug ?? '');
@@ -425,6 +426,8 @@ export function ItemForm({
               className="flex h-10 w-full rounded-md border border-input bg-card px-3 py-2 text-base text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring sm:text-sm"
               type="search"
               value={notificationSearch}
+              onFocus={() => setNotificationSearchFocused(true)}
+              onBlur={() => window.setTimeout(() => setNotificationSearchFocused(false), 150)}
               onChange={(event) => {
                 setNotificationSearch(event.target.value);
                 setHighlightedNotificationIndex(0);
@@ -457,34 +460,36 @@ export function ItemForm({
                   : undefined
               }
             />
-            <div
-              id="notification-user-options"
-              role="listbox"
-              className="max-h-64 overflow-y-auto rounded-md border bg-card"
-            >
-              {filteredNotificationUsers.map((user, index) => (
-                <button
-                  key={user.email}
-                  id={`notification-user-${user.email}`}
-                  type="button"
-                  role="option"
-                  aria-selected={index === highlightedNotificationIndex}
-                  className={`block w-full px-3 py-2 text-left ${index === highlightedNotificationIndex ? 'bg-primary/10' : 'hover:bg-muted/50'}`}
-                  onMouseEnter={() => setHighlightedNotificationIndex(index)}
-                  onClick={() => addNotificationUser(user.email)}
-                >
-                  <span className="block font-medium">{user.name ?? 'Nimetön käyttäjä'}</span>
-                  <span className="block text-sm text-muted-foreground">{user.email}</span>
-                </button>
-              ))}
-              {filteredNotificationUsers.length === 0 && (
-                <p className="px-3 py-2 text-sm text-muted-foreground">
-                  {notificationUsers.length === 0
-                    ? 'Käyttäjiä ei ole vielä.'
-                    : 'Ei sopivia käyttäjiä.'}
-                </p>
-              )}
-            </div>
+            {notificationSearchFocused && (
+              <div
+                id="notification-user-options"
+                role="listbox"
+                className="max-h-64 overflow-y-auto rounded-md border bg-card"
+              >
+                {filteredNotificationUsers.map((user, index) => (
+                  <button
+                    key={user.email}
+                    id={`notification-user-${user.email}`}
+                    type="button"
+                    role="option"
+                    aria-selected={index === highlightedNotificationIndex}
+                    className={`block w-full px-3 py-2 text-left ${index === highlightedNotificationIndex ? 'bg-primary/10' : 'hover:bg-muted/50'}`}
+                    onMouseEnter={() => setHighlightedNotificationIndex(index)}
+                    onClick={() => addNotificationUser(user.email)}
+                  >
+                    <span className="block font-medium">{user.name ?? 'Nimetön käyttäjä'}</span>
+                    <span className="block text-sm text-muted-foreground">{user.email}</span>
+                  </button>
+                ))}
+                {filteredNotificationUsers.length === 0 && (
+                  <p className="px-3 py-2 text-sm text-muted-foreground">
+                    {notificationUsers.length === 0
+                      ? 'Käyttäjiä ei ole vielä.'
+                      : 'Ei sopivia käyttäjiä.'}
+                  </p>
+                )}
+              </div>
+            )}
             <p className="text-xs text-muted-foreground">
               Valituille käyttäjille lähetetään viesti uudesta ilmoittautumisesta. Vain ylläpidon
               käyttöön.

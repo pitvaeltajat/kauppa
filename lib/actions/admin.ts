@@ -178,7 +178,6 @@ export async function saveItem(
             .filter((value): value is string => typeof value === 'string')
             .map((email) => email.trim().toLowerCase())
             .filter(Boolean),
-          ...(existingCreatedByEmail ? [existingCreatedByEmail] : actorEmail ? [actorEmail] : []),
         ]),
       ]
     : [];

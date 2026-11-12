@@ -12,6 +12,7 @@ import { LoadingPill } from '@/components/ui/loading-pill';
 
 export type KammiSettingsValues = {
   heroImageUrl: string | null;
+  bookingTermsUrl: string | null;
   active: boolean;
   weekendScoutCents: number;
   weekendOtherCents: number;
@@ -88,6 +89,24 @@ export function KammiSettingsForm({
             Valinnainen leveä kuva kansiosta kuvat/Kammi.
           </p>
         )}
+      </div>
+
+      <div className="space-y-1.5">
+        <Label htmlFor="bookingTermsUrl">Varausehtojen linkki</Label>
+        <Input
+          id="bookingTermsUrl"
+          name="bookingTermsUrl"
+          type="url"
+          inputMode="url"
+          spellCheck={false}
+          autoCapitalize="none"
+          defaultValue={settings.bookingTermsUrl ?? ''}
+          placeholder="https://drive.google.com/..."
+        />
+        <p className="text-xs text-muted-foreground">
+          Linkki näkyy Kammin sivun Ehdot ja yhteystiedot -osiossa. Jätä tyhjäksi, jos linkkiä ei
+          näytetä.
+        </p>
       </div>
 
       <label className="flex items-center gap-2 text-sm font-medium">

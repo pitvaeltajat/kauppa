@@ -124,14 +124,16 @@ export default async function KammiPage() {
           Varaaja huolehtii loppusiivouksesta. Jos siivous jää tekemättä, siitä veloitetaan
           erikseen. Varausasioissa auttaa kämppäisäntä.
         </p>
-        <a
-          href="https://drive.google.com/file/d/1oBSd5QAEzgaSr1BgTgii2qtc2v7prKMd/view"
-          target="_blank"
-          rel="noreferrer"
-          className="mt-3 inline-block font-medium text-primary underline underline-offset-4 hover:no-underline"
-        >
-          Tutustu varausehtoihin (PDF)
-        </a>
+        {settings.bookingTermsUrl && (
+          <a
+            href={settings.bookingTermsUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-3 inline-block font-medium text-primary underline underline-offset-4 hover:no-underline"
+          >
+            Tutustu varausehtoihin (PDF)
+          </a>
+        )}
         <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-muted-foreground">
           <span className="flex items-center gap-1.5">
             <Phone className="size-4" /> 044 9747446

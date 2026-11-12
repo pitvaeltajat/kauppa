@@ -42,6 +42,7 @@ export async function saveKammiSettings(
   const keycode = ((formData.get('keycode') as string) ?? '').trim();
   const instructions = ((formData.get('instructions') as string) ?? '').trim();
   const heroImageUrl = ((formData.get('heroImageUrl') as string) ?? '').trim() || null;
+  const bookingTermsUrl = ((formData.get('bookingTermsUrl') as string) ?? '').trim() || null;
   const active = formData.get('active') === 'on';
   const accountingClassId =
     ((formData.get('accountingClassId') as string) ?? '').trim() || KAMMI_ACCOUNTING_CLASS_ID;
@@ -57,6 +58,7 @@ export async function saveKammiSettings(
       create: {
         id: 'singleton',
         heroImageUrl,
+        bookingTermsUrl,
         active,
         weekendScoutCents,
         weekendOtherCents,
@@ -70,6 +72,7 @@ export async function saveKammiSettings(
       },
       update: {
         heroImageUrl,
+        bookingTermsUrl,
         active,
         weekendScoutCents,
         weekendOtherCents,

@@ -577,7 +577,7 @@ export function KammiBooking({
           {isFree
             ? 'Ovikoodi ja ohjeet tulevat sähköpostiisi heti varauksen jälkeen.'
             : paymentMode === 'request'
-              ? 'Varaus pidetään maksamatta 24 tuntia. Se vahvistuu, kun maksaja maksaa linkin kautta.'
+              ? 'Varaus pidetään voimassa, kunnes maksaja maksaa tai ylläpito peruu sen. Se vahvistuu maksun jälkeen.'
               : 'Vuoro varmistuu maksamalla. Ovikoodi ja ohjeet tulevat sähköpostiin maksun jälkeen.'}
         </p>
       </div>

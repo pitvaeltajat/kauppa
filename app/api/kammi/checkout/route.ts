@@ -122,7 +122,7 @@ export async function POST(req: Request) {
   }
 
   const hold = await createKammiHold(holdInput, {
-    holdMinutes: paymentRequest ? 24 * 60 : undefined,
+    holdMinutes: paymentRequest ? null : undefined,
   });
   if (!hold.ok) return NextResponse.json({ error: hold.error }, { status: 400 });
   const booking = hold.booking;

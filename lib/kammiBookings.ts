@@ -106,7 +106,10 @@ export type CreateHoldResult = { ok: true; booking: KammiBooking } | { ok: false
  */
 export async function createKammiHold(
   input: CreateHoldInput,
-  { free = false, holdMinutes = HOLD_MINUTES }: { free?: boolean; holdMinutes?: number } = {},
+  {
+    free = false,
+    holdMinutes = HOLD_MINUTES,
+  }: { free?: boolean; holdMinutes?: number | null } = {},
 ): Promise<CreateHoldResult> {
   const settings = await getKammiSettings();
   if (!settings.active)
@@ -146,7 +149,8 @@ export async function createKammiHold(
         billingEmail: input.billingEmail,
         requestKey: input.requestKey ?? undefined,
         totalCents: free ? 0 : price.totalCents,
-        holdExpiresAt: free ? null : new Date(Date.now() + holdMinutes * 60_000),
+        holdExpiresAt:
+          free || holdMinutes === null ? null : new Date(Date.now() + holdMinutes * 60_000),
         paidAt: free ? new Date() : null,
         accountingClassId,
       },

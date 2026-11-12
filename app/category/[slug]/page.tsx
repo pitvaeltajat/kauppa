@@ -13,8 +13,19 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const category = await prisma.category.findUnique({ where: { slug }, select: { name: true } });
-  return { title: category ? category.name : 'Kategoria' };
+  const category = await prisma.category.findUnique({
+    where: { slug },
+    select: { name: true, description: true },
+  });
+  if (!category)
+    return { title: 'Kategoria', description: 'Pitkäjärven Vaeltajien tuotteet Kontissa.' };
+  const description =
+    category.description || `Pitkäjärven Vaeltajien ${category.name.toLowerCase()} Kontissa.`;
+  return {
+    title: category.name,
+    description,
+    openGraph: { title: `${category.name} · Kontti`, description, type: 'website' },
+  };
 }
 
 export default async function CategoryPage({ params }: { params: Promise<{ slug: string }> }) {

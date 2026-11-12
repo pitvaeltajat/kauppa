@@ -11,6 +11,11 @@ export const metadata: Metadata = {
   title: 'Kammin varaus',
   description:
     'Tarkista Kammin vapaat päivät, varaa vuoro ja maksa verkossa. Saat ovikoodin sähköpostitse.',
+  openGraph: {
+    title: 'Kammin varaus · Kontti',
+    description: 'Tarkista Kammin vapaat päivät ja varaa oma vuorosi.',
+    type: 'website',
+  },
 };
 
 export const dynamic = 'force-dynamic';

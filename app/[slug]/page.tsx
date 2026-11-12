@@ -19,8 +19,22 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const item = await prisma.item.findUnique({ where: { slug }, select: { name: true } });
-  return { title: item ? item.name : 'Tuote' };
+  const item = await prisma.item.findUnique({
+    where: { slug },
+    select: { name: true, description: true, imageUrl: true },
+  });
+  if (!item) return { title: 'Tuote', description: 'Pitkäjärven Vaeltajien tuote Kontissa.' };
+  const description = item.description || `${item.name} · Pitkäjärven Vaeltajien Kontti.`;
+  return {
+    title: item.name,
+    description,
+    openGraph: {
+      title: `${item.name} · Kontti`,
+      description,
+      type: 'website',
+      ...(item.imageUrl ? { images: [{ url: item.imageUrl, alt: item.name }] } : {}),
+    },
+  };
 }
 
 export default async function ItemPage({ params }: { params: Promise<{ slug: string }> }) {

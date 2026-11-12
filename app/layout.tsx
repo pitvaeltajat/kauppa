@@ -12,12 +12,30 @@ import '@/styles/globals.css';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://kontti.pitva.fi'),
   title: {
     default: 'Kontti · Pitkäjärven Vaeltajat',
     template: '%s · Kontti',
   },
   description:
     'Pitkäjärven Vaeltajien tuotteet ja tapahtumailmoittautumiset samassa paikassa. Tilaa huiveja, merkkejä ja muita PitVa-tuotteita tai ilmoittaudu tapahtumiin.',
+  openGraph: {
+    type: 'website',
+    locale: 'fi_FI',
+    siteName: 'Kontti · Pitkäjärven Vaeltajat',
+    title: 'Kontti · Pitkäjärven Vaeltajat',
+    description: 'Pitkäjärven Vaeltajien nettikauppa ja ilmoittautumisportaali.',
+    url: '/',
+    images: [
+      { url: '/opengraph-image', width: 1200, height: 630, alt: 'Kontti · Pitkäjärven Vaeltajat' },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Kontti · Pitkäjärven Vaeltajat',
+    description: 'Pitkäjärven Vaeltajien nettikauppa ja ilmoittautumisportaali.',
+    images: ['/opengraph-image'],
+  },
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

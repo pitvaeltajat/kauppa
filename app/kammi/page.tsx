@@ -66,9 +66,6 @@ export default async function KammiPage() {
               Pitkäjärven vaeltajat
             </p>
             <h1 className="mt-2 text-3xl font-bold sm:text-4xl">Kammin varaus</h1>
-            <p className="mt-3 text-sm leading-6 text-white/90 sm:text-base">
-              Varaa oma vuorosi luonnon rauhaan.
-            </p>
           </div>
         </div>
       )}

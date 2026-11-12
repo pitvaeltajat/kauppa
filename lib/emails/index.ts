@@ -7,6 +7,8 @@
 export {
   renderOrderReceiptEmail,
   sendOrderReceiptEmail,
+  sendOrderPaymentFailureEmail,
+  sendEventCancellationEmail,
   renderNewOrderAdminEmail,
   sendNewOrderAdminEmail,
   sendEventPaymentLinkEmail,
@@ -15,6 +17,10 @@ export {
 export {
   renderKammiConfirmationEmail,
   sendKammiConfirmationEmail,
+  sendKammiPayerReceiptEmail,
+  sendKammiPaymentFailureEmail,
+  sendKammiCancellationEmail,
+  sendKammiPaymentReminderEmail,
   renderKammiFeedbackEmail,
   sendKammiFeedbackEmail,
   sendKammiHostNotificationEmail,

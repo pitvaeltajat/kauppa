@@ -15,6 +15,8 @@ export type OrderEmailData = {
     name: string;
     quantity: number;
     priceCents: number;
+    imageUrl?: string | null;
+    eventDates?: string;
     answers: Answer[];
     participants?: { name: string; answers: Answer[] }[];
   }[];
@@ -23,6 +25,12 @@ export type OrderEmailData = {
 /** "#A1B2C3D4" is the same short id the admin order list shows. */
 function orderNumber(id: string): string {
   return `#${id.slice(-8).toUpperCase()}`;
+}
+
+function emailImageUrl(imageUrl: string | null): string | null {
+  if (!imageUrl) return null;
+  if (/^https?:\/\//i.test(imageUrl)) return imageUrl;
+  return `${publicUrl()}${imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`}`;
 }
 
 function renderAnswers(answers: Answer[]): string {
@@ -47,7 +55,7 @@ function renderLinesTable(data: OrderEmailData): string {
         .join('');
       return `
       <tr>
-        <td>${escapeHtml(line.name)} × ${line.quantity}${participantDetails || renderAnswers(line.answers)}</td>
+        <td>${line.imageUrl ? `<img src="${escapeHtml(line.imageUrl)}" alt="" width="56" height="56" style="width:56px;height:56px;object-fit:cover;border-radius:6px;vertical-align:middle;margin-right:10px">` : ''}<strong>${escapeHtml(line.name)} × ${line.quantity}</strong>${line.eventDates ? `<br><span style="color:#5A5874">${escapeHtml(line.eventDates)}</span>` : ''}${participantDetails || renderAnswers(line.answers)}</td>
         <td class="num">${formatCents(line.priceCents * line.quantity)}</td>
       </tr>`;
     })
@@ -65,18 +73,23 @@ function renderLinesTable(data: OrderEmailData): string {
 /** Receipt the buyer gets once a payment is confirmed. */
 export function renderOrderReceiptEmail(data: OrderEmailData): EmailContent {
   const greeting = data.name ? `Hei ${escapeHtml(data.name)}!` : 'Hei!';
+  const freeEvent = data.totalCents === 0;
   const html = renderEmail(`
-    <h1>Kiitos tilauksestasi</h1>
+    <h1>${freeEvent ? 'Ilmoittautuminen vastaanotettu' : 'Kiitos tilauksestasi'}</h1>
     <p>${greeting}</p>
-    <p>Maksusi on vastaanotettu. Tässä on kuitti tilauksestasi <strong>${orderNumber(data.id)}</strong>.</p>
+    <p>${freeEvent ? `Maksuton tapahtumailmoittautumisesi on vastaanotettu. Ilmoittautumisnumero on <strong>${orderNumber(data.id)}</strong>.` : `Maksusi on vastaanotettu. Tässä on kuitti tilauksestasi <strong>${orderNumber(data.id)}</strong>.`}</p>
     ${renderLinesTable(data)}
     <div class="info-box">
-      Tuotteet noudetaan kokouksessa ryhmänjohtajalta tai erikseen sovittuna aikana kololta.
-      Emme postita tuotteita. Tapahtumatuotteen ostaminen toimii samalla ilmoittautumisena.
+      ${freeEvent ? 'Tapahtumailmoittautuminen on nyt vahvistettu. Saat tapahtuman tarkemmat ohjeet erikseen.' : 'Tuotteet noudetaan kokouksessa ryhmänjohtajalta tai erikseen sovittuna aikana kololta. Emme postita tuotteita. Tapahtumatuotteen ostaminen toimii samalla ilmoittautumisena.'}
     </div>
     ${renderButton(publicUrl(), 'Takaisin Konttiin')}
   `);
-  return { subject: `Kuitti tilauksestasi ${orderNumber(data.id)}`, html };
+  return {
+    subject: freeEvent
+      ? `Ilmoittautuminen vastaanotettu ${orderNumber(data.id)}`
+      : `Kuitti tilauksestasi ${orderNumber(data.id)}`,
+    html,
+  };
 }
 
 /** Heads-up to the troop when a new order is paid. */
@@ -104,6 +117,7 @@ async function loadOrderEmailData(orderId: string): Promise<OrderEmailData | nul
           name: true,
           quantity: true,
           priceCents: true,
+          item: { select: { imageUrl: true, isEvent: true, startsAt: true, endsAt: true } },
           answers: true,
           participants: { select: { name: true, answers: true }, orderBy: { createdAt: 'asc' } },
         },
@@ -117,6 +131,10 @@ async function loadOrderEmailData(orderId: string): Promise<OrderEmailData | nul
       name: line.name,
       quantity: line.quantity,
       priceCents: line.priceCents,
+      imageUrl: emailImageUrl(line.item.imageUrl),
+      eventDates: line.item.isEvent
+        ? formatEventDates(line.item.startsAt, line.item.endsAt)
+        : undefined,
       answers: Array.isArray(line.answers) ? (line.answers as Answer[]) : [],
       participants: line.participants.map((participant) => ({
         name: participant.name,
@@ -132,6 +150,33 @@ export async function sendOrderReceiptEmail(orderId: string): Promise<void> {
   if (!data?.email) return;
   const { subject, html } = renderOrderReceiptEmail(data);
   await sendEmail(data.email, subject, html);
+}
+
+/** Tell the buyer that a payment attempt did not complete. */
+export async function sendOrderPaymentFailureEmail(orderId: string): Promise<void> {
+  const data = await loadOrderEmailData(orderId);
+  if (!data?.email) return;
+  const html = renderEmail(`
+    <h1>Maksu ei onnistunut</h1>
+    <p>Hei${data.name ? ` ${escapeHtml(data.name)}` : ''}!</p>
+    <p>Tilauksen <strong>${orderNumber(data.id)}</strong> maksua ei voitu vahvistaa. Maksua ei veloitettu, ja voit yrittää uudelleen.</p>
+    ${renderLinesTable(data)}
+    ${renderButton(`${publicUrl()}/cart`, 'Palaa ostoskoriin')}
+  `);
+  await sendEmail(data.email, `Maksu ei onnistunut ${orderNumber(data.id)}`, html);
+}
+
+/** Tell a child/parent link recipient that an unpaid event registration was cancelled. */
+export async function sendEventCancellationEmail(orderId: string): Promise<void> {
+  const data = await loadOrderEmailData(orderId);
+  if (!data?.email) return;
+  const html = renderEmail(`
+    <h1>Ilmoittautuminen peruttu</h1>
+    <p>Ilmoittautuminen ${orderNumber(data.id)} on peruttu eikä sitä tarvitse enää maksaa.</p>
+    ${renderLinesTable(data)}
+    ${renderButton(publicUrl(), 'Avaa PitVa-kontti')}
+  `);
+  await sendEmail(data.email, `Ilmoittautuminen peruttu ${orderNumber(data.id)}`, html);
 }
 
 /** Notify the troop of a new order, if ORDER_NOTIFICATION_EMAILS is set. */

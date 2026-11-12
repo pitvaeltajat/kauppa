@@ -6,6 +6,7 @@ import { auth } from '@/lib/auth';
 import { getUserRole, isSuperAdmin } from '@/lib/admin';
 import { parseEurosInput } from '@/lib/money';
 import { cancelKammiBooking, KAMMI_ACCOUNTING_CLASS_ID } from '@/lib/kammiBookings';
+import { sendKammiCancellationEmail, trySendEmail } from '@/lib/emails';
 import type { ActionResult } from '@/lib/actions/admin';
 
 async function requireSuper(): Promise<boolean> {
@@ -34,7 +35,10 @@ export async function saveKammiSettings(
   }
 
   const minNights = Math.max(1, Number((formData.get('minNights') as string) ?? '1') || 1);
-  const maxNights = Math.max(minNights, Number((formData.get('maxNights') as string) ?? '14') || 14);
+  const maxNights = Math.max(
+    minNights,
+    Number((formData.get('maxNights') as string) ?? '14') || 14,
+  );
   const keycode = ((formData.get('keycode') as string) ?? '').trim();
   const instructions = ((formData.get('instructions') as string) ?? '').trim();
   const active = formData.get('active') === 'on';
@@ -89,6 +93,7 @@ export async function cancelKammiBookingAction(formData: FormData): Promise<void
   const id = ((formData.get('id') as string) ?? '').trim();
   if (!id) return;
   await cancelKammiBooking(id);
+  await trySendEmail(`kammi cancellation ${id}`, () => sendKammiCancellationEmail(id));
   revalidatePath('/admin/kammi');
   revalidatePath('/kammi');
 }

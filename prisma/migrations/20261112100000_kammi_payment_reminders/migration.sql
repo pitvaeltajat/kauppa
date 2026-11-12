@@ -1,0 +1,1 @@
+ALTER TABLE "KammiBooking" ADD COLUMN "paymentReminderCount" INTEGER NOT NULL DEFAULT 0;

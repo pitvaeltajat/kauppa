@@ -69,6 +69,109 @@ export async function sendKammiConfirmationEmail(bookingId: string): Promise<voi
   await sendEmail(booking.email, subject, html);
 }
 
+/** Send the payer a confirmation when the payer differs from the booker. */
+export async function sendKammiPayerReceiptEmail(bookingId: string): Promise<void> {
+  const [booking] = await Promise.all([
+    prisma.kammiBooking.findUnique({ where: { id: bookingId } }),
+  ]);
+  if (!booking?.billingEmail || booking.billingEmail === booking.email) return;
+  const html = renderEmail(`
+    <h1>Kammin maksu vastaanotettu</h1>
+    <p>Kammin varaus on maksettu. Varaaja saa erillisen varausvahvistuksen ja ovikoodin.</p>
+    <div class="info-box"><strong>${fi(toISODate(booking.startDate))} – ${fi(toISODate(booking.endDate))}</strong> (${booking.nights} yötä)<br>Hinta: ${formatCents(booking.totalCents)}<br>Varaaja: ${escapeHtml(booking.name ?? 'Varaaja')}</div>
+    ${renderButton(publicUrl(), 'Pitkäjärven Vaeltajat')}
+  `);
+  await sendEmail(
+    booking.billingEmail,
+    `Kammin maksu vastaanotettu ${fi(toISODate(booking.startDate))}`,
+    html,
+  );
+}
+
+async function kammiRecipients(bookingId: string): Promise<{
+  booking: KammiEmailData & {
+    email: string | null;
+    billingEmail: string | null;
+    paymentToken: string | null;
+  };
+} | null> {
+  const [booking, settings] = await Promise.all([
+    prisma.kammiBooking.findUnique({ where: { id: bookingId } }),
+    prisma.kammiSettings.findUnique({ where: { id: 'singleton' } }),
+  ]);
+  if (!booking) return null;
+  return {
+    booking: {
+      name: booking.name,
+      startISO: toISODate(booking.startDate),
+      endISO: toISODate(booking.endDate),
+      nights: booking.nights,
+      totalCents: booking.totalCents,
+      keycode: settings?.keycode ?? '',
+      instructions: settings?.instructions ?? '',
+      email: booking.email,
+      billingEmail: booking.billingEmail,
+      paymentToken: booking.paymentToken,
+    },
+  };
+}
+
+/** Notify the payer/booker that a payment failed or the payment session expired. */
+export async function sendKammiPaymentFailureEmail(bookingId: string): Promise<void> {
+  const data = await kammiRecipients(bookingId);
+  if (!data) return;
+  const recipients = [
+    ...new Set([data.booking.billingEmail, data.booking.email].filter(Boolean)),
+  ] as string[];
+  if (!recipients.length) return;
+  const html = renderEmail(`
+    <h1>Kammin maksu ei onnistunut</h1>
+    <p>Kammin maksua ei voitu vahvistaa. Varaus ei ole vielä vahvistettu.</p>
+    <div class="info-box"><strong>${data.booking.startISO} – ${data.booking.endISO}</strong> (${data.booking.nights} yötä)<br>Hinta: ${formatCents(data.booking.totalCents)}</div>
+    <p>Voit yrittää maksua uudelleen maksuohjesivulla.</p>
+    ${data.booking.paymentToken ? renderButton(`${publicUrl()}/kammi/pay/${encodeURIComponent(data.booking.paymentToken)}`, 'Avaa maksuohje') : ''}
+  `);
+  await sendEmail(recipients, `Kammin maksu ei onnistunut ${data.booking.startISO}`, html);
+}
+
+/** Notify recipients when a Kammi booking is cancelled. */
+export async function sendKammiCancellationEmail(bookingId: string): Promise<void> {
+  const data = await kammiRecipients(bookingId);
+  if (!data) return;
+  const recipients = [
+    ...new Set([data.booking.email, data.booking.billingEmail].filter(Boolean)),
+  ] as string[];
+  if (!recipients.length) return;
+  const html = renderEmail(`
+    <h1>Kammin varaus peruttu</h1>
+    <p>Kammin varaus on peruttu ja päivät on vapautettu.</p>
+    <div class="info-box"><strong>${data.booking.startISO} – ${data.booking.endISO}</strong> (${data.booking.nights} yötä)<br>Hinta: ${formatCents(data.booking.totalCents)}</div>
+    ${renderButton(publicUrl(), 'Avaa PitVa-kontti')}
+  `);
+  await sendEmail(recipients, `Kammin varaus peruttu ${data.booking.startISO}`, html);
+}
+
+/** Remind a payer/booker about a still-unpaid, indefinite hold. */
+export async function sendKammiPaymentReminderEmail(
+  bookingId: string,
+  reminderNumber: number,
+): Promise<void> {
+  const data = await kammiRecipients(bookingId);
+  if (!data) return;
+  const recipients = [
+    ...new Set([data.booking.billingEmail, data.booking.email].filter(Boolean)),
+  ] as string[];
+  if (!recipients.length || !data.booking.paymentToken) return;
+  const html = renderEmail(`
+    <h1>Muistutus: Kammin maksu odottaa</h1>
+    <p>Kammin varaus on edelleen pidossa, mutta maksua ei ole vielä vahvistettu.</p>
+    <div class="info-box"><strong>${data.booking.startISO} – ${data.booking.endISO}</strong> (${data.booking.nights} yötä)<br>Hinta: ${formatCents(data.booking.totalCents)}</div>
+    <p>Varaus pysyy voimassa, kunnes se maksetaan tai ylläpito peruu sen.</p>
+    ${renderButton(`${publicUrl()}/kammi/pay/${encodeURIComponent(data.booking.paymentToken)}`, reminderNumber > 1 ? 'Maksa Kammin varaus nyt' : 'Avaa maksuohje')}
+  `);
+  await sendEmail(recipients, `Muistutus: Kammin maksu ${data.booking.startISO}`, html);
+}
+
 /**
  * Post-stay feedback request, migrated from the old `palaute()` Apps Script.
  * Sent the day a stay ends, asking the booker to fill the feedback form.
@@ -115,7 +218,10 @@ export async function sendKammiHostNotificationEmail(bookingId: string): Promise
   ];
   const rowsHtml = rows
     .filter(([, v]) => v)
-    .map(([k, v]) => `<tr><td style="padding:4px 10px 4px 0;color:#5A5874">${k}</td><td style="padding:4px 0;color:#221E5D">${escapeHtml(v ?? '')}</td></tr>`)
+    .map(
+      ([k, v]) =>
+        `<tr><td style="padding:4px 10px 4px 0;color:#5A5874">${k}</td><td style="padding:4px 0;color:#221E5D">${escapeHtml(v ?? '')}</td></tr>`,
+    )
     .join('');
   const { subject, html } = {
     subject: `Uusi Kammi-varaus ${fi(toISODate(booking.startDate))}–${fi(toISODate(booking.endDate))}`,

@@ -10,6 +10,10 @@
     {
       "path": "/api/cron/kammiFeedback",
       "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/kammiPaymentReminders",
+      "schedule": "0 10 * * *"
     }
   ]
 }

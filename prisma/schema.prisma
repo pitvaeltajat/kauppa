@@ -290,7 +290,9 @@ model KammiBooking {
   googleEventId   String?
   paidAt          DateTime?
   /// When the post-stay feedback request was sent, so it is sent only once.
-  feedbackSentAt  DateTime?
+  feedbackSentAt       DateTime?
+  /// Number of payment reminders sent for a payer-separated booking.
+  paymentReminderCount Int       @default(0)
 
   @@index([status, startDate])
 }

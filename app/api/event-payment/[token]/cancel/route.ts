@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { sendEventCancellationEmail, trySendEmail } from '@/lib/emails';
 
 export async function POST(_req: Request, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params;
@@ -13,5 +14,6 @@ export async function POST(_req: Request, { params }: { params: Promise<{ token:
   }
 
   await prisma.order.update({ where: { id: order.id }, data: { status: 'CANCELLED' } });
+  await trySendEmail(`event cancellation ${order.id}`, () => sendEventCancellationEmail(order.id));
   return NextResponse.json({ cancelled: true });
 }

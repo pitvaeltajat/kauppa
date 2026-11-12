@@ -5,8 +5,12 @@ import { getStripe } from '@/lib/stripe';
 import {
   trySendEmail,
   sendOrderReceiptEmail,
+  sendOrderPaymentFailureEmail,
   sendNewOrderAdminEmail,
   sendKammiConfirmationEmail,
+  sendKammiPayerReceiptEmail,
+  sendKammiPaymentFailureEmail,
+  sendKammiCancellationEmail,
   sendKammiHostNotificationEmail,
 } from '@/lib/emails';
 import { confirmKammiBooking, cancelKammiBooking } from '@/lib/kammiBookings';
@@ -56,6 +60,9 @@ export async function POST(req: Request) {
           await trySendEmail(`kammi confirmation ${bookingId}`, () =>
             sendKammiConfirmationEmail(bookingId),
           );
+          await trySendEmail(`kammi payer receipt ${bookingId}`, () =>
+            sendKammiPayerReceiptEmail(bookingId),
+          );
           await trySendEmail(`kammi host notice ${bookingId}`, () =>
             sendKammiHostNotificationEmail(bookingId),
           );
@@ -87,6 +94,13 @@ export async function POST(req: Request) {
           session.metadata.orderId,
           session.id,
         );
+        await trySendEmail(`order payment failure ${session.metadata.orderId}`, () =>
+          sendOrderPaymentFailureEmail(session.metadata!.orderId!),
+        );
+      } else if (session.metadata?.kammiBookingId) {
+        await trySendEmail(`kammi payment failure ${session.metadata.kammiBookingId}`, () =>
+          sendKammiPaymentFailureEmail(session.metadata!.kammiBookingId!),
+        );
       }
       break;
     }
@@ -98,9 +112,30 @@ export async function POST(req: Request) {
           where: { id: orderId, status: 'RECEIVED' },
           data: { status: 'CANCELLED' },
         });
+        await trySendEmail(`order payment expired ${orderId}`, () =>
+          sendOrderPaymentFailureEmail(orderId),
+        );
       } else if (session.metadata?.kammiBookingId) {
-        // The hold also lapses on its own timer, but cancel promptly to free dates.
-        await cancelKammiBooking(session.metadata.kammiBookingId);
+        const booking = await prisma.kammiBooking.findUnique({
+          where: { id: session.metadata.kammiBookingId },
+          select: { id: true, paymentToken: true, status: true },
+        });
+        if (booking?.paymentToken && booking.status === 'PENDING') {
+          // A payer-separated booking is held indefinitely. Only the Stripe
+          // checkout session expires; the booking and its payment link remain.
+          await prisma.kammiBooking.updateMany({
+            where: { id: booking.id, stripeSessionId: session.id },
+            data: { stripeSessionId: null },
+          });
+          await trySendEmail(`kammi payment expired ${booking.id}`, () =>
+            sendKammiPaymentFailureEmail(booking.id),
+          );
+        } else {
+          await cancelKammiBooking(session.metadata.kammiBookingId);
+          await trySendEmail(`kammi booking cancelled ${session.metadata.kammiBookingId}`, () =>
+            sendKammiCancellationEmail(session.metadata!.kammiBookingId!),
+          );
+        }
       }
       break;
     }

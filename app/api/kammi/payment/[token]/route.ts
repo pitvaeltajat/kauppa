@@ -47,7 +47,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ token: 
       locale: 'fi',
       expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
     },
-    { idempotencyKey: `kammi-payment:${booking.id}` },
+    { idempotencyKey: `kammi-payment:${booking.id}:${Date.now()}` },
   );
   await prisma.kammiBooking.update({
     where: { id: booking.id },

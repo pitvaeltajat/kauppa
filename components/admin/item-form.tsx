@@ -222,48 +222,56 @@ export function ItemForm({
         )}
       />
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-1.5">
-          <Label htmlFor="name">Nimi *</Label>
-          <Input
-            id="name"
-            name="name"
-            required
-            value={name}
-            onChange={(e) => {
-              const next = e.target.value;
-              setName(next);
-              if (!slugManuallyEdited) setSlug(slugify(next));
-            }}
-          />
-        </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="slug">Tunnus URL-osoitteessa</Label>
-          <Input
-            id="slug"
-            name="slug"
-            value={slug}
-            onChange={(e) => {
-              setSlugManuallyEdited(true);
-              setSlug(e.target.value);
-            }}
-            placeholder="muodostetaan-nimesta"
-            spellCheck={false}
-            autoCapitalize="none"
-            aria-describedby="slug-help"
-          />
-          <p id="slug-help" className="text-xs text-muted-foreground">
-            Tuotteen osoite: <span className="font-mono">/item/{'{slug}'}</span>. Jätä tyhjäksi,
-            niin tunnus muodostetaan nimestä. Käytä pieniä kirjaimia, numeroita ja väliviivoja (ä→a,
-            ö→o). Vanha osoite ohjautuu uuteen, jos muutat tunnusta.
+      <section className="space-y-4 rounded-lg border bg-card p-5 shadow-sm">
+        <div>
+          <h2 className="text-base font-semibold">Perustiedot</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Nimi ja tapahtuman verkkosivun osoite.
           </p>
         </div>
-      </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="name">Nimi *</Label>
+            <Input
+              id="name"
+              name="name"
+              required
+              value={name}
+              onChange={(e) => {
+                const next = e.target.value;
+                setName(next);
+                if (!slugManuallyEdited) setSlug(slugify(next));
+              }}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="slug">Tunnus URL-osoitteessa</Label>
+            <Input
+              id="slug"
+              name="slug"
+              value={slug}
+              onChange={(e) => {
+                setSlugManuallyEdited(true);
+                setSlug(e.target.value);
+              }}
+              placeholder="muodostetaan-nimesta"
+              spellCheck={false}
+              autoCapitalize="none"
+              aria-describedby="slug-help"
+            />
+            <p id="slug-help" className="text-xs text-muted-foreground">
+              Tuotteen osoite: <span className="font-mono">/item/{'{slug}'}</span>. Jätä tyhjäksi,
+              niin tunnus muodostetaan nimestä. Käytä pieniä kirjaimia, numeroita ja väliviivoja
+              (ä→a, ö→o). Vanha osoite ohjautuu uuteen, jos muutat tunnusta.
+            </p>
+          </div>
+        </div>
+      </section>
 
       {eventMode && <input type="hidden" name="eventMode" value="on" />}
 
       {isEvent && (
-        <div className="space-y-4 rounded-md border bg-background p-4">
+        <section className="space-y-4 rounded-lg border bg-card p-5 shadow-sm">
           <div>
             <h2 className="text-base font-semibold">Tapahtuman ajankohta</h2>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -295,284 +303,308 @@ export function ItemForm({
               </span>
             </span>
           </label>
-        </div>
+        </section>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        {!isEvent && (
+      <section className="space-y-5 rounded-lg border bg-card p-5 shadow-sm">
+        <div>
+          <h2 className="text-base font-semibold">Ilmoittautumisen hallinta</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Sisäiset asetukset ja ilmoitukset tapahtuman järjestäjille.
+          </p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {!isEvent && (
+            <div className="space-y-1.5">
+              <Label htmlFor="categoryId">Kategoria *</Label>
+              <Select
+                id="categoryId"
+                name="categoryId"
+                defaultValue={item?.categoryId ?? categories[0]?.id}
+              >
+                {categories.map((category) => (
+                  <option key={category.id} value={category.id}>
+                    {category.name}
+                  </option>
+                ))}
+              </Select>
+            </div>
+          )}
           <div className="space-y-1.5">
-            <Label htmlFor="categoryId">Kategoria *</Label>
+            <Label htmlFor="accountingClassId">Kirjanpitoluokka</Label>
             <Select
-              id="categoryId"
-              name="categoryId"
-              defaultValue={item?.categoryId ?? categories[0]?.id}
+              id="accountingClassId"
+              name="accountingClassId"
+              defaultValue={
+                item?.accountingClassId ??
+                (eventMode
+                  ? (accountingClasses.find(
+                      ({ name }) => name === DEFAULT_EVENT_ACCOUNTING_CLASS_NAME,
+                    )?.id ?? '')
+                  : '')
+              }
             >
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
+              <option value="">Ei luokkaa</option>
+              {accountingClasses.map((accountingClass) => (
+                <option key={accountingClass.id} value={accountingClass.id}>
+                  {accountingClass.name}
                 </option>
               ))}
             </Select>
+            <p className="text-xs text-muted-foreground">Vain sisäiseen kirjanpitoon.</p>
+          </div>
+        </div>
+
+        {!isEvent && (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="stock">Varastossa (kpl)</Label>
+              <Input
+                id="stock"
+                name="stock"
+                type="number"
+                min="0"
+                step="1"
+                inputMode="numeric"
+                defaultValue={item?.stock?.toString() ?? ''}
+                placeholder="Tyhjä = rajoittamaton"
+                aria-describedby="stock-help"
+              />
+              <p id="stock-help" className="text-xs text-muted-foreground">
+                Jätä tyhjäksi, jos määrä on rajaton.
+              </p>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="sortOrder">Järjestysnumero</Label>
+              <Input
+                id="sortOrder"
+                name="sortOrder"
+                type="number"
+                step="1"
+                inputMode="numeric"
+                defaultValue={item?.sortOrder ?? 0}
+              />
+            </div>
           </div>
         )}
-        <div className="space-y-1.5">
-          <Label htmlFor="accountingClassId">Kirjanpitoluokka</Label>
-          <Select
-            id="accountingClassId"
-            name="accountingClassId"
-            defaultValue={
-              item?.accountingClassId ??
-              (eventMode
-                ? (accountingClasses.find(
-                    ({ name }) => name === DEFAULT_EVENT_ACCOUNTING_CLASS_NAME,
-                  )?.id ?? '')
-                : '')
-            }
-          >
-            <option value="">Ei luokkaa</option>
-            {accountingClasses.map((accountingClass) => (
-              <option key={accountingClass.id} value={accountingClass.id}>
-                {accountingClass.name}
-              </option>
-            ))}
-          </Select>
-          <p className="text-xs text-muted-foreground">Vain sisäiseen kirjanpitoon.</p>
-        </div>
-      </div>
 
-      {!isEvent && (
-        <div className="grid gap-4 sm:grid-cols-2">
+        {isEvent && (
           <div className="space-y-1.5">
-            <Label htmlFor="stock">Varastossa (kpl)</Label>
-            <Input
-              id="stock"
-              name="stock"
-              type="number"
-              min="0"
-              step="1"
-              inputMode="numeric"
-              defaultValue={item?.stock?.toString() ?? ''}
-              placeholder="Tyhjä = rajoittamaton"
-              aria-describedby="stock-help"
-            />
-            <p id="stock-help" className="text-xs text-muted-foreground">
-              Jätä tyhjäksi, jos määrä on rajaton.
-            </p>
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="sortOrder">Järjestysnumero</Label>
-            <Input
-              id="sortOrder"
-              name="sortOrder"
-              type="number"
-              step="1"
-              inputMode="numeric"
-              defaultValue={item?.sortOrder ?? 0}
-            />
-          </div>
-        </div>
-      )}
-
-      {isEvent && (
-        <div className="space-y-1.5">
-          <Label htmlFor="notificationEmails">Ilmoitusosoitteet</Label>
-          <div className="flex min-h-10 flex-wrap gap-2 rounded-md border border-input bg-card p-2">
-            {selectedNotificationEmails.map((email) => {
-              const user = notificationUsers.find((candidate) => candidate.email === email);
-              const isCreator = email === (item?.createdByEmail ?? creatorEmail);
-              return (
-                <span
-                  key={email}
-                  className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-sm text-foreground"
-                >
-                  <span>
-                    <span className="block font-medium">{user?.name ?? 'Nimetön käyttäjä'}</span>
-                    <span className="block text-xs text-muted-foreground">{email}</span>
+            <Label htmlFor="notificationEmails">Ilmoitusosoitteet</Label>
+            <div className="flex min-h-10 flex-wrap gap-2 rounded-md border border-input bg-card p-2">
+              {selectedNotificationEmails.map((email) => {
+                const user = notificationUsers.find((candidate) => candidate.email === email);
+                const isCreator = email === (item?.createdByEmail ?? creatorEmail);
+                return (
+                  <span
+                    key={email}
+                    className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-sm text-foreground"
+                  >
+                    <span>
+                      <span className="block font-medium">{user?.name ?? 'Nimetön käyttäjä'}</span>
+                      <span className="block text-xs text-muted-foreground">{email}</span>
+                    </span>
+                    {!isCreator && (
+                      <button
+                        type="button"
+                        className="rounded-full p-0.5 text-muted-foreground hover:bg-primary/15 hover:text-foreground"
+                        onClick={() =>
+                          setSelectedNotificationEmails((current) =>
+                            current.filter((selected) => selected !== email),
+                          )
+                        }
+                        aria-label={`Poista ${user?.name ?? email}`}
+                      >
+                        <X className="size-3.5" />
+                      </button>
+                    )}
                   </span>
-                  {!isCreator && (
-                    <button
-                      type="button"
-                      className="rounded-full p-0.5 text-muted-foreground hover:bg-primary/15 hover:text-foreground"
-                      onClick={() =>
-                        setSelectedNotificationEmails((current) =>
-                          current.filter((selected) => selected !== email),
-                        )
-                      }
-                      aria-label={`Poista ${user?.name ?? email}`}
-                    >
-                      <X className="size-3.5" />
-                    </button>
-                  )}
-                </span>
-              );
-            })}
-            {selectedNotificationEmails.length === 0 && (
-              <span className="px-1 py-1 text-sm text-muted-foreground">
-                Ei valittuja vastaanottajia
-              </span>
-            )}
-          </div>
-          {selectedNotificationEmails.map((email) => (
-            <input key={email} type="hidden" name="notificationEmails" value={email} />
-          ))}
-          <input
-            className="flex h-10 w-full rounded-md border border-input bg-card px-3 py-2 text-base text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring sm:text-sm"
-            type="search"
-            value={notificationSearch}
-            onChange={(event) => {
-              setNotificationSearch(event.target.value);
-              setHighlightedNotificationIndex(0);
-            }}
-            onKeyDown={(event) => {
-              if (event.key === 'ArrowDown' && filteredNotificationUsers.length > 0) {
-                event.preventDefault();
-                setHighlightedNotificationIndex((current) =>
-                  Math.min(current + 1, filteredNotificationUsers.length - 1),
                 );
-              } else if (event.key === 'ArrowUp' && filteredNotificationUsers.length > 0) {
-                event.preventDefault();
-                setHighlightedNotificationIndex((current) => Math.max(current - 1, 0));
-              } else if (event.key === 'Enter' && filteredNotificationUsers.length > 0) {
-                event.preventDefault();
-                addNotificationUser(filteredNotificationUsers[highlightedNotificationIndex].email);
-              } else if (event.key === 'Escape') {
-                setNotificationSearch('');
-                setHighlightedNotificationIndex(0);
-              }
-            }}
-            placeholder="Hae käyttäjää nimellä tai sähköpostilla"
-            aria-label="Hae ilmoitusvastaanottajaa"
-            aria-controls="notification-user-options"
-            aria-activedescendant={
-              filteredNotificationUsers[highlightedNotificationIndex]
-                ? `notification-user-${filteredNotificationUsers[highlightedNotificationIndex].email}`
-                : undefined
-            }
-          />
-          <div
-            id="notification-user-options"
-            role="listbox"
-            className="max-h-64 overflow-y-auto rounded-md border bg-card"
-          >
-            {filteredNotificationUsers.map((user, index) => (
-              <button
-                key={user.email}
-                id={`notification-user-${user.email}`}
-                type="button"
-                role="option"
-                aria-selected={index === highlightedNotificationIndex}
-                className={`block w-full px-3 py-2 text-left ${index === highlightedNotificationIndex ? 'bg-primary/10' : 'hover:bg-muted/50'}`}
-                onMouseEnter={() => setHighlightedNotificationIndex(index)}
-                onClick={() => addNotificationUser(user.email)}
-              >
-                <span className="block font-medium">{user.name ?? 'Nimetön käyttäjä'}</span>
-                <span className="block text-sm text-muted-foreground">{user.email}</span>
-              </button>
-            ))}
-            {filteredNotificationUsers.length === 0 && (
-              <p className="px-3 py-2 text-sm text-muted-foreground">
-                {notificationUsers.length === 0
-                  ? 'Käyttäjiä ei ole vielä.'
-                  : 'Ei sopivia käyttäjiä.'}
-              </p>
-            )}
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Valituille käyttäjille lähetetään viesti uudesta ilmoittautumisesta. Vain ylläpidon
-            käyttöön.
-          </p>
-        </div>
-      )}
-
-      <div className="space-y-1.5">
-        <Label htmlFor="imageUrl">Kuva</Label>
-        <input type="hidden" name="imageUrl" value={imageUrl} />
-        <div className="flex gap-4">
-          <div className="w-24 shrink-0">
-            <ItemImage src={imageUrl || null} alt="Tuotekuvan esikatselu" />
-          </div>
-          <div className="flex-1 space-y-2">
-            {/* Migrated products can use same-origin paths such as /products/foo.jpeg. */}
-            <Input
-              id="imageUrl"
-              type="text"
-              inputMode="url"
-              spellCheck={false}
-              autoCapitalize="none"
-              value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
-              placeholder="https://… tai /products/…"
-            />
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/avif,image/gif"
-              className="hidden"
-              onChange={onPickImage}
-            />
-            <div className="flex items-center gap-2">
-              <KuvatPicker onSelect={setImageUrl} />
-              <Button
-                type="button"
-                size="sm"
-                variant="secondary"
-                disabled={uploading}
-                onClick={() => fileRef.current?.click()}
-              >
-                {uploading ? (
-                  <LoadingPill className="bg-current/25" />
-                ) : (
-                  <>
-                    <Upload /> Lataa kuva
-                  </>
-                )}
-              </Button>
-              {imageUrl && !uploading && (
-                <Button type="button" size="sm" variant="ghost" onClick={() => setImageUrl('')}>
-                  Poista kuva
-                </Button>
+              })}
+              {selectedNotificationEmails.length === 0 && (
+                <span className="px-1 py-1 text-sm text-muted-foreground">
+                  Ei valittuja vastaanottajia
+                </span>
               )}
             </div>
-            {uploadError && <p className="text-xs text-destructive">{uploadError}</p>}
+            {selectedNotificationEmails.map((email) => (
+              <input key={email} type="hidden" name="notificationEmails" value={email} />
+            ))}
+            <input
+              className="flex h-10 w-full rounded-md border border-input bg-card px-3 py-2 text-base text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring sm:text-sm"
+              type="search"
+              value={notificationSearch}
+              onChange={(event) => {
+                setNotificationSearch(event.target.value);
+                setHighlightedNotificationIndex(0);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === 'ArrowDown' && filteredNotificationUsers.length > 0) {
+                  event.preventDefault();
+                  setHighlightedNotificationIndex((current) =>
+                    Math.min(current + 1, filteredNotificationUsers.length - 1),
+                  );
+                } else if (event.key === 'ArrowUp' && filteredNotificationUsers.length > 0) {
+                  event.preventDefault();
+                  setHighlightedNotificationIndex((current) => Math.max(current - 1, 0));
+                } else if (event.key === 'Enter' && filteredNotificationUsers.length > 0) {
+                  event.preventDefault();
+                  addNotificationUser(
+                    filteredNotificationUsers[highlightedNotificationIndex].email,
+                  );
+                } else if (event.key === 'Escape') {
+                  setNotificationSearch('');
+                  setHighlightedNotificationIndex(0);
+                }
+              }}
+              placeholder="Hae käyttäjää nimellä tai sähköpostilla"
+              aria-label="Hae ilmoitusvastaanottajaa"
+              aria-controls="notification-user-options"
+              aria-activedescendant={
+                filteredNotificationUsers[highlightedNotificationIndex]
+                  ? `notification-user-${filteredNotificationUsers[highlightedNotificationIndex].email}`
+                  : undefined
+              }
+            />
+            <div
+              id="notification-user-options"
+              role="listbox"
+              className="max-h-64 overflow-y-auto rounded-md border bg-card"
+            >
+              {filteredNotificationUsers.map((user, index) => (
+                <button
+                  key={user.email}
+                  id={`notification-user-${user.email}`}
+                  type="button"
+                  role="option"
+                  aria-selected={index === highlightedNotificationIndex}
+                  className={`block w-full px-3 py-2 text-left ${index === highlightedNotificationIndex ? 'bg-primary/10' : 'hover:bg-muted/50'}`}
+                  onMouseEnter={() => setHighlightedNotificationIndex(index)}
+                  onClick={() => addNotificationUser(user.email)}
+                >
+                  <span className="block font-medium">{user.name ?? 'Nimetön käyttäjä'}</span>
+                  <span className="block text-sm text-muted-foreground">{user.email}</span>
+                </button>
+              ))}
+              {filteredNotificationUsers.length === 0 && (
+                <p className="px-3 py-2 text-sm text-muted-foreground">
+                  {notificationUsers.length === 0
+                    ? 'Käyttäjiä ei ole vielä.'
+                    : 'Ei sopivia käyttäjiä.'}
+                </p>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Valituille käyttäjille lähetetään viesti uudesta ilmoittautumisesta. Vain ylläpidon
+              käyttöön.
+            </p>
+          </div>
+        )}
+      </section>
+
+      <section className="space-y-5 rounded-lg border bg-card p-5 shadow-sm">
+        <div>
+          <h2 className="text-base font-semibold">Esittely</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Kuva ja osallistujille näytettävä kuvaus.
+          </p>
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="imageUrl">Kuva</Label>
+          <input type="hidden" name="imageUrl" value={imageUrl} />
+          <div className="flex gap-4">
+            <div className="w-24 shrink-0">
+              <ItemImage src={imageUrl || null} alt="Tuotekuvan esikatselu" />
+            </div>
+            <div className="flex-1 space-y-2">
+              {/* Migrated products can use same-origin paths such as /products/foo.jpeg. */}
+              <Input
+                id="imageUrl"
+                type="text"
+                inputMode="url"
+                spellCheck={false}
+                autoCapitalize="none"
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+                placeholder="https://… tai /products/…"
+              />
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/avif,image/gif"
+                className="hidden"
+                onChange={onPickImage}
+              />
+              <div className="flex items-center gap-2">
+                <KuvatPicker onSelect={setImageUrl} />
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  disabled={uploading}
+                  onClick={() => fileRef.current?.click()}
+                >
+                  {uploading ? (
+                    <LoadingPill className="bg-current/25" />
+                  ) : (
+                    <>
+                      <Upload /> Lataa kuva
+                    </>
+                  )}
+                </Button>
+                {imageUrl && !uploading && (
+                  <Button type="button" size="sm" variant="ghost" onClick={() => setImageUrl('')}>
+                    Poista kuva
+                  </Button>
+                )}
+              </div>
+              {uploadError && <p className="text-xs text-destructive">{uploadError}</p>}
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="space-y-1.5">
-        <Label htmlFor="description">Kuvaus</Label>
-        <Textarea
-          id="description"
-          name="description"
-          rows={6}
-          defaultValue={item?.description ?? ''}
-          placeholder={
-            isEvent
-              ? 'Kerro tapahtuman sisällöstä, paikasta ja tärkeistä ohjeista.'
-              : 'Kerro tuotteesta, koosta, materiaalista tai muista tärkeistä tiedoista.'
-          }
-        />
-      </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="description">Kuvaus</Label>
+          <Textarea
+            id="description"
+            name="description"
+            rows={6}
+            defaultValue={item?.description ?? ''}
+            placeholder={
+              isEvent
+                ? 'Kerro tapahtuman sisällöstä, paikasta ja tärkeistä ohjeista.'
+                : 'Kerro tuotteesta, koosta, materiaalista tai muista tärkeistä tiedoista.'
+            }
+          />
+        </div>
+      </section>
 
-      <label className="flex items-center gap-2 text-sm">
-        <input
-          type="checkbox"
-          name="active"
-          defaultChecked={item?.active ?? true}
-          className="size-4 accent-[hsl(244,51%,24%)]"
-        />
-        Julkaistu
-      </label>
+      <section className="space-y-4 rounded-lg border bg-card p-5 shadow-sm">
+        <div>
+          <h2 className="text-base font-semibold">Julkaisu</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Miten tapahtuma näkyy kaupassa.</p>
+        </div>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            name="active"
+            defaultChecked={item?.active ?? true}
+            className="size-4 accent-[hsl(244,51%,24%)]"
+          />
+          Julkaistu
+        </label>
 
-      <label className="flex items-center gap-2 text-sm">
-        <input
-          type="checkbox"
-          name="featured"
-          defaultChecked={item?.featured ?? false}
-          className="size-4 accent-[hsl(244,51%,24%)]"
-        />
-        Nosta etusivulle{' '}
-        <span className="text-xs text-muted-foreground">(näkyy Nostot-osiossa)</span>
-      </label>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            name="featured"
+            defaultChecked={item?.featured ?? false}
+            className="size-4 accent-[hsl(244,51%,24%)]"
+          />
+          Nosta etusivulle{' '}
+          <span className="text-xs text-muted-foreground">(näkyy Nostot-osiossa)</span>
+        </label>
+      </section>
 
       <div className="space-y-3 rounded-md border bg-background p-4">
         <div className="flex items-center justify-between gap-3">

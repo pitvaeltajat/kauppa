@@ -36,7 +36,10 @@ export async function GET(req: Request) {
         orderBy: { sortOrder: 'asc' },
         select: { id: true, name: true, priceCents: true },
       },
-      questions: { orderBy: { sortOrder: 'asc' } },
+      questions: {
+        orderBy: { sortOrder: 'asc' },
+        select: { id: true, prompt: true, type: true, required: true, options: true },
+      },
     },
   });
 

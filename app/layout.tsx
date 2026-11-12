@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { auth } from '@/lib/auth';
 import { getUserRole, isSuperAdmin } from '@/lib/admin';
+import { getSession } from '@/lib/session';
 import { SiteHeader } from '@/components/site-header';
 import { SiteFooter } from '@/components/site-footer';
 import '@/styles/globals.css';
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const session = await auth();
+  const session = await getSession();
   const email = session?.user?.email ?? null;
   // Read the role from kontti's own database, not the session token. A shared
   // .pitva.fi cookie from another pitva app carries that app's role claim.

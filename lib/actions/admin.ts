@@ -169,8 +169,9 @@ export async function saveItem(
   const notificationEmails = isEvent
     ? [
         ...new Set(
-          ((formData.get('notificationEmails') as string) ?? '')
-            .split(/[\n,;]+/)
+          formData
+            .getAll('notificationEmails')
+            .filter((value): value is string => typeof value === 'string')
             .map((email) => email.trim().toLowerCase())
             .filter(Boolean),
         ),

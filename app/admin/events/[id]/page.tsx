@@ -11,7 +11,7 @@ export const metadata: Metadata = { title: 'Muokkaa tapahtumaa' };
 export default async function EditEventPage({ params }: { params: Promise<{ id: string }> }) {
   await requireEventAdmin();
   const { id } = await params;
-  const [item, accountingClasses] = await Promise.all([
+  const [item, accountingClasses, users] = await Promise.all([
     prisma.item.findUnique({
       where: { id },
       include: {
@@ -20,6 +20,11 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
       },
     }),
     prisma.accountingClass.findMany({ orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }] }),
+    prisma.user.findMany({
+      where: { deletedAt: null },
+      select: { email: true, name: true },
+      orderBy: { email: 'asc' },
+    }),
   ]);
   if (!item || !item.isEvent) notFound();
 
@@ -64,7 +69,13 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
         <ChevronLeft className="size-4" /> Tapahtumat
       </Link>
       <h1 className="mb-6 text-2xl font-bold">Muokkaa tapahtumaa</h1>
-      <ItemForm categories={[]} accountingClasses={accountingClasses} item={formValues} eventMode />
+      <ItemForm
+        categories={[]}
+        accountingClasses={accountingClasses}
+        notificationUsers={users}
+        item={formValues}
+        eventMode
+      />
     </div>
   );
 }

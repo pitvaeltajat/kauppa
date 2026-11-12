@@ -88,12 +88,14 @@ function draftFromVariant(variant: ItemFormValues['variants'][number]): VariantD
 export function ItemForm({
   categories,
   accountingClasses,
+  notificationUsers = [],
   item,
   eventMode = false,
   returnHref = eventMode ? '/admin/events' : '/admin/items',
 }: {
   categories: Category[];
   accountingClasses: { id: string; name: string }[];
+  notificationUsers?: { email: string; name: string | null }[];
   item?: ItemFormValues;
   /** Events-only form (used by event admins): locks isEvent on, hides the
    * category picker (events go to Tapahtumat automatically). */
@@ -109,6 +111,10 @@ export function ItemForm({
       ? item.variants.map(draftFromVariant)
       : [{ key: 'new-price', name: '', price: '' }],
   );
+  const [selectedNotificationEmails, setSelectedNotificationEmails] = useState<string[]>(
+    item?.notificationEmails ?? [],
+  );
+  const [notificationSearch, setNotificationSearch] = useState('');
   const [name, setName] = useState(item?.name ?? '');
   const [slug, setSlug] = useState(item?.slug ?? '');
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(Boolean(item?.id));
@@ -347,16 +353,53 @@ export function ItemForm({
       {isEvent && (
         <div className="space-y-1.5">
           <Label htmlFor="notificationEmails">Ilmoitusosoitteet</Label>
-          <Textarea
-            id="notificationEmails"
-            name="notificationEmails"
-            rows={3}
-            defaultValue={item?.notificationEmails.join('\n')}
-            placeholder="esim. johtajat@pitva.fi\ntoinen@pitva.fi"
+          <input
+            className="flex h-10 w-full rounded-md border border-input bg-card px-3 py-2 text-base text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring sm:text-sm"
+            type="search"
+            value={notificationSearch}
+            onChange={(event) => setNotificationSearch(event.target.value)}
+            placeholder="Hae käyttäjää nimellä tai sähköpostilla"
+            aria-label="Hae ilmoitusvastaanottajaa"
           />
+          <div className="max-h-56 overflow-y-auto rounded-md border bg-card p-2">
+            {notificationUsers
+              .filter((user) => {
+                const needle = notificationSearch.trim().toLowerCase();
+                return !needle || `${user.name ?? ''} ${user.email}`.toLowerCase().includes(needle);
+              })
+              .map((user) => (
+                <label
+                  key={user.email}
+                  className="flex cursor-pointer items-center gap-3 rounded px-2 py-2 hover:bg-muted/50"
+                >
+                  <input
+                    type="checkbox"
+                    name="notificationEmails"
+                    value={user.email}
+                    checked={selectedNotificationEmails.includes(user.email)}
+                    onChange={(event) =>
+                      setSelectedNotificationEmails((current) =>
+                        event.target.checked
+                          ? [...current, user.email]
+                          : current.filter((email) => email !== user.email),
+                      )
+                    }
+                  />
+                  <span>
+                    <span className="block text-sm font-medium">
+                      {user.name ?? 'Nimetön käyttäjä'}
+                    </span>
+                    <span className="block text-xs text-muted-foreground">{user.email}</span>
+                  </span>
+                </label>
+              ))}
+            {notificationUsers.length === 0 && (
+              <p className="px-2 py-3 text-sm text-muted-foreground">Käyttäjiä ei ole vielä.</p>
+            )}
+          </div>
           <p className="text-xs text-muted-foreground">
-            Näihin osoitteisiin lähetetään viesti uudesta ilmoittautumisesta. Yksi osoite per rivi
-            tai pilkulla eroteltuna. Vain ylläpidon käyttöön.
+            Valituille käyttäjille lähetetään viesti uudesta ilmoittautumisesta. Vain ylläpidon
+            käyttöön.
           </p>
         </div>
       )}

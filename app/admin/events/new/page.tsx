@@ -9,7 +9,14 @@ export const metadata: Metadata = { title: 'Uusi tapahtuma' };
 
 export default async function NewEventPage() {
   await requireEventAdmin();
-  const accountingClasses = await prisma.accountingClass.findMany({ orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }] });
+  const [accountingClasses, users] = await Promise.all([
+    prisma.accountingClass.findMany({ orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }] }),
+    prisma.user.findMany({
+      where: { deletedAt: null },
+      select: { email: true, name: true },
+      orderBy: { email: 'asc' },
+    }),
+  ]);
   return (
     <div>
       <Link
@@ -19,7 +26,12 @@ export default async function NewEventPage() {
         <ChevronLeft className="size-4" /> Tapahtumat
       </Link>
       <h1 className="mb-6 text-2xl font-bold">Uusi tapahtuma</h1>
-      <ItemForm categories={[]} accountingClasses={accountingClasses} eventMode />
+      <ItemForm
+        categories={[]}
+        accountingClasses={accountingClasses}
+        notificationUsers={users}
+        eventMode
+      />
     </div>
   );
 }

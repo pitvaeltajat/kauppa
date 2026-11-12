@@ -19,7 +19,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const item = await prisma.item.findUnique({ where: { slug } });
+  const item = await prisma.item.findUnique({ where: { slug }, select: { name: true } });
   return { title: item ? item.name : 'Tuote' };
 }
 
@@ -27,8 +27,18 @@ export default async function ItemPage({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const item = await prisma.item.findUnique({
     where: { slug },
-    include: {
-      category: true,
+    select: {
+      id: true,
+      slug: true,
+      name: true,
+      imageUrl: true,
+      stock: true,
+      isEvent: true,
+      startsAt: true,
+      endsAt: true,
+      description: true,
+      active: true,
+      category: { select: { id: true, name: true, slug: true } },
       variants: {
         where: { active: true },
         orderBy: { sortOrder: 'asc' },
@@ -40,7 +50,10 @@ export default async function ItemPage({ params }: { params: Promise<{ slug: str
   if (!item) {
     // Maybe this is an old slug the item has since moved off. Keep the shared
     // link working by redirecting to the current URL.
-    const alias = await prisma.itemSlug.findUnique({ where: { slug }, include: { item: true } });
+    const alias = await prisma.itemSlug.findUnique({
+      where: { slug },
+      select: { item: { select: { active: true, slug: true } } },
+    });
     if (alias?.item.active) permanentRedirect(`/item/${alias.item.slug}`);
     notFound();
   }

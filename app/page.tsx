@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma';
-import { auth } from '@/lib/auth';
 import { getUserRole, isEventAdmin, isSuperAdmin } from '@/lib/admin';
+import { getSession } from '@/lib/session';
 import { ItemCard } from '@/components/item-card';
 import { SiteBanner } from '@/components/site-banner';
 import { listedItemWhere, lowestVariantPrice } from '@/lib/catalog';
@@ -8,20 +8,32 @@ import { getSiteSettings } from '@/lib/siteSettings';
 import { HomepageOrganizer } from '@/components/admin/homepage-organizer';
 
 export default async function HomePage() {
-  const session = await auth();
+  const session = await getSession();
   const role = await getUserRole(session?.user?.email ?? null);
   const eventAdmin = isEventAdmin(role);
   const canReorderProducts = isSuperAdmin(role);
   const listed = listedItemWhere();
   const [categories, items, settings] = await Promise.all([
     prisma.category.findMany({
+      select: { id: true, name: true, slug: true },
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
     }),
     prisma.item.findMany({
       where: listed,
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
-      include: {
-        category: true,
+      select: {
+        id: true,
+        categoryId: true,
+        name: true,
+        slug: true,
+        imageUrl: true,
+        stock: true,
+        description: true,
+        isEvent: true,
+        startsAt: true,
+        endsAt: true,
+        featured: true,
+        featuredOrder: true,
         variants: { where: { active: true }, select: { priceCents: true } },
       },
     }),

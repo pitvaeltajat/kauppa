@@ -1,10 +1,10 @@
 import { redirect } from 'next/navigation';
-import { auth } from '@/lib/auth';
 import { getUserRole, isEventAdmin, isSuperAdmin, type Role } from '@/lib/admin';
+import { getSession } from '@/lib/session';
 
 /** Role of the signed-in person for an admin screen, or null. */
 export async function adminRole(): Promise<Role | null> {
-  const session = await auth();
+  const session = await getSession();
   return getUserRole(session?.user?.email ?? null);
 }
 

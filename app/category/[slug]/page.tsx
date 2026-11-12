@@ -13,7 +13,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const category = await prisma.category.findUnique({ where: { slug } });
+  const category = await prisma.category.findUnique({ where: { slug }, select: { name: true } });
   return { title: category ? category.name : 'Kategoria' };
 }
 
@@ -21,11 +21,26 @@ export default async function CategoryPage({ params }: { params: Promise<{ slug:
   const { slug } = await params;
   const category = await prisma.category.findUnique({
     where: { slug },
-    include: {
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      description: true,
       items: {
         where: listedItemWhere(),
         orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
-        include: { variants: { where: { active: true }, select: { priceCents: true } } },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          imageUrl: true,
+          stock: true,
+          description: true,
+          isEvent: true,
+          startsAt: true,
+          endsAt: true,
+          variants: { where: { active: true }, select: { priceCents: true } },
+        },
       },
     },
   });

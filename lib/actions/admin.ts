@@ -72,6 +72,8 @@ export async function saveItem(
     return { error: 'Sinulla ei ole tähän käyttöoikeutta. Kirjaudu sisään.' };
 
   const id = ((formData.get('id') as string) ?? '').trim() || undefined;
+  const session = await auth();
+  const actorEmail = session?.user?.email?.trim().toLowerCase() || null;
   const name = ((formData.get('name') as string) ?? '').trim();
   if (!name) return { error: 'Anna tuotteelle nimi.' };
 
@@ -82,10 +84,11 @@ export async function saveItem(
 
   let oldSlug: string | null = null;
   let existingSortOrder = 0;
+  let existingCreatedByEmail: string | null = null;
   if (id) {
     const current = await prisma.item.findUnique({
       where: { id },
-      select: { slug: true, isEvent: true, sortOrder: true },
+      select: { slug: true, isEvent: true, sortOrder: true, createdByEmail: true },
     });
     if (!current) return { error: 'Tuotetta ei löytynyt.' };
     if (current.isEvent !== isEvent) {
@@ -96,6 +99,7 @@ export async function saveItem(
     }
     oldSlug = current.slug;
     existingSortOrder = current.sortOrder;
+    existingCreatedByEmail = current.createdByEmail;
   }
 
   let startsAt: Date | null = null;
@@ -168,13 +172,14 @@ export async function saveItem(
   const description = ((formData.get('description') as string) ?? '').trim();
   const notificationEmails = isEvent
     ? [
-        ...new Set(
-          formData
+        ...new Set([
+          ...formData
             .getAll('notificationEmails')
             .filter((value): value is string => typeof value === 'string')
             .map((email) => email.trim().toLowerCase())
             .filter(Boolean),
-        ),
+          ...(existingCreatedByEmail ? [existingCreatedByEmail] : actorEmail ? [actorEmail] : []),
+        ]),
       ]
     : [];
   if (notificationEmails.some((email) => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))) {
@@ -241,6 +246,7 @@ export async function saveItem(
     active,
     featured,
     notificationEmails,
+    createdByEmail: isEvent ? (existingCreatedByEmail ?? actorEmail) : null,
     description,
     isEvent,
     startsAt,

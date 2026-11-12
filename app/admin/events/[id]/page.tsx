@@ -41,6 +41,7 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
     active: item.active,
     featured: item.featured,
     notificationEmails: item.notificationEmails,
+    createdByEmail: item.createdByEmail,
     isEvent: item.isEvent,
     startsAt: item.startsAt ? item.startsAt.toISOString().slice(0, 10) : null,
     endsAt: item.endsAt ? item.endsAt.toISOString().slice(0, 10) : null,

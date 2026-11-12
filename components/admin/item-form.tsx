@@ -3,7 +3,7 @@
 import { useRef, useState } from 'react';
 import { useActionState } from 'react';
 import Link from 'next/link';
-import { Plus, Trash2, Upload } from 'lucide-react';
+import { Plus, Trash2, Upload, X } from 'lucide-react';
 import type { Category } from '@prisma/client';
 import { saveItem } from '@/lib/actions/admin';
 import {
@@ -37,6 +37,7 @@ export type ItemFormValues = {
   active: boolean;
   featured: boolean;
   notificationEmails: string[];
+  createdByEmail: string | null;
   isEvent: boolean;
   /** "YYYY-MM-DD" for the native date inputs, or null. */
   startsAt: string | null;
@@ -89,6 +90,7 @@ export function ItemForm({
   categories,
   accountingClasses,
   notificationUsers = [],
+  creatorEmail,
   item,
   eventMode = false,
   returnHref = eventMode ? '/admin/events' : '/admin/items',
@@ -96,6 +98,7 @@ export function ItemForm({
   categories: Category[];
   accountingClasses: { id: string; name: string }[];
   notificationUsers?: { email: string; name: string | null }[];
+  creatorEmail?: string | null;
   item?: ItemFormValues;
   /** Events-only form (used by event admins): locks isEvent on, hides the
    * category picker (events go to Tapahtumat automatically). */
@@ -111,9 +114,12 @@ export function ItemForm({
       ? item.variants.map(draftFromVariant)
       : [{ key: 'new-price', name: '', price: '' }],
   );
-  const [selectedNotificationEmails, setSelectedNotificationEmails] = useState<string[]>(
-    item?.notificationEmails ?? [],
-  );
+  const [selectedNotificationEmails, setSelectedNotificationEmails] = useState<string[]>([
+    ...new Set([
+      ...(item?.notificationEmails ?? []),
+      ...(item?.createdByEmail ? [item.createdByEmail] : creatorEmail ? [creatorEmail] : []),
+    ]),
+  ]);
   const [notificationSearch, setNotificationSearch] = useState('');
   const [name, setName] = useState(item?.name ?? '');
   const [slug, setSlug] = useState(item?.slug ?? '');
@@ -123,6 +129,18 @@ export function ItemForm({
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const filteredNotificationUsers = notificationUsers.filter((user) => {
+    const needle = notificationSearch.trim().toLowerCase();
+    return !needle || `${user.name ?? ''} ${user.email}`.toLowerCase().includes(needle);
+  });
+
+  function addNotificationUser(email: string) {
+    setSelectedNotificationEmails((current) =>
+      current.includes(email) ? current : [...current, email],
+    );
+    setNotificationSearch('');
+  }
 
   function updateQuestion(key: string, patch: Partial<QuestionDraft>) {
     setQuestions((prev) => prev.map((q) => (q.key === key ? { ...q, ...patch } : q)));
@@ -353,49 +371,64 @@ export function ItemForm({
       {isEvent && (
         <div className="space-y-1.5">
           <Label htmlFor="notificationEmails">Ilmoitusosoitteet</Label>
+          <div className="flex min-h-10 flex-wrap gap-2 rounded-md border border-input bg-card p-2">
+            {selectedNotificationEmails.map((email) => {
+              const user = notificationUsers.find((candidate) => candidate.email === email);
+              const isCreator = email === (item?.createdByEmail ?? creatorEmail);
+              return (
+                <span
+                  key={email}
+                  className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1 text-sm text-foreground"
+                >
+                  {user?.name ?? email}
+                  {!isCreator && (
+                    <button
+                      type="button"
+                      className="rounded-full p-0.5 text-muted-foreground hover:bg-primary/15 hover:text-foreground"
+                      onClick={() =>
+                        setSelectedNotificationEmails((current) =>
+                          current.filter((selected) => selected !== email),
+                        )
+                      }
+                      aria-label={`Poista ${user?.name ?? email}`}
+                    >
+                      <X className="size-3.5" />
+                    </button>
+                  )}
+                </span>
+              );
+            })}
+            {selectedNotificationEmails.length === 0 && (
+              <span className="px-1 py-1 text-sm text-muted-foreground">
+                Ei valittuja vastaanottajia
+              </span>
+            )}
+          </div>
+          {selectedNotificationEmails.map((email) => (
+            <input key={email} type="hidden" name="notificationEmails" value={email} />
+          ))}
           <input
             className="flex h-10 w-full rounded-md border border-input bg-card px-3 py-2 text-base text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring sm:text-sm"
             type="search"
             value={notificationSearch}
             onChange={(event) => setNotificationSearch(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key !== 'Enter') return;
+              event.preventDefault();
+              const firstMatch = filteredNotificationUsers.find(
+                (user) => !selectedNotificationEmails.includes(user.email),
+              );
+              if (firstMatch) addNotificationUser(firstMatch.email);
+            }}
             placeholder="Hae käyttäjää nimellä tai sähköpostilla"
             aria-label="Hae ilmoitusvastaanottajaa"
           />
-          <div className="max-h-56 overflow-y-auto rounded-md border bg-card p-2">
-            {notificationUsers
-              .filter((user) => {
-                const needle = notificationSearch.trim().toLowerCase();
-                return !needle || `${user.name ?? ''} ${user.email}`.toLowerCase().includes(needle);
-              })
-              .map((user) => (
-                <label
-                  key={user.email}
-                  className="flex cursor-pointer items-center gap-3 rounded px-2 py-2 hover:bg-muted/50"
-                >
-                  <input
-                    type="checkbox"
-                    name="notificationEmails"
-                    value={user.email}
-                    checked={selectedNotificationEmails.includes(user.email)}
-                    onChange={(event) =>
-                      setSelectedNotificationEmails((current) =>
-                        event.target.checked
-                          ? [...current, user.email]
-                          : current.filter((email) => email !== user.email),
-                      )
-                    }
-                  />
-                  <span>
-                    <span className="block text-sm font-medium">
-                      {user.name ?? 'Nimetön käyttäjä'}
-                    </span>
-                    <span className="block text-xs text-muted-foreground">{user.email}</span>
-                  </span>
-                </label>
-              ))}
-            {notificationUsers.length === 0 && (
-              <p className="px-2 py-3 text-sm text-muted-foreground">Käyttäjiä ei ole vielä.</p>
-            )}
+          <div className="text-sm text-muted-foreground">
+            {notificationSearch && filteredNotificationUsers.length > 0
+              ? `Paina Enter lisätäksesi: ${filteredNotificationUsers[0]?.name ?? filteredNotificationUsers[0]?.email}`
+              : notificationUsers.length === 0
+                ? 'Käyttäjiä ei ole vielä.'
+                : 'Hae käyttäjää ja paina Enter lisätäksesi hänet.'}
           </div>
           <p className="text-xs text-muted-foreground">
             Valituille käyttäjille lähetetään viesti uudesta ilmoittautumisesta. Vain ylläpidon

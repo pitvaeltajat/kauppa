@@ -4,11 +4,13 @@ import { ChevronLeft } from 'lucide-react';
 import { ItemForm } from '@/components/admin/item-form';
 import { requireEventAdmin } from '@/lib/admin-guard';
 import { prisma } from '@/lib/prisma';
+import { auth } from '@/lib/auth';
 
 export const metadata: Metadata = { title: 'Uusi tapahtuma' };
 
 export default async function NewEventPage() {
   await requireEventAdmin();
+  const session = await auth();
   const [accountingClasses, users] = await Promise.all([
     prisma.accountingClass.findMany({ orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }] }),
     prisma.user.findMany({
@@ -30,6 +32,7 @@ export default async function NewEventPage() {
         categories={[]}
         accountingClasses={accountingClasses}
         notificationUsers={users}
+        creatorEmail={session?.user?.email?.trim().toLowerCase() ?? null}
         eventMode
       />
     </div>

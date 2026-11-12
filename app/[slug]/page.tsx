@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { notFound, permanentRedirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import { ChevronRight, CalendarDays, Pencil } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
 import { formatCents } from '@/lib/money';
@@ -47,17 +47,7 @@ export default async function ItemPage({ params }: { params: Promise<{ slug: str
     },
   });
 
-  if (!item) {
-    // Maybe this is an old slug the item has since moved off. Keep the shared
-    // link working by redirecting to the current URL.
-    const alias = await prisma.itemSlug.findUnique({
-      where: { slug },
-      select: { item: { select: { active: true, slug: true } } },
-    });
-    if (alias?.item.active) permanentRedirect(`/item/${alias.item.slug}`);
-    notFound();
-  }
-  if (!item.active) notFound();
+  if (!item || !item.active) notFound();
 
   const soldOut = item.stock === 0;
   const eventDates = item.isEvent ? formatEventDates(item.startsAt, item.endsAt) : '';

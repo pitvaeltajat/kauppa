@@ -14,7 +14,7 @@ export function lowestVariantPrice(variants: { priceCents: number }[]): number {
  * Where-filter for items the public shop lists (front page, category pages,
  * header). An item shows when it is active, not manually hidden, and, if it is
  * an event, ended less than a week ago. Items excluded here are still reachable
- * and buyable at their direct /item/<slug> link; only the listings drop them.
+ * and buyable at their direct /<slug> link; only the listings drop them.
  */
 export function listedItemWhere(now: Date = new Date()): Prisma.ItemWhereInput {
   const cutoff = new Date(now.getTime() - EVENT_GRACE_MS);
@@ -37,7 +37,9 @@ export function formatEventDates(
 ): string {
   const fmt = (d: Date) => format(d, 'd.M.yyyy', { locale: fi });
   if (startsAt && endsAt) {
-    return startsAt.getTime() === endsAt.getTime() ? fmt(startsAt) : `${fmt(startsAt)} – ${fmt(endsAt)}`;
+    return startsAt.getTime() === endsAt.getTime()
+      ? fmt(startsAt)
+      : `${fmt(startsAt)} – ${fmt(endsAt)}`;
   }
   if (startsAt) return fmt(startsAt);
   if (endsAt) return fmt(endsAt);

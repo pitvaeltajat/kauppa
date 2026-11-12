@@ -11,3 +11,22 @@ export function slugify(text: string): string {
     .slice(0, 80);
   return slug || 'tuote';
 }
+
+/** Root-level routes that must never be claimed by a product or event slug. */
+export const RESERVED_ITEM_SLUGS = new Set([
+  'admin',
+  'api',
+  'cart',
+  'cancel',
+  'category',
+  'event-payment',
+  'invoice',
+  'item',
+  'kammi',
+  'login',
+  'success',
+]);
+
+export function isReservedItemSlug(slug: string): boolean {
+  return RESERVED_ITEM_SLUGS.has(slug.toLowerCase());
+}

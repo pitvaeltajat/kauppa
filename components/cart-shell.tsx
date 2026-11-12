@@ -387,13 +387,13 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
             key={`${cartItem.id}:${cartItem.variantId ?? ''}`}
             className="flex items-start gap-4 rounded-lg border bg-card p-4 shadow-sm"
           >
-            <Link href={item ? `/item/${item.slug}` : '#'} className="w-20 shrink-0">
+            <Link href={item ? `/${item.slug}` : '#'} className="w-20 shrink-0">
               <ItemImage src={item?.imageUrl} alt={item?.name ?? 'Tuote'} />
             </Link>
             <div className="min-w-0 flex-1">
               {item ? (
                 <>
-                  <Link href={`/item/${item.slug}`} className="font-medium hover:underline">
+                  <Link href={`/${item.slug}`} className="font-medium hover:underline">
                     {item.name}
                   </Link>
                   <p className="text-sm text-muted-foreground">

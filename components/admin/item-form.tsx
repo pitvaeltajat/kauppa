@@ -261,9 +261,9 @@ export function ItemForm({
               aria-describedby="slug-help"
             />
             <p id="slug-help" className="text-xs text-muted-foreground">
-              Tuotteen osoite: <span className="font-mono">/item/{'{slug}'}</span>. Jätä tyhjäksi,
-              niin tunnus muodostetaan nimestä. Käytä pieniä kirjaimia, numeroita ja väliviivoja
-              (ä→a, ö→o). Vanha osoite ohjautuu uuteen, jos muutat tunnusta.
+              Tuotteen osoite: <span className="font-mono">/{'{slug}'}</span>. Jätä tyhjäksi, niin
+              tunnus muodostetaan nimestä. Käytä pieniä kirjaimia, numeroita ja väliviivoja (ä→a,
+              ö→o). Järjestelmäsivujen nimiä ei voi käyttää tunnuksena.
             </p>
           </div>
         </div>

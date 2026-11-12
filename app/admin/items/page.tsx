@@ -53,7 +53,7 @@ export default async function AdminItemsPage() {
               >
                 <td className="px-4 py-3 font-medium">
                   <Link
-                    href={`/item/${item.slug}`}
+                    href={`/${item.slug}`}
                     className="hover:underline"
                     target="_blank"
                     rel="noreferrer"

@@ -79,7 +79,7 @@ export default async function AdminEventsPage() {
                   >
                     <td className="px-4 py-3 font-medium">
                       <Link
-                        href={`/item/${event.slug}`}
+                        href={`/${event.slug}`}
                         className="hover:underline"
                         target="_blank"
                         rel="noreferrer"

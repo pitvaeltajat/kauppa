@@ -6,7 +6,7 @@ import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { getUserRole, isEventAdmin, isSuperAdmin, type Role } from '@/lib/admin';
-import { slugify } from '@/lib/slug';
+import { isReservedItemSlug, slugify } from '@/lib/slug';
 import { parseEurosInput } from '@/lib/money';
 import { parseQuestionDrafts } from '@/lib/questions';
 import { LEADER_DISCOUNT_CODE, normalizeCode } from '@/lib/discount';
@@ -146,6 +146,9 @@ export async function saveItem(
   }
 
   const slug = slugify(((formData.get('slug') as string) ?? '').trim() || name);
+  if (isReservedItemSlug(slug)) {
+    return { error: `Slug "${slug}" on varattu järjestelmäsivulle.` };
+  }
   const existing = await prisma.item.findUnique({ where: { slug } });
   if (existing && existing.id !== id) {
     return { error: `Slug "${slug}" on jo toisen tuotteen käytössä.` };

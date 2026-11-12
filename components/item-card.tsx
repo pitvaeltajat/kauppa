@@ -30,7 +30,7 @@ export function ItemCard({
   const dates = item.isEvent ? formatEventDates(item.startsAt, item.endsAt) : '';
   return (
     <Link
-      href={`/item/${item.slug}`}
+      href={`/${item.slug}`}
       className={cn(
         'group overflow-hidden rounded-lg border bg-card text-card-foreground shadow-sm transition-shadow hover:shadow-md',
         featured ? 'flex flex-row' : 'block',

@@ -43,7 +43,10 @@ export async function POST(req: Request) {
       ? payload.requestKey
       : null;
   if (checkoutKey) {
-    const existing = await prisma.order.findUnique({ where: { checkoutKey } });
+    let existing = await prisma.order.findUnique({
+      where: { checkoutKey },
+      include: { lines: { select: { item: { select: { isEvent: true } } } } },
+    });
     if (existing) {
       if (payload.paymentMethod === 'deferred_event' && existing.paymentToken) {
         return NextResponse.json({
@@ -52,18 +55,72 @@ export async function POST(req: Request) {
           paymentToken: existing.paymentToken,
         });
       }
-      if (existing.stripeSessionId) {
+
+      const isEventOrder =
+        existing.lines.length > 0 && existing.lines.every((line) => line.item.isEvent);
+      const switchingToDeferred =
+        payload.paymentMethod === 'deferred_event' &&
+        isEventOrder &&
+        existing.status === 'RECEIVED' &&
+        !existing.paymentToken &&
+        Boolean(existing.stripeSessionId);
+      const switchingToCard =
+        payload.paymentMethod !== 'deferred_event' &&
+        isEventOrder &&
+        existing.status === 'RECEIVED' &&
+        Boolean(existing.paymentToken) &&
+        !existing.stripeSessionId;
+
+      if (switchingToDeferred || switchingToCard) {
+        if (existing.stripeSessionId) {
+          const session = await getStripe().checkout.sessions.retrieve(existing.stripeSessionId);
+          if (session.status === 'complete') {
+            return NextResponse.json({
+              paymentMethod: 'elements',
+              clientSecret: session.client_secret,
+              checkoutSessionId: session.id,
+            });
+          }
+          if (session.status === 'open') await getStripe().checkout.sessions.expire(session.id);
+        }
+
+        const cancelled = await prisma.order.updateMany({
+          where: {
+            id: existing.id,
+            status: 'RECEIVED',
+            checkoutKey,
+            stripeSessionId: existing.stripeSessionId,
+          },
+          data: {
+            status: 'CANCELLED',
+            stripeSessionId: null,
+            paymentToken: null,
+            checkoutKey: null,
+            paymentLinkEmailSentAt: null,
+          },
+        });
+        if (cancelled.count !== 1) {
+          return NextResponse.json(
+            { error: 'Maksutavan vaihto epäonnistui. Yritä uudelleen.' },
+            { status: 409 },
+          );
+        }
+        existing = null;
+      }
+
+      if (!existing) {
+        // The cancelled order has released the idempotency key. Continue by
+        // creating a fresh order for the newly selected payment method.
+      } else if (existing.stripeSessionId) {
         const session = await getStripe().checkout.sessions.retrieve(existing.stripeSessionId);
         return NextResponse.json({
           paymentMethod: 'elements',
           clientSecret: session.client_secret,
           checkoutSessionId: session.id,
         });
-      }
-      if (existing.status === 'PAID' && existing.totalCents === 0) {
+      } else if (existing.status === 'PAID' && existing.totalCents === 0) {
         return NextResponse.json({ paymentMethod: 'free', orderId: existing.id });
-      }
-      if (existing.invoiceUrl) {
+      } else if (existing.invoiceUrl) {
         return NextResponse.json({
           paymentMethod: 'invoice',
           orderId: existing.id,
@@ -71,11 +128,12 @@ export async function POST(req: Request) {
           invoiceUrl: existing.invoiceUrl,
           invoicePdfUrl: existing.invoicePdfUrl,
         });
+      } else {
+        return NextResponse.json(
+          { error: 'Maksu on jo käynnistymässä. Yritä hetken kuluttua uudelleen.' },
+          { status: 409 },
+        );
       }
-      return NextResponse.json(
-        { error: 'Maksu on jo käynnistymässä. Yritä hetken kuluttua uudelleen.' },
-        { status: 409 },
-      );
     }
   }
 

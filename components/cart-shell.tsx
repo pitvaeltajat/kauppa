@@ -70,6 +70,7 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
   const [codeChecking, setCodeChecking] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const checkoutRequestKey = useRef<string | null>(null);
+  const checkoutGeneration = useRef(0);
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'deferred'>('card');
   const participantNamesPrefilled = useRef(false);
   const autoCheckoutStarted = useRef(false);
@@ -197,7 +198,7 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
     setPaymentMethod(next);
     setClientSecret(null);
     setLoading(false);
-    checkoutRequestKey.current = null;
+    checkoutGeneration.current += 1;
     autoCheckoutStarted.current = false;
     setError(null);
   }
@@ -253,6 +254,7 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
     setLoading(true);
     const requestKey = checkoutRequestKey.current ?? crypto.randomUUID();
     checkoutRequestKey.current = requestKey;
+    const requestGeneration = checkoutGeneration.current;
     try {
       const res = await fetch('/api/checkout', {
         method: 'POST',
@@ -283,7 +285,7 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
         invoicePdfUrl?: string | null;
         error?: string;
       };
-      if (checkoutRequestKey.current !== requestKey) return;
+      if (checkoutGeneration.current !== requestGeneration) return;
       if (!res.ok) {
         autoCheckoutStarted.current = false;
         checkoutRequestKey.current = null;
@@ -315,11 +317,11 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
         return;
       }
     } catch {
-      if (checkoutRequestKey.current !== requestKey) return;
+      if (checkoutGeneration.current !== requestGeneration) return;
       autoCheckoutStarted.current = false;
       setError('Maksua ei voitu aloittaa. Tarkista yhteys ja yritä uudelleen.');
     } finally {
-      if (checkoutRequestKey.current === requestKey) setLoading(false);
+      if (checkoutGeneration.current === requestGeneration) setLoading(false);
     }
   }, [
     answers,

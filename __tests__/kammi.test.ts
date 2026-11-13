@@ -12,6 +12,7 @@ import {
   type KammiPrices,
 } from '@/lib/kammi';
 import { createKammiEvent, eventToRange } from '@/lib/googleCalendar';
+import { kammiFeedbackEmailsEnabled } from '@/lib/emails';
 
 const prices: KammiPrices = {
   weekendScoutCents: 20000,
@@ -122,6 +123,21 @@ describe('Google calendar writes', () => {
     else process.env.KAMMI_CALENDAR_ID = previousId;
     if (previousWriteEnabled === undefined) delete process.env.KAMMI_CALENDAR_WRITE_ENABLED;
     else process.env.KAMMI_CALENDAR_WRITE_ENABLED = previousWriteEnabled;
+  });
+});
+
+describe('Kammi feedback emails', () => {
+  it('stay disabled unless explicitly enabled', () => {
+    const previous = process.env.KAMMI_FEEDBACK_EMAILS_ENABLED;
+
+    delete process.env.KAMMI_FEEDBACK_EMAILS_ENABLED;
+    expect(kammiFeedbackEmailsEnabled()).toBe(false);
+
+    process.env.KAMMI_FEEDBACK_EMAILS_ENABLED = 'true';
+    expect(kammiFeedbackEmailsEnabled()).toBe(true);
+
+    if (previous === undefined) delete process.env.KAMMI_FEEDBACK_EMAILS_ENABLED;
+    else process.env.KAMMI_FEEDBACK_EMAILS_ENABLED = previous;
   });
 });
 

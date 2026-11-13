@@ -114,6 +114,8 @@ project:
 - `KAMMI_CALENDAR_ID`: optional Google Calendar ID used for Kammi availability
 - `KAMMI_CALENDAR_WRITE_ENABLED="true"`: explicitly enable writing new Kammi
   bookings to that calendar; leave unset or `false` while testing
+- `KAMMI_FEEDBACK_EMAILS_ENABLED="true"`: explicitly enable post-stay feedback
+  emails; leave unset while the legacy Google Sheets workflow is active
 - `NEXT_PUBLIC_APP_URL="https://kontti.pitva.fi"`: the app's public URL
 
 DNS: `kontti.pitva.fi` CNAME to the Vercel deployment, in the same Route 53

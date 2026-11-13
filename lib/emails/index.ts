@@ -20,6 +20,7 @@ export {
   sendKammiCancellationEmail,
   sendKammiPaymentReminderEmail,
   renderKammiFeedbackEmail,
+  kammiFeedbackEmailsEnabled,
   sendKammiFeedbackEmail,
   sendKammiHostNotificationEmail,
   type KammiEmailData,

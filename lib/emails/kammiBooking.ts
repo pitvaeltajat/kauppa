@@ -8,6 +8,11 @@ import { sendEmail } from './ses-client';
 const FEEDBACK_URL = () => process.env.KAMMI_FEEDBACK_URL || 'https://bit.ly/kamminpalautelomake';
 /** The cabin host who fields booking questions and signs the feedback mail. */
 const HOST_EMAIL = () => process.env.KAMMI_HOST_EMAIL || 'paavali.keppo@pitkajarvenvaeltajat.fi';
+
+/** Feedback emails stay disabled until the legacy Google Sheets workflow is retired. */
+export function kammiFeedbackEmailsEnabled(): boolean {
+  return process.env.KAMMI_FEEDBACK_EMAILS_ENABLED === 'true';
+}
 const HOST_SIGNATURE = `Terveisin,<br>Paavali Keppo<br>Kämppäisäntä<br>Pitkäjärven Vaeltajat ry<br>044 9747446<br>paavali.keppo@pitkajarvenvaeltajat.fi`;
 
 export type KammiEmailData = {
@@ -176,6 +181,7 @@ export function renderKammiFeedbackEmail(name: string | null): EmailContent {
 }
 
 export async function sendKammiFeedbackEmail(bookingId: string): Promise<void> {
+  if (!kammiFeedbackEmailsEnabled()) return;
   const booking = await prisma.kammiBooking.findUnique({ where: { id: bookingId } });
   if (!booking?.email) return;
   const { subject, html } = renderKammiFeedbackEmail(booking.name);

@@ -3,10 +3,12 @@
 import { useMemo, useState, useSyncExternalStore } from 'react';
 import {
   CheckoutElementsProvider,
+  ExpressCheckoutElement,
   PaymentElement,
   useCheckoutElements,
 } from '@stripe/react-stripe-js/checkout';
 import { loadStripe } from '@stripe/stripe-js';
+import type { StripeExpressCheckoutElementConfirmEvent } from '@stripe/stripe-js';
 import { CheckCircle2, Copy, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -296,18 +298,29 @@ function EventPaymentForm() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  async function submit() {
-    if (checkoutState.type !== 'success') return;
+  async function submit(expressCheckoutConfirmEvent?: StripeExpressCheckoutElementConfirmEvent) {
+    if (checkoutState.type !== 'success') {
+      expressCheckoutConfirmEvent?.paymentFailed({
+        message: 'Maksulomake ei ole vielä valmis. Yritä uudelleen.',
+      });
+      return;
+    }
     const { checkout } = checkoutState;
     setError(null);
     setLoading(true);
     try {
       const result = await checkout.confirm({
         redirect: 'if_required',
+        ...(expressCheckoutConfirmEvent ? { expressCheckoutConfirmEvent } : {}),
       });
-      if (result.type === 'error') setError(result.error.message ?? 'Maksu epäonnistui.');
+      if (result.type === 'error') {
+        expressCheckoutConfirmEvent?.paymentFailed({ message: result.error.message });
+        setError(result.error.message ?? 'Maksu epäonnistui.');
+      }
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Maksu epäonnistui.');
+      const message = error instanceof Error ? error.message : 'Maksu epäonnistui.';
+      expressCheckoutConfirmEvent?.paymentFailed({ message });
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -315,13 +328,24 @@ function EventPaymentForm() {
 
   return (
     <div className="space-y-4 border-t pt-4">
+      <ExpressCheckoutElement
+        options={{
+          buttonHeight: 48,
+          buttonType: { applePay: 'buy', googlePay: 'buy' },
+          buttonTheme: { applePay: 'black', googlePay: 'black' },
+          layout: { maxColumns: 2, maxRows: 1 },
+          paymentMethodOrder: ['apple_pay', 'google_pay'],
+          paymentMethods: { applePay: 'always', googlePay: 'always' },
+        }}
+        onConfirm={(event) => void submit(event)}
+      />
       <PaymentElement />
       {error && <p className="text-sm text-destructive">{error}</p>}
       <Button
         type="button"
         variant="cta"
         className="w-full"
-        onClick={submit}
+        onClick={() => void submit()}
         disabled={loading || checkoutState.type !== 'success'}
       >
         {loading ? <LoadingPill className="bg-current/25" /> : 'Maksa turvallisesti'}

@@ -54,13 +54,13 @@ export function EventPayment({
   );
   const message = useMemo(
     () =>
-      `Hei! Olen ilmoittautunut tapahtumaan ${eventName}${dates ? ` (${dates})` : ''}. Hinta on ${total}. Voit maksaa ilmoittautumisen tästä: ${url}`,
+      `Hei! Olen ilmoittautunut partiotapahtumaan ${eventName}${dates ? ` (${dates})` : ''}. Hinta on ${total}. Voit maksaa ilmoittautumisen tästä: ${url}`,
     [dates, eventName, total, url],
   );
 
   async function share() {
     if (navigator.share) {
-      await navigator.share({ title: `Tapahtumamaksu: ${eventName}`, text: message, url });
+      await navigator.share({ title: `Tapahtumamaksu: ${eventName}`, text: message });
       return;
     }
     await navigator.clipboard.writeText(message);

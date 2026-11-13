@@ -192,6 +192,16 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
     });
   }
 
+  function choosePaymentMethod(next: 'card' | 'deferred') {
+    if (next === paymentMethod) return;
+    setPaymentMethod(next);
+    setClientSecret(null);
+    setLoading(false);
+    checkoutRequestKey.current = null;
+    autoCheckoutStarted.current = false;
+    setError(null);
+  }
+
   const missingAnswerMessage = useCallback(
     (item: FetchedItem, quantity: number): string | null => {
       const itemAnswers = answers[item.id] ?? {};
@@ -241,8 +251,9 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
       }
     }
     setLoading(true);
+    const requestKey = checkoutRequestKey.current ?? crypto.randomUUID();
+    checkoutRequestKey.current = requestKey;
     try {
-      checkoutRequestKey.current ??= crypto.randomUUID();
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -259,7 +270,7 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
           email: deferredCheckout ? undefined : email.trim() || undefined,
           discountCode: discount?.code,
           paymentMethod: deferredCheckout ? 'deferred_event' : 'card',
-          requestKey: checkoutRequestKey.current,
+          requestKey,
         }),
       });
       const data = (await res.json()) as {
@@ -272,6 +283,7 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
         invoicePdfUrl?: string | null;
         error?: string;
       };
+      if (checkoutRequestKey.current !== requestKey) return;
       if (!res.ok) {
         autoCheckoutStarted.current = false;
         checkoutRequestKey.current = null;
@@ -303,10 +315,11 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
         return;
       }
     } catch {
+      if (checkoutRequestKey.current !== requestKey) return;
       autoCheckoutStarted.current = false;
       setError('Maksua ei voitu aloittaa. Tarkista yhteys ja yritä uudelleen.');
     } finally {
-      setLoading(false);
+      if (checkoutRequestKey.current === requestKey) setLoading(false);
     }
   }, [
     answers,
@@ -324,7 +337,6 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
   useEffect(() => {
     if (
       !catalogLoaded ||
-      eventOnly ||
       deferredCheckout ||
       freeEventRegistration ||
       hasInvalidVariant ||
@@ -347,7 +359,6 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
     deferredCheckout,
     discount,
     email,
-    eventOnly,
     clientSecret,
     freeEventRegistration,
     hasInvalidVariant,
@@ -689,10 +700,7 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
                 name="payment-method"
                 className="mt-0.5 size-4 accent-[hsl(244,51%,24%)]"
                 checked={paymentMethod === 'card'}
-                onChange={() => {
-                  setPaymentMethod('card');
-                  setError(null);
-                }}
+                onChange={() => choosePaymentMethod('card')}
               />
               <span>
                 <span className="font-medium">Maksa itse</span>
@@ -707,10 +715,7 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
                 name="payment-method"
                 className="mt-0.5 size-4 accent-[hsl(244,51%,24%)]"
                 checked={paymentMethod === 'deferred'}
-                onChange={() => {
-                  setPaymentMethod('deferred');
-                  setError(null);
-                }}
+                onChange={() => choosePaymentMethod('deferred')}
               />
               <span>
                 <span className="font-medium">Vanhempi maksaa myöhemmin</span>
@@ -741,7 +746,7 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
           >
             <PaymentForm loading={loading} onError={setError} onLoading={setLoading} />
           </CheckoutElementsProvider>
-        ) : !eventOnly && !deferredCheckout && !freeEventRegistration && cardCheckoutReady && !error ? (
+        ) : !deferredCheckout && !freeEventRegistration && cardCheckoutReady && !error ? (
           <div className="flex min-h-11 items-center justify-center gap-2 rounded-md bg-muted px-4 py-2 text-sm text-muted-foreground">
             <LoadingPill /> Valmistellaan maksutapoja…
           </div>

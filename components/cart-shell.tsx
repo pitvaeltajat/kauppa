@@ -385,182 +385,199 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
         {lines.map(({ cartItem, item, variant }) => (
           <div
             key={`${cartItem.id}:${cartItem.variantId ?? ''}`}
-            className="flex items-start gap-4 rounded-lg border bg-card p-4 shadow-sm"
+            className="rounded-lg border bg-card p-3 shadow-sm sm:p-4"
           >
-            <Link href={item ? `/${item.slug}` : '#'} className="w-20 shrink-0">
-              <ItemImage src={item?.imageUrl} alt={item?.name ?? 'Tuote'} />
-            </Link>
-            <div className="min-w-0 flex-1">
-              {item ? (
-                <>
-                  <Link href={`/${item.slug}`} className="font-medium hover:underline">
-                    {item.name}
-                  </Link>
-                  <p className="text-sm text-muted-foreground">
-                    {variant
-                      ? item.isEvent && variant.priceCents === 0
-                        ? 'Maksuton ilmoittautuminen'
-                        : `${formatCents(variant.priceCents)} / kpl`
-                      : 'Vaihtoehto ei ole enää saatavilla'}
-                    {variant?.name ? ` - ${variant.name}` : ''}
-                  </p>
-                </>
-              ) : catalogLoaded ? (
-                <>
-                  <p className="font-medium">Tuote ei ole enää myynnissä</p>
-                  <p className="text-sm text-muted-foreground">
-                    Poista tuote korista, jotta voit jatkaa.
-                  </p>
-                </>
-              ) : (
-                <>
-                  <LoadingPill className="h-5 w-40 max-w-full bg-muted" />
-                  <LoadingPill className="mt-1.5 h-4 w-24 bg-muted" />
-                </>
-              )}
-              <div className="mt-2 flex items-center gap-3">
-                <div className="flex h-8 items-center rounded-md border border-input bg-background">
+            <div className="flex items-start gap-3 sm:gap-4">
+              <Link href={item ? `/${item.slug}` : '#'} className="w-16 shrink-0 sm:w-20">
+                <ItemImage src={item?.imageUrl} alt={item?.name ?? 'Tuote'} />
+              </Link>
+              <div className="min-w-0 flex-1">
+                {item ? (
+                  <>
+                    <Link href={`/${item.slug}`} className="font-medium hover:underline">
+                      {item.name}
+                    </Link>
+                    <p className="text-sm text-muted-foreground">
+                      {variant
+                        ? item.isEvent && variant.priceCents === 0
+                          ? 'Maksuton ilmoittautuminen'
+                          : `${formatCents(variant.priceCents)} / kpl`
+                        : 'Vaihtoehto ei ole enää saatavilla'}
+                      {variant?.name ? ` - ${variant.name}` : ''}
+                    </p>
+                  </>
+                ) : catalogLoaded ? (
+                  <>
+                    <p className="font-medium">Tuote ei ole enää myynnissä</p>
+                    <p className="text-sm text-muted-foreground">
+                      Poista tuote korista, jotta voit jatkaa.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <LoadingPill className="h-5 w-40 max-w-full bg-muted" />
+                    <LoadingPill className="mt-1.5 h-4 w-24 bg-muted" />
+                  </>
+                )}
+                <div className="mt-2 flex items-center gap-3">
+                  <div className="flex h-8 items-center rounded-md border border-input bg-background">
+                    <button
+                      type="button"
+                      aria-label="Vähennä"
+                      className="flex h-full w-8 items-center justify-center text-muted-foreground hover:text-foreground"
+                      onClick={() =>
+                        cartStore.setQuantity(
+                          cartItem.id,
+                          cartItem.quantity - 1,
+                          cartItem.variantId,
+                        )
+                      }
+                    >
+                      <Minus className="size-3.5" />
+                    </button>
+                    <span className="w-8 text-center text-sm">{cartItem.quantity}</span>
+                    <button
+                      type="button"
+                      aria-label="Lisää"
+                      className="flex h-full w-8 items-center justify-center text-muted-foreground hover:text-foreground"
+                      onClick={() =>
+                        cartStore.setQuantity(
+                          cartItem.id,
+                          cartItem.quantity + 1,
+                          cartItem.variantId,
+                        )
+                      }
+                    >
+                      <Plus className="size-3.5" />
+                    </button>
+                  </div>
+                  {item && (
+                    <span className="text-sm font-semibold">
+                      {variant ? formatCents(variant.priceCents * cartItem.quantity) : '–'}
+                    </span>
+                  )}
                   <button
                     type="button"
-                    aria-label="Vähennä"
-                    className="flex h-full w-8 items-center justify-center text-muted-foreground hover:text-foreground"
-                    onClick={() =>
-                      cartStore.setQuantity(cartItem.id, cartItem.quantity - 1, cartItem.variantId)
-                    }
+                    aria-label="Poista korista"
+                    className="ml-auto text-muted-foreground transition-colors hover:text-destructive"
+                    onClick={() => cartStore.remove(cartItem.id, cartItem.variantId)}
                   >
-                    <Minus className="size-3.5" />
-                  </button>
-                  <span className="w-8 text-center text-sm">{cartItem.quantity}</span>
-                  <button
-                    type="button"
-                    aria-label="Lisää"
-                    className="flex h-full w-8 items-center justify-center text-muted-foreground hover:text-foreground"
-                    onClick={() =>
-                      cartStore.setQuantity(cartItem.id, cartItem.quantity + 1, cartItem.variantId)
-                    }
-                  >
-                    <Plus className="size-3.5" />
+                    <Trash2 className="size-4" />
                   </button>
                 </div>
-                {item && (
-                  <span className="text-sm font-semibold">
-                    {variant ? formatCents(variant.priceCents * cartItem.quantity) : '–'}
-                  </span>
-                )}
-                <button
-                  type="button"
-                  aria-label="Poista korista"
-                  className="ml-auto text-muted-foreground transition-colors hover:text-destructive"
-                  onClick={() => cartStore.remove(cartItem.id, cartItem.variantId)}
-                >
-                  <Trash2 className="size-4" />
-                </button>
               </div>
+            </div>
 
-              {/* Checkout questions for this item */}
-              {item && item.questions.length > 0 && (
-                <div className="mt-4 space-y-3 rounded-md bg-background p-3">
-                  {Array.from({ length: cartItem.quantity }).map((_, participantIndex) => (
-                    <div key={participantIndex} className="space-y-4 rounded-md border bg-card p-4">
-                      {cartItem.quantity > 1 && (
-                        <p className="text-sm font-semibold">
-                          {item.isEvent ? 'Osallistuja' : 'Tuote'} {participantIndex + 1}
-                        </p>
-                      )}
-                      {item.questions.map((question) => {
-                        const current = answers[item.id]?.[question.id]?.[participantIndex];
+            {/* Checkout questions span the full card width so inputs have room on mobile. */}
+            {item && item.questions.length > 0 && (
+              <div className="mt-4 space-y-3 border-t pt-4">
+                {Array.from({ length: cartItem.quantity }).map((_, participantIndex) => (
+                  <div
+                    key={participantIndex}
+                    className={
+                      cartItem.quantity > 1
+                        ? 'space-y-4 rounded-md border bg-background/50 p-3 sm:p-4'
+                        : 'space-y-4'
+                    }
+                  >
+                    {cartItem.quantity > 1 && (
+                      <p className="text-sm font-semibold">
+                        {item.isEvent ? 'Osallistuja' : 'Tuote'} {participantIndex + 1}
+                      </p>
+                    )}
+                    {item.questions.map((question) => {
+                      const current = answers[item.id]?.[question.id]?.[participantIndex];
 
-                        return (
-                          <div key={question.id} className="space-y-2">
-                            <Label className="text-xs font-medium">
-                              {question.prompt}
-                              {!question.required && (
-                                <span className="ml-1 font-normal text-muted-foreground">
-                                  (valinnainen)
-                                </span>
-                              )}
-                            </Label>
-                            {question.type === 'TEXT' && (
-                              <Input
-                                value={typeof current === 'string' ? current : ''}
-                                onChange={(e) =>
-                                  setAnswer(item.id, question.id, participantIndex, e.target.value)
-                                }
-                                placeholder={question.prompt}
-                              />
+                      return (
+                        <div key={question.id} className="space-y-2">
+                          <Label className="text-xs font-medium">
+                            {question.prompt}
+                            {!question.required && (
+                              <span className="ml-1 font-normal text-muted-foreground">
+                                (valinnainen)
+                              </span>
                             )}
-                            {question.type === 'NUMBER' && (
-                              <Input
-                                type="number"
-                                inputMode="decimal"
-                                value={typeof current === 'string' ? current : ''}
-                                onChange={(e) =>
-                                  setAnswer(item.id, question.id, participantIndex, e.target.value)
-                                }
-                                placeholder="luku"
-                              />
-                            )}
-                            {question.type === 'RADIO' && (
-                              <div className="flex flex-wrap gap-x-4 gap-y-2">
-                                {question.options.map((option) => (
+                          </Label>
+                          {question.type === 'TEXT' && (
+                            <Input
+                              value={typeof current === 'string' ? current : ''}
+                              onChange={(e) =>
+                                setAnswer(item.id, question.id, participantIndex, e.target.value)
+                              }
+                              placeholder={question.prompt}
+                            />
+                          )}
+                          {question.type === 'NUMBER' && (
+                            <Input
+                              type="number"
+                              inputMode="decimal"
+                              value={typeof current === 'string' ? current : ''}
+                              onChange={(e) =>
+                                setAnswer(item.id, question.id, participantIndex, e.target.value)
+                              }
+                              placeholder="luku"
+                            />
+                          )}
+                          {question.type === 'RADIO' && (
+                            <div className="flex flex-wrap gap-x-4 gap-y-2">
+                              {question.options.map((option) => (
+                                <label
+                                  key={option}
+                                  className="flex cursor-pointer items-center gap-2 text-sm"
+                                >
+                                  <input
+                                    type="radio"
+                                    name={`q-${item.id}-${question.id}-${participantIndex}`}
+                                    className="size-4 accent-[hsl(244,51%,24%)]"
+                                    checked={current === option}
+                                    onChange={() =>
+                                      setAnswer(item.id, question.id, participantIndex, option)
+                                    }
+                                  />
+                                  {option}
+                                </label>
+                              ))}
+                            </div>
+                          )}
+                          {question.type === 'CHECKBOX' && (
+                            <div className="flex flex-wrap gap-x-4 gap-y-2">
+                              {question.options.map((option) => {
+                                const selected = Array.isArray(current) ? current : [];
+                                return (
                                   <label
                                     key={option}
                                     className="flex cursor-pointer items-center gap-2 text-sm"
                                   >
                                     <input
-                                      type="radio"
-                                      name={`q-${item.id}-${question.id}-${participantIndex}`}
+                                      type="checkbox"
                                       className="size-4 accent-[hsl(244,51%,24%)]"
-                                      checked={current === option}
-                                      onChange={() =>
-                                        setAnswer(item.id, question.id, participantIndex, option)
-                                      }
+                                      checked={selected.includes(option)}
+                                      onChange={(e) => {
+                                        const next = e.target.checked
+                                          ? [...selected, option]
+                                          : selected.filter((o) => o !== option);
+                                        setAnswer(item.id, question.id, participantIndex, next);
+                                      }}
                                     />
                                     {option}
                                   </label>
-                                ))}
-                              </div>
-                            )}
-                            {question.type === 'CHECKBOX' && (
-                              <div className="flex flex-wrap gap-x-4 gap-y-2">
-                                {question.options.map((option) => {
-                                  const selected = Array.isArray(current) ? current : [];
-                                  return (
-                                    <label
-                                      key={option}
-                                      className="flex cursor-pointer items-center gap-2 text-sm"
-                                    >
-                                      <input
-                                        type="checkbox"
-                                        className="size-4 accent-[hsl(244,51%,24%)]"
-                                        checked={selected.includes(option)}
-                                        onChange={(e) => {
-                                          const next = e.target.checked
-                                            ? [...selected, option]
-                                            : selected.filter((o) => o !== option);
-                                          setAnswer(item.id, question.id, participantIndex, next);
-                                        }}
-                                      />
-                                      {option}
-                                    </label>
-                                  );
-                                })}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         ))}
       </div>
 
       {/* Summary */}
-      <div className="h-fit space-y-4 rounded-lg border bg-card p-5 shadow-sm">
+      <div className="h-fit space-y-4 rounded-lg border bg-card p-4 shadow-sm sm:p-5">
         <h2 className="text-lg font-bold">Yhteenveto</h2>
 
         {/* Discount code */}

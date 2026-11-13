@@ -8,7 +8,7 @@ export default async function CartPage() {
   const session = await getSession();
 
   return (
-    <div className="container py-8">
+    <div className="container py-6 sm:py-8">
       <h1 className="mb-6 text-2xl font-bold">Ostoskori</h1>
       <CartShell
         initialUser={{

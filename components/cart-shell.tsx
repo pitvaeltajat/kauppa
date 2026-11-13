@@ -324,6 +324,7 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
   useEffect(() => {
     if (
       !catalogLoaded ||
+      eventOnly ||
       deferredCheckout ||
       freeEventRegistration ||
       hasInvalidVariant ||
@@ -346,6 +347,7 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
     deferredCheckout,
     discount,
     email,
+    eventOnly,
     clientSecret,
     freeEventRegistration,
     hasInvalidVariant,
@@ -739,7 +741,7 @@ export function CartShell({ initialUser }: { initialUser: { name: string; email:
           >
             <PaymentForm loading={loading} onError={setError} onLoading={setLoading} />
           </CheckoutElementsProvider>
-        ) : !deferredCheckout && !freeEventRegistration && cardCheckoutReady && !error ? (
+        ) : !eventOnly && !deferredCheckout && !freeEventRegistration && cardCheckoutReady && !error ? (
           <div className="flex min-h-11 items-center justify-center gap-2 rounded-md bg-muted px-4 py-2 text-sm text-muted-foreground">
             <LoadingPill /> Valmistellaan maksutapoja…
           </div>

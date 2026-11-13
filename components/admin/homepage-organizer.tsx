@@ -96,7 +96,12 @@ export function HomepageOrganizer({
     setDragged(null);
   }
 
-  function renderItem(item: OrganizerItem, onDrop: () => void, featuredCard = false) {
+  function renderItem(
+    item: OrganizerItem,
+    onDrop: () => void,
+    featuredCard = false,
+    listOnMobile = false,
+  ) {
     const draggable = canDrag(item);
     return (
       <div
@@ -120,11 +125,16 @@ export function HomepageOrganizer({
         )}
       >
         {draggable && (
-          <div className="pointer-events-none absolute right-2 top-2 z-10 rounded bg-card/90 p-1 text-muted-foreground shadow-sm">
+          <div
+            className={cn(
+              'pointer-events-none absolute top-2 z-10 rounded bg-card/90 p-1 text-muted-foreground shadow-sm',
+              listOnMobile ? 'left-2 sm:left-auto sm:right-2' : 'right-2',
+            )}
+          >
             <GripVertical className="size-4" aria-hidden="true" />
           </div>
         )}
-        <ItemCard item={item} featured={featuredCard} />
+        <ItemCard item={item} featured={featuredCard} listOnMobile={listOnMobile} />
       </div>
     );
   }
@@ -167,14 +177,21 @@ export function HomepageOrganizer({
             </div>
             <div
               className={cn(
-                'grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4',
+                category.slug === 'tapahtumat'
+                  ? 'grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4'
+                  : 'grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4',
                 pending && 'opacity-70',
               )}
               onDragOver={(event) => event.preventDefault()}
               onDrop={() => dropOnCategory(category.id)}
             >
               {category.items.map((item) =>
-                renderItem(item, () => dropOnCategory(category.id, item.id)),
+                renderItem(
+                  item,
+                  () => dropOnCategory(category.id, item.id),
+                  false,
+                  category.slug === 'tapahtumat',
+                ),
               )}
             </div>
           </div>
